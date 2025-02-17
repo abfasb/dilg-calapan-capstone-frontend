@@ -1,0 +1,72 @@
+import { motion, useAnimation } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import { useEffect, useState } from "react";
+
+const stats = [
+  { value: 80, suffix: "%", label: "Process Automation" },
+  { value: 40, suffix: "+", label: "Integrated Services" },
+  { value: 100, suffix: "+", label: "Documents Processed" },
+  { value: 24, suffix: "/7", label: "Real-time Monitoring" }
+];
+
+const StatisticsSection = () => {
+  const controls = useAnimation();
+  const [ref, inView] = useInView({ threshold: 0.2 });
+
+  useEffect(() => {
+    if (inView) controls.start("visible");
+  }, [controls, inView]);
+
+  return (
+    <section className="py-20 bg-gradient-to-br from-blue-900/30 to-indigo-900/30">
+      <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={index}
+              className="text-center p-8 bg-gray-900/50 rounded-2xl border border-gray-800"
+              ref={ref}
+              initial="hidden"
+              animate={controls}
+              variants={{
+                visible: { opacity: 1, y: 0 },
+                hidden: { opacity: 0, y: 50 }
+              }}
+              transition={{ delay: index * 0.2 }}
+            >
+              <div className="text-5xl font-bold mb-4 text-cyan-400">
+                <Counter from={0} to={stat.value} duration={2} />
+                {stat.suffix}
+              </div>
+              <div className="text-gray-400 text-lg">{stat.label}</div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const Counter = ({ from, to, duration }: { from: number; to: number; duration: number }) => {
+  const [count, setCount] = useState(from);
+
+  useEffect(() => {
+    let start = from;
+    const increment = (to - from) / (duration * 60);
+
+    const timer = setInterval(() => {
+      start += increment;
+      setCount(Math.ceil(start));
+      if (start >= to) {
+        setCount(to);
+        clearInterval(timer);
+      }
+    }, 1000 / 60);
+
+    return () => clearInterval(timer);
+  }, [from, to, duration]);
+
+  return <>{count}</>;
+};
+
+export default StatisticsSection;

@@ -1,0 +1,84 @@
+import { useState } from 'react';
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiChevronDown, FiHelpCircle } from 'react-icons/fi';
+
+const FaqSection : React.FC = () => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  
+  const faqs = [
+    {
+      question: "How secure is our document management system?",
+      answer: "We use military-grade encryption and blockchain technology to ensure maximum security for all government documents."
+    },
+    {
+      question: "Can we integrate with existing government systems?",
+      answer: "Yes, our platform offers seamless API integration with all major government platforms and legacy systems."
+    },
+    {
+      question: "What training is provided for LGU staff?",
+      answer: "We provide comprehensive training programs and 24/7 support to ensure smooth adoption across all departments."
+    },
+    {
+      question: "How does the AI reporting work?",
+      answer: "Our AI analyzes historical data and current metrics to generate predictive reports and actionable insights."
+    }
+  ];
+
+  return (
+    <section id="faq" className="py-20 bg-white dark:bg-gray-800">
+      <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-3 mb-4 text-cyan-500">
+            <FiHelpCircle className="text-3xl" />
+            <h2 className="text-4xl font-bold dark:text-white">FAQs</h2>
+          </div>
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Common questions about implementing AI-powered governance solutions for your LGU
+          </p>
+        </div>
+
+        <div className="grid gap-4">
+          {faqs.map((faq, index) => (
+            <div 
+              key={index}
+              className="border rounded-xl dark:border-gray-700 overflow-hidden"
+            >
+              <button
+                className="flex justify-between items-center w-full p-6 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => setActiveIndex(activeIndex === index ? null : index)}
+              >
+                <h3 className="text-lg font-semibold text-left dark:text-white">
+                  {faq.question}
+                </h3>
+                <motion.div
+                  animate={{ rotate: activeIndex === index ? 180 : 0 }}
+                >
+                  <FiChevronDown className="text-xl text-gray-600 dark:text-gray-400" />
+                </motion.div>
+              </button>
+
+              <AnimatePresence>
+                {activeIndex === index && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="p-6 pt-2 dark:text-gray-300">
+                      {faq.answer}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default FaqSection;
+

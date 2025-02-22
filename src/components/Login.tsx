@@ -6,6 +6,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { loginUser } from '../api/registrationApi';
 import { toast, Toaster } from 'react-hot-toast';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import { Checkbox } from './ui/checkbox';
 
 
 interface IFormInput {
@@ -86,7 +87,7 @@ const Login: React.FC = () => {
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           <motion.button
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.95 }}
@@ -104,13 +105,6 @@ const Login: React.FC = () => {
             <FaFacebook className="w-5 h-5 text-blue-500" />
           </motion.button>
           
-          <motion.button
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center"
-          >
-            <FaGithub className="w-5 h-5 text-gray-300" />
-          </motion.button>
         </div>
 
         <div className="relative my-8">
@@ -240,15 +234,14 @@ const Login: React.FC = () => {
             )}
           </motion.button>
 
-          <div className="flex items-center mb-4">
-            <input
-              type="checkbox"
-              id="rememberMe"
-              checked={rememberMe}
-              onChange={() => setRememberMe(!rememberMe)}
-              className="mr-2"
-            />
-            <label className='text-cyan-300' htmlFor="rememberMe">Remember Me</label>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="terms" className='border-blue-400' />
+            <label
+              htmlFor="terms"
+              className="text-sm text-cyan-400 font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Remember Me
+            </label>
           </div>
         </form>
 

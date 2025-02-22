@@ -23,21 +23,21 @@ const ContactSection : React.FC= () => {
                   <FiMapPin className="text-2xl flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Calapan City Office</p>
-                    <p className="opacity-90">City Hall Compound, Calapan, Oriental Mindoro</p>
+                    <p className="opacity-90">1st Floor, Local Government Center New City Hall Complex, M. Roxas Drive Barangay, Calapan, 5200 Oriental Mindoro</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <FiMail className="text-2xl flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Email Support</p>
-                    <p className="opacity-90">support@egovnexus.gov.ph</p>
+                    <p className="opacity-90">dilgcalapancity@gmail.com</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <FiPhone className="text-2xl flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Phone Support</p>
-                    <p className="opacity-90">+63 912 345 6789</p>
+                    <p className="opacity-90">+63 905 5812 027</p>
                   </div>
                 </div>
               </div>

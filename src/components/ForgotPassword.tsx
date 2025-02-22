@@ -6,12 +6,10 @@ import * as yup from "yup";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { motion } from "framer-motion";
 import axios from "axios";
-
 interface ResetPasswordForm {
   newPassword: string;
   confirmPassword: string;
 }
-
 const schema = yup.object().shape({
   newPassword: yup
     .string()

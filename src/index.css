@@ -5,4 +5,15 @@
   :root {
     --radius: 0.5rem
   }
+
+body {
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+.dark body {
+  background-color: #1a1a1a;
+  color: #f1f1f1;
+}
+
 }

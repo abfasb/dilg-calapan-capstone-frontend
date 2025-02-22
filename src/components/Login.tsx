@@ -24,16 +24,15 @@ const Login: React.FC = () => {
     mode: 'onChange'
   });
   
-  const watchPassword = watch("password", "");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     setError("");
     try {
       const response = await loginUser(data.email, data.password);
       localStorage.setItem('token', response.token);
+      localStorage.setItem('adminEmail', response.user.email);
       
       toast.success('Login Successful!', {
         icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,

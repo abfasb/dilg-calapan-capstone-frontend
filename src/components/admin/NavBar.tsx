@@ -11,6 +11,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const adminEmail = localStorage.getItem('adminEmail');
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -57,7 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
             <FaUserCircle className="h-7 w-7 text-blue-400" />
             <div className="text-left">
               <p className="text-sm font-medium">Super Admin</p>
-              <p className="text-xs text-gray-400">admin@dilg-egov.gov</p>
+              <p className="text-xs text-gray-400">{adminEmail}</p>
             </div>
             <FiChevronDown className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
           </button>

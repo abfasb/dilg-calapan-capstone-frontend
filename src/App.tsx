@@ -27,8 +27,10 @@ function App() {
           <Route path='/account/eGov-lgu' element={<LguMainDashboardPage />} />
         <Route path='*' element={ <NotFoundPage />}/>
 
+
         { /* Admin*/ }
         <Route path='/account/admin/:id' element={<AdminPanelPage />} />
+        
         </Routes>
       </Router>
   );

@@ -1,14 +1,10 @@
 import { useState } from "react";
-import UserManagement from "../../components/admin/UserManagement";
-import ReportsAnalytics from "../../components/admin/ReportsAnalytics";
-import SystemMonitoring from "../../components/admin/SystemMonitoring";
-import Announcements from "../../components/admin/Announcements";
 import { Sidebar } from "../../components/admin/Sidebar";
 import Dashboard from "../../components/admin/Dashboard";
-import LGUManagement from "../../components/admin/LGUManagement";
 import { Navbar } from "../../components/admin/NavBar";
 
 
+//for the sub-menu
 import RBACManagement from "../../components/admin/access-control/RBACManagement";
 import SessionPolicies from "../../components/admin/access-control/SessionPolicies";
 import AuditLogs from "../../components/admin/access-control/AuditLogs";
@@ -34,15 +30,11 @@ export default function AdminPanelPage() {
 
   const renderSection = () => {
     switch (activeSection) {
+
       //main section if i ever use it
       case "dashboard": return <Dashboard />;
-      case "users": return <UserManagement />;
-      case "lgu": return <LGUManagement />;
-      case "reports": return <ReportsAnalytics />;
-      case "monitoring": return <SystemMonitoring />;
-      case "announcements": return <Announcements />;
 
-      // Sub-section
+      // my sub-section
       case "rbac": return <RBACManagement />;
       case "session": return <SessionPolicies />;
       case "audit": return <AuditLogs />;
@@ -81,17 +73,7 @@ export default function AdminPanelPage() {
         
         <main className="flex-1 p-6 pt-20 lg:pt-6">
           <div className="max-w-7xl mx-auto">
-            {/* Content Header */}
-            <div className="mb-6 px-4 sm:px-0">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white capitalize">
-                {activeSection.replace(/-/g, ' ')}
-              </h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                {getSectionDescription(activeSection)}
-              </p>
-            </div>
-
-            {/* Main Content Card */}
+           
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
               <div className="p-6 sm:p-8">
                 {renderSection()}
@@ -111,33 +93,3 @@ export default function AdminPanelPage() {
     </div>
   );
 }
-
-const getSectionDescription = (section: string) => {
-  const descriptions: { [key: string]: string } = {
-    dashboard: "Comprehensive overview of system health and key metrics",
-    users: "Manage user accounts, roles, and access permissions",
-    lgu: "Oversee local government unit partnerships and data",
-    reports: "Generate detailed analytics and system reports",
-    monitoring: "Real-time system performance monitoring",
-    announcements: "Create and manage public communications",
-    // Subsection descriptions
-    'rbac': "Role-Based Access Control configuration",
-    'session': "User session management and policies",
-    'audit': "System audit trails and security logs",
-    'citizen-reg': "Citizen registration management",
-    'staff-onboard': "LGU staff onboarding processes",
-    'report-oversight': "Citizen report monitoring system",
-    'verification': "Identity verification systems",
-    'add-reports': "Create new analytical reports",
-    'custom-reports': "Generate custom system reports",
-    'resolution': "Issue resolution analytics",
-    'ai-reports': "AI-powered report generation",
-    'workflow': "Automated workflow configuration",
-    'performance': "System performance metrics",
-    'backups': "Data backup management",
-    'sys-announce': "System-wide announcements",
-    'notices': "Public notices management",
-    'alert-history': "Historical alert records"
-  };
-  return descriptions[section] || "Administrative management section";
-};

@@ -47,7 +47,6 @@ const Navbar: React.FC<NavbarProps> = ({ theme , toggleTheme }) => {
       } shadow-lg transition-all duration-300`}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20 py-4 flex justify-between items-center">
-        {/* Logo */}
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 rounded-full shadow-md overflow-hidden">
             <img
@@ -96,7 +95,6 @@ const Navbar: React.FC<NavbarProps> = ({ theme , toggleTheme }) => {
                 {link.name}
               </a>
 
-              {/* Dropdown (Only for Services) */}
               {link.hasDropdown && isMegaMenuOpen && (
                 <div
                   className={`absolute left-1/2 transform -translate-x-1/2 mt-3 w-80 bg-white shadow-xl rounded-lg p-6 grid grid-cols-1 gap-4 border ${

@@ -34,7 +34,8 @@ const Login: React.FC = () => {
     try {
       const response = await loginUser(data.email, data.password);
       localStorage.setItem('token', response.token);
-      toast.success('Registration Successful!', {
+      
+      toast.success('Login Successful!', {
         icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
         style: {
           background: '#1a1d24',
@@ -43,13 +44,21 @@ const Login: React.FC = () => {
           padding: '16px',
         },
         duration: 4000,
-      })
-      alert('Login successful');
+      });
+  
+      if (response.redirectUrl) {
+        window.location.href = response.redirectUrl;
+      } else {
+        window.location.href = `/dashboard/${response.user.id}`;
+      }
+  
     } catch (err) {
       const errorMessage = 'Something is wrong with your username or password.';
       setError(errorMessage);
     }
   };
+
+  
 
   return ( 
     <>

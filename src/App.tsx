@@ -28,7 +28,7 @@ function App() {
         <Route path='*' element={ <NotFoundPage />}/>
 
         { /* Admin*/ }
-        <Route path='/account/admin' element={<AdminPanelPage />} />
+        <Route path='/account/admin/:id' element={<AdminPanelPage />} />
         </Routes>
       </Router>
   );

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/admin/Sidebar";
 import Dashboard from "../../components/admin/Dashboard";
 import { Navbar } from "../../components/admin/NavBar";
@@ -27,6 +28,15 @@ import AlertHistory from "../../components/admin/communications/AlertHistory";
 export default function AdminPanelPage() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token"); 
+    if (!token) {
+      navigate("/account/login"); 
+    }
+  }, [navigate]);
 
   const renderSection = () => {
     switch (activeSection) {

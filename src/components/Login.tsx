@@ -31,8 +31,11 @@ const Login: React.FC = () => {
     setError("");
     try {
       const response = await loginUser(data.email, data.password);
+      
       localStorage.setItem('token', response.token);
       localStorage.setItem('adminEmail', response.user.email);
+      localStorage.setItem('name', response.user.name);
+
       
       toast.success('Login Successful!', {
         icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,

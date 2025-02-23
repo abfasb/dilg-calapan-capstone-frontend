@@ -10,7 +10,6 @@ import { EyeIcon, EyeSlashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/
 import { AiOutlineClose } from 'react-icons/ai';
 import { useDebouncedCallback} from 'use-debounce';
 
-// Create base schema without refinement for field validation
 const baseSchema = z.object({
   firstName: z.string()
     .min(2, 'First name must be at least 2 characters')
@@ -36,6 +35,15 @@ const baseSchema = z.object({
   newsletter: z.boolean()
 });
 
+
+const passwordMatchSchema = z.object({
+  password: z.string(),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"]
+});
+
 const registrationSchema = baseSchema.refine(
   data => data.password === data.confirmPassword,
   {
@@ -56,6 +64,7 @@ const initialFormState = {
   terms: false,
   newsletter: false,
 };
+
 
 function Registration() {
   const [formData, setFormData] = useState(initialFormState);
@@ -81,29 +90,29 @@ function Registration() {
     try {
       const fieldSchema = baseSchema.pick({ [field]: true });
       await fieldSchema.parseAsync({ [field]: value });
-
       setErrors(prev => ({ ...prev, [field]: '' }));
 
+      // Handle password match validation separately
       if (field === 'password' || field === 'confirmPassword') {
-        if (formData.password && formData.confirmPassword) {
-          registrationSchema.parse({
-            ...formData,
-            password: formData.password,
-            confirmPassword: formData.confirmPassword
-          });
+        const password = field === 'password' ? value : formData.password;
+        const confirmPassword = field === 'confirmPassword' ? value : formData.confirmPassword;
+
+        if (password && confirmPassword) {
+          await passwordMatchSchema.parseAsync({ password, confirmPassword });
           setErrors(prev => ({ ...prev, confirmPassword: '' }));
         }
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
-        const message = err.errors[0].message;
-        setErrors(prev => field === 'confirmPassword' && message === "Passwords don't match" 
-          ? { ...prev, [field]: message }
-          : { ...prev, [field]: message }
-        );
+        const error = err.errors[0];
+        if (error.path.includes('confirmPassword')) {
+          setErrors(prev => ({ ...prev, confirmPassword: error.message }));
+        } else {
+          setErrors(prev => ({ ...prev, [field]: error.message }));
+        }
       }
     }
-  }, [formData]);
+  }, [formData.password, formData.confirmPassword]);
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -131,13 +140,21 @@ function Registration() {
         toast.error('Please fix form errors');
         return;
       }
-
+  
       await registerUser(formData);
       toast.success('Registration Successful!');
       setFormData(initialFormState);
       setErrors({});
-    } catch (error) {
-      toast.error('Registration failed. Please try again.');
+    } catch (error: any) {
+      if (error.response) {
+        if (error.response.status === 409) {
+          toast.error(error.response.data.message);
+        } else {
+          toast.error('Registration failed. Please try again.');
+        }
+      } else {
+        toast.error('Network error. Please check your connection.');
+      }
     } finally {
       setIsSubmitting(false);
     }

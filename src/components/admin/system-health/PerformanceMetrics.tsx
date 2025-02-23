@@ -29,7 +29,7 @@ const PerformanceMetrics : React.FC = () => {
   };
 
   return (
-    <div className="h-full bg-gray-50 p-6 space-y-8">
+    <div className="h-full w-full bg-gray-50 p-6 space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard 
           icon={<FiUsers className="w-5 h-5" />}

@@ -6,12 +6,19 @@ interface NavbarProps {
   onMenuToggle: () => void;
 }
 
-
 export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const adminEmail = localStorage.getItem('adminEmail');
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("adminEmail");
+  
+    window.location.href = "/account/login";
+  };
+  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -91,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
               </div>
 
               <div className="py-1 border-t border-gray-700">
-                <button className="flex items-center w-full px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700">
+                <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700">
                   <FiLogOut className="h-5 w-5 mr-3" />
                   Sign Out
                 </button>

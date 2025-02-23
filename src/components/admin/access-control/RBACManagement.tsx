@@ -5,45 +5,86 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from ".
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "../../ui/dialog";
+import { toast } from "react-hot-toast";
 
 interface User {
   _id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: string;
   createdAt: string;
+  phoneNumber?: string;
 }
 
-const RBACManagement: React.FC = () => {
-  const [selectedTab, setSelectedTab] = useState<"users" | "lguRoles">("users");
+interface PendingLgu {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  status: string;
+  createdAt: string;
+}
+
+const AdminLguManagement: React.FC = () => {
+  const [selectedTab, setSelectedTab] = useState<"users" | "lguRoles" | "pendingLgus">("users");
   const [users, setUsers] = useState<User[]>([]);
+  const [pendingLgus, setPendingLgus] = useState<PendingLgu[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<string>("");
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/admin/users")
-      .then((res) => res.json())
-      .then((data: User[]) => {
-        setUsers(data);
-        console.log("Users Data:", data);
-      });
+    fetchUsers();
+    fetchPendingLgus();
   }, []);
 
-  const updateUserRole = async (userId: string, newRole: string) => {
-    const response = await fetch(`/api/users/${userId}/role`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: newRole }),
-    });
-
-    if (response.ok) {
-      setUsers((prevUsers) =>
-        prevUsers.map((user) => (user._id === userId ? { ...user, role: newRole } : user))
-      );
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/admin/users");
+      const data = await res.json();
+      setUsers(data);
+    } catch (error) {
+      toast.error("Failed to fetch users");
     }
   };
 
-  const lguUsers = users.filter(user => user.role.includes("LGU"));
+  const fetchPendingLgus = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/lgu/pendingLgus");
+      const data = await res.json();
+      setPendingLgus(data);
+    } catch (error) {
+      toast.error("Failed to fetch pending LGUs");
+    }
+  };
+
+
+  const handleApproveReject = async (id: string, status: 'approved' | 'rejected') => {
+    setProcessingId(id);
+    try {
+      const response = await fetch(`http://localhost:5000/lgu/pendingLgus/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        setPendingLgus(prev => prev.filter(lgu => lgu._id !== id));
+        toast.success(`LGU ${status} successfully`);
+        if (status === 'approved') {
+          await fetchUsers(); // Refresh users list if approved
+        }
+      }
+    } catch (error) {
+      toast.error(`Failed to ${status} LGU`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const lguUsers = users.filter(user => user.role.includes("lgu"));
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -53,7 +94,10 @@ const RBACManagement: React.FC = () => {
             Users ({users.length})
           </Button>
           <Button variant={selectedTab === "lguRoles" ? "default" : "outline"} onClick={() => setSelectedTab("lguRoles")}>
-            LGU Roles ({lguUsers.length})
+            Active LGU ({lguUsers.length})
+          </Button>
+          <Button variant={selectedTab === "pendingLgus" ? "default" : "outline"} onClick={() => setSelectedTab("pendingLgus")}>
+            Pending LGU ({pendingLgus.length})
           </Button>
         </div>
       </div>
@@ -74,14 +118,43 @@ const RBACManagement: React.FC = () => {
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user._id}>
-                    <TableCell>{user.name}</TableCell>
+                    <TableCell>{user.firstName} {user.lastName}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge>{user.role}</Badge>
+                      <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                        {user.role}
+                      </Badge>
                     </TableCell>
                     <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Button size="sm" onClick={() => setSelectedUser(user)}>Manage Role</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      ) : selectedTab === "lguRoles" ? (
+        <Card>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Role</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lguUsers.map((user) => (
+                  <TableRow key={user._id}>
+                    <TableCell>{user.firstName} {user.lastName}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.phoneNumber || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{user.role}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -97,16 +170,41 @@ const RBACManagement: React.FC = () => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Applied At</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lguUsers.map((user) => (
-                  <TableRow key={user._id}>
-                    <TableCell>{user.firstName} {user.lastName}</TableCell>
-                    <TableCell>{user.email}</TableCell>
+                {pendingLgus.map((lgu) => (
+                  <TableRow key={lgu._id}>
+                    <TableCell>{lgu.firstName} {lgu.lastName}</TableCell>
+                    <TableCell>{lgu.email}</TableCell>
+                    <TableCell>{lgu.phoneNumber}</TableCell>
                     <TableCell>
-                      <Badge>{user.role}</Badge>
+                      <Badge variant="outline">{lgu.status}</Badge>
+                    </TableCell>
+                    <TableCell>{new Date(lgu.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                      onClick={() => handleApproveReject(lgu._id, 'approved')}
+                      disabled={processingId === lgu._id}
+                    >
+                      {processingId === lgu._id ? 'Processing...' : 'Approve'}
+                    </Button>
+
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleApproveReject(lgu._id, 'rejected')}
+                        disabled={processingId === lgu._id}
+                      >
+                        Reject
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -126,17 +224,14 @@ const RBACManagement: React.FC = () => {
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
-                {[...new Set(users.map(user => user.role))].map((role) => (
+                {['admin', 'lgu', 'user'].map((role) => (
                   <SelectItem key={role} value={role}>{role}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <DialogFooter>
               <Button variant="outline" onClick={() => setSelectedUser(null)}>Cancel</Button>
-              <Button onClick={() => {
-                updateUserRole(selectedUser._id, newRole);
-                setSelectedUser(null);
-              }}>Save Changes</Button>
+              
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -145,4 +240,4 @@ const RBACManagement: React.FC = () => {
   );
 };
 
-export default RBACManagement;
+export default AdminLguManagement;

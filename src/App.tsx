@@ -7,6 +7,7 @@ import ForgotPasswordPage from './pages/authentication/ForgotPasswordPage';
 import SubForgotPasswordPage from './pages/authentication/SubForgotPasswordPage';
 import LguMainDashboardPage from './pages/lgus/LguMainDashboardPage';
 import AdminPanelPage from './pages/admin/AdminPanelPage';
+import LGURegistrationPage from './pages/lgus/LGURegistrationPage';
 
 function App() {
   return (
@@ -18,13 +19,14 @@ function App() {
          { /* Authentication*/ }
          <Route path='/account/register' element={ <RegistrationPage />}/>
          <Route path='/account/login' element={ <LoginPage />}/>
+         <Route path='/account/lgu/register' element={ <LGURegistrationPage />}/>
 
          { /* Forgot Password*/ }
          <Route path='/account/forgot-password/:token' element={ <ForgotPasswordPage />}/>
          <Route path='/account/forgot-password/' element={ <SubForgotPasswordPage />}/>
 
          { /* Forgot Password*/ }
-          <Route path='/account/eGov-lgu' element={<LguMainDashboardPage />} />
+          <Route path='/account/lgu/:id' element={<LguMainDashboardPage />} />
         <Route path='*' element={ <NotFoundPage />}/>
 
 

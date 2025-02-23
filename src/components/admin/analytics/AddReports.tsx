@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDropzone } from 'react-dropzone';
 import { Plus, GripVertical, Trash2, Text, List, CheckSquare, Image, Radio, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 
 import { Button } from '../..//ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../..//ui/card';
@@ -162,6 +163,19 @@ const AddReports: React.FC = () => {
       return field;
     }));
   }, []);
+
+  const submitForm = async () => {
+    try {
+      await axios.post("http://localhost:5000/form/create-report", {
+        title: formTitle,
+        description: formDescription,
+        fields,
+      });
+      console.log("Form submitted successfully!");
+    } catch (error) {
+      console.error("Error submitting form!");
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -396,7 +410,7 @@ const AddReports: React.FC = () => {
                     )}
                   </div>
                 ))}
-                <Button className="w-full" size="lg">
+                <Button onClick={submitForm} className="w-full" size="lg">
                   Submit Form
                 </Button>
               </div>

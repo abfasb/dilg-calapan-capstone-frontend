@@ -23,9 +23,9 @@ const PerformanceMetrics : React.FC = () => {
   ];
 
   const systemHealth = {
-    uptime: '99.98%',
+    uptime: '94.98%',
     activeSessions: 142,
-    storageUsed: '1.2/2TB'
+    storageUsed: '14.2/558MB'
   };
 
   return (
@@ -226,7 +226,6 @@ const MetricCard = ({ icon, title, value, trend, color }: any) => (
   </div>
 );
 
-// Activity Item Component
 const ActivityItem = ({ type, title, timestamp, user }: any) => {
   const iconConfig = {
     policy: { icon: <FiFileText />, color: 'bg-purple-100 text-purple-600' },

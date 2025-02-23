@@ -124,7 +124,7 @@ function LGURegistration() {
         <img 
           src="https://i.ibb.co/pvVzXYRv/images-1-removebg-preview-1.png" 
           alt="DILG Logo" 
-          className="absolute left-20 top-20 inset-0 w-[70%] h-[70%] object-cover ml-8 mt-8 opacity-10 pointer-events-none"
+          className="absolute left-20 top-20 inset-0 w-[70%] h-[70%] object-cover ml-8 mt-8 opacity-5 pointer-events-none"
         />
         <div className="relative max-w-md mx-auto w-full z-10">
           <h1 className="text-2xl font-semibold mb-8">LGU Official Registration</h1>

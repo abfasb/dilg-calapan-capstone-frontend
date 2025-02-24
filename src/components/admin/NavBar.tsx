@@ -72,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
+            <div className="absolute z-100 right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
               <div className="px-4 py-3 border-b border-gray-700">
                 <p className="text-sm font-medium">Juan Dela Cruz</p>
                 <p className="text-xs text-gray-400 mt-1">Super Administrator</p>

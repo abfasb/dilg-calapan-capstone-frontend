@@ -190,7 +190,7 @@ const AddReports: React.FC = () => {
       }}
     />
         <TooltipProvider>
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-6 h-[calc(100vh-64px)] p-6 bg-muted/40">
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-6 h-[calc(100vh-64px)] p-2 bg-muted/40">
       <Card className="h-full overflow-hidden">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">Form Elements</CardTitle>

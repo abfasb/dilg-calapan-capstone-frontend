@@ -68,7 +68,7 @@ export default function ResetPassword() {
         { password: data.newPassword }
       );
       setMessage(response.data.message);
-      setTimeout(() => navigate("/login"), 3000);
+      setTimeout(() => navigate("/account/login"), 3000);
     } catch (error: any) {
       setMessage(error.response?.data?.message || "Something went wrong");
     }

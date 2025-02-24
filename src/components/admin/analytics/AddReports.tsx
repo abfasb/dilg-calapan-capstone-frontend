@@ -7,6 +7,7 @@ import { useDropzone } from 'react-dropzone';
 import { Plus, GripVertical, Trash2, Text, List, CheckSquare, Image, Radio, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { toast, Toaster } from 'react-hot-toast';
 
 import { Button } from '../..//ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../..//ui/card';
@@ -171,14 +172,24 @@ const AddReports: React.FC = () => {
         description: formDescription,
         fields,
       });
-      console.log("Form submitted successfully!");
+      toast.success("Form submitted successfully!");
     } catch (error) {
       console.error("Error submitting form!");
+      toast.error("Error submitting form!");
     }
   };
 
   return (
-    <TooltipProvider>
+    <>
+      <Toaster
+      position="top-right"
+      gutter={32}
+      containerClassName="!top-4 !right-6"
+      toastOptions={{
+        className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+      }}
+    />
+        <TooltipProvider>
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-6 h-[calc(100vh-64px)] p-6 bg-muted/40">
       <Card className="h-full overflow-hidden">
         <CardHeader className="pb-4">
@@ -491,6 +502,7 @@ const AddReports: React.FC = () => {
       </Card>
     </div>
     </TooltipProvider>
+    </>
   );
 };
 

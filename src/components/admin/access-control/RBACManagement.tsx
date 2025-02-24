@@ -9,8 +9,7 @@ import { toast } from "react-hot-toast";
 
 interface User {
   _id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   role: string;
   createdAt: string;
@@ -74,7 +73,7 @@ const AdminLguManagement: React.FC = () => {
         setPendingLgus(prev => prev.filter(lgu => lgu._id !== id));
         toast.success(`LGU ${status} successfully`);
         if (status === 'approved') {
-          await fetchUsers(); // Refresh users list if approved
+          await fetchUsers(); 
         }
       }
     } catch (error) {
@@ -118,7 +117,7 @@ const AdminLguManagement: React.FC = () => {
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user._id}>
-                    <TableCell>{user.firstName} {user.lastName}</TableCell>
+                    <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
@@ -150,7 +149,7 @@ const AdminLguManagement: React.FC = () => {
               <TableBody>
                 {lguUsers.map((user) => (
                   <TableRow key={user._id}>
-                    <TableCell>{user.firstName} {user.lastName}</TableCell>
+                    <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.phoneNumber || 'N/A'}</TableCell>
                     <TableCell>

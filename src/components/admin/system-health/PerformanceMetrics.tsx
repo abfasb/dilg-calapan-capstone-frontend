@@ -4,22 +4,22 @@ import { FiUsers, FiAlertTriangle,FiFileText, FiCheckCircle, FiClock, FiActivity
 
 const PerformanceMetrics : React.FC = () => {
   const metrics = {
-    totalUsers: { current: 2453, change: +12.4 },
-    activeReports: { current: 167, change: +8.2 },
-    resolvedCases: { current: 1204, change: -3.1 },
+    totalUsers: { current: 23, change: +12.4 },
+    activeReports: { current: 7, change: +8.2 },
+    resolvedCases: { current: 12, change: -3.1 },
     avgResolutionTime: '2.4d'
   };
 
   const incidentTrends = [
-    { month: 'Jan', Crime: 45, Infrastructure: 32, Environmental: 23 },
-    { month: 'Feb', Crime: 52, Infrastructure: 38, Environmental: 27 },
-    { month: 'Mar', Crime: 48, Infrastructure: 41, Environmental: 31 },
+    { month: 'Jan', Crime: 15, Infrastructure: 12, Environmental: 3 },
+    { month: 'Feb', Crime: 12, Infrastructure: 18, Environmental: 17 },
+    { month: 'Mar', Crime: 18, Infrastructure: 11, Environmental: 11 },
   ];
 
   const resolutionData = [
-    { barangay: 'Bgy 1', resolved: 85, pending: 15 },
-    { barangay: 'Bgy 2', resolved: 78, pending: 22 },
-    { barangay: 'Bgy 3', resolved: 92, pending: 8 },
+    { barangay: 'Brgy Masipit', resolved: 85, pending: 15 },
+    { barangay: 'Bgy Managpi', resolved: 78, pending: 22 },
+    { barangay: 'Bgy Dulangan', resolved: 92, pending: 8 },
   ];
 
   const systemHealth = {
@@ -195,7 +195,7 @@ const PerformanceMetrics : React.FC = () => {
             />
             <ActivityItem
               type="resolved"
-              title="Resolved case #245"
+              title="Resolved case #3"
               timestamp="4h ago"
               user="LGU Staff"
             />
@@ -206,7 +206,6 @@ const PerformanceMetrics : React.FC = () => {
   );
 };
 
-// Metric Card Component
 const MetricCard = ({ icon, title, value, trend, color }: any) => (
   <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
     <div className="flex items-center justify-between">

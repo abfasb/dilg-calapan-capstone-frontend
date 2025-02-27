@@ -1,358 +1,469 @@
-import { useState } from 'react'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card"
-import {
+
+import React, { useState } from "react";
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent, 
+  CardFooter 
+} from "../ui/card";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationLink, PaginationNext } from "../ui/pagination";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { Badge } from "../ui/badge";
+import { Switch } from "../ui/switch";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { 
+  Alert,
+  AlertTitle,
+  AlertDescription,
+} from "../ui/alert";
+import { 
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../ui/tabs"
-import { Button } from "../ui/button"
-import { Input } from "../ui/input"
-import { Textarea } from "../ui/textarea"
-import { Switch } from "../ui/switch"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select"
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "../ui/alert"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog"
-import {
+} from "../ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider 
+} from "../ui/tooltip";
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu"
-import { Progress } from "../ui/progress"
-import { Badge } from "../ui/badge"
+  DropdownMenuLabel
+  ,DropdownMenuSeparator
+} from "../ui/dropdown-menu";
 import { 
-  Fingerprint,
   AlertCircle,
-  MessageSquare,
+  Shield,
+  Bot,
   Bell,
-  Upload,
-  ScanFace,
-  ShieldAlert,
-  CalendarCheck,
-  NotebookPen
-} from 'lucide-react'
+  Camera,
+  Mail,
+  MessageSquare,
+  Calendar,
+  AlertTriangle,
+  FileText,
+  User
+} from "lucide-react";
+import { Header } from "./ui/Header";
+import { useEffect } from "react";
+import { ThemeProvider } from "../../contexts/theme-provider";
 
 interface Report {
-  id: string
-  title: string
-  category: string
-  status: 'submitted' | 'in-review' | 'resolved' | 'closed'
-  date: Date
-  anonymous: boolean
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: 'pending' | 'in_progress' | 'resolved';
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface Alert {
-  id: string
-  title: string
-  type: 'emergency' | 'warning' | 'info'
-  date: Date
-}
+export default function CitizenPanelPage() {
+  const [anonymousMode, setAnonymousMode] = useState(false);
 
-const alertVariantMap: Record<string, "default" | "destructive"> = {
-    emergency: "destructive",
-    warning: "default",
-    info: "default",
-  };
+  const [reports, setReports] = useState<Report[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
 
-const reportSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters"),
-  description: z.string().min(20, "Description must be at least 20 characters"),
-  category: z.string().min(1, "Please select a category"),
-  evidence: z.any().optional(),
-  anonymous: z.boolean().default(false)
-})
+  // Mock categories - replace with your actual categories
+  const categories = [
+    'Road Issues',
+    'Sanitation',
+    'Public Safety',
+    'Infrastructure',
+    'Other'
+  ];
 
-const statusVariantMap: Record<string, "default" | "destructive" | "outline" | "secondary"> = {
-    submitted: "default",
-    "in-review": "secondary",
-    resolved: "outline",
-    closed: "destructive",
-  };
+  // Mock data - replace with actual API call
+  useEffect(() => {
+    // Simulate API call
+    const mockReports: Report[] = Array.from({ length: 25 }, (_, i) => ({
+      id: `REPORT-${i + 1}`,
+      title: `Public Report ${i + 1}`,
+      description: `Description of report ${i + 1} detailing the issue...`,
+      category: categories[Math.floor(Math.random() * categories.length)],
+      status: ['pending', 'in_progress', 'resolved'][Math.floor(Math.random() * 3)] as Report['status'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+    
+    setReports(mockReports);
+  }, []);
 
-export default function CitizenPanel() {
-  const [activeTab, setActiveTab] = useState('reporting')
-  const [reports, setReports] = useState<Report[]>([])
-  const [alerts, setAlerts] = useState<Alert[]>([])
-  const [showChatbot, setShowChatbot] = useState(false)
-  const [trackingId, setTrackingId] = useState('')
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null)
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
-  const [files, setFiles] = useState<File[]>([])
+  // Filtering logic
+  const filteredReports = reports.filter(report => {
+    const categoryMatch = selectedCategories.length === 0 || 
+      selectedCategories.includes(report.category);
+    const statusMatch = selectedStatus.length === 0 || 
+      selectedStatus.includes(report.status);
+    return categoryMatch && statusMatch;
+  });
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
-    resolver: zodResolver(reportSchema)
-  })
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentReports = filteredReports.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
 
-  const getCategorySuggestions = (description: string) => {
-    const mockSuggestions = ['Public Safety', 'Infrastructure', 'Environmental', 'Administrative']
-    setAiSuggestions(mockSuggestions)
-  }
-
-  const onSubmit = (data: any) => {
-    const newReport: Report = {
-      id: `DILG-${Date.now()}`,
-      title: data.title,
-      category: data.category,
-      status: 'submitted',
-      date: new Date(),
-      anonymous: data.anonymous
-    }
-    setReports([...reports, newReport])
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 max-w-7xl mx-auto">
-      <div className="flex justify-end gap-4 mb-8">
-        <Button variant="ghost" className="gap-2">
-          <ScanFace className="w-4 h-4" /> Facial Login
-        </Button>
-        <Button variant="ghost" className="gap-2">
-          <Fingerprint className="w-4 h-4" /> Fingerprint
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">Third-Party Login</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem>Google</DropdownMenuItem>
-            <DropdownMenuItem>Facebook</DropdownMenuItem>
-            <DropdownMenuItem>Microsoft</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 gap-4 bg-white shadow-sm">
-          <TabsTrigger value="reporting" className="gap-2">
-            <NotebookPen className="w-4 h-4" /> Report Incident
-          </TabsTrigger>
-          <TabsTrigger value="tracking" className="gap-2">
-            <ShieldAlert className="w-4 h-4" /> Track Reports
-          </TabsTrigger>
-          <TabsTrigger value="engagement" className="gap-2">
-            <Bell className="w-4 h-4" /> Community
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="reporting" className="mt-6">
-          <Card className="shadow-lg">
+    <ThemeProvider>
+    <div className="min-h-screen bg-muted/40 dark:bg-gray-900/50">
+      
+      <Header />
+      <main className="max-w-7xl mx-auto p-4 grid gap-6">
+        {/* Quick Actions Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ShieldAlert className="w-6 h-6 text-primary" />
-                AI-Powered Incident Reporting
+                <Shield className="w-6 h-6 text-primary" />
+                Anonymous Reporting
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Input
-                        placeholder="Incident Title"
-                        {...register('title')}
-                        onChange={(e) => getCategorySuggestions(e.target.value)}
-                      />
-                      {errors.title && (
-                        <span className="text-sm text-red-500">{errors.title.message}</span>
-                      )}
-                    </div>
-
-                    <Select onValueChange={(value) => setValue('category', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {aiSuggestions.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="anonymous-mode"
-                        {...register('anonymous')}
-                      />
-                      <label htmlFor="anonymous-mode" className="text-sm">
-                        Anonymous Reporting
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Textarea
-                      placeholder="Detailed description..."
-                      {...register('description')}
-                      className="h-32"
-                    />
-                    <div className="border-dashed border-2 rounded-lg p-4">
-                      <label className="flex flex-col items-center gap-2 cursor-pointer">
-                        <Upload className="w-6 h-6" />
-                        <span className="text-sm">Upload Evidence (Photos, Videos)</span>
-                        <input
-                          type="file"
-                          multiple
-                          className="hidden"
-                          onChange={(e) => setFiles([...e.target.files!])}
-                        />
-                      </label>
-                      {files.map((file) => (
-                        <div key={file.name} className="text-sm text-gray-600">
-                          {file.name} ({Math.round(file.size / 1024)}KB)
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-4">
-                  <Button type="submit" className="gap-2">
-                    <Upload className="w-4 h-4" /> Submit Report
-                  </Button>
-                </div>
-              </form>
+              <div className="flex items-center justify-between">
+                <span>Enable Anonymous Mode</span>
+                <Switch 
+                  checked={anonymousMode}
+                  onCheckedChange={setAnonymousMode}
+                />
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Report Tracking */}
-        <TabsContent value="tracking" className="mt-6">
-          <Card className="shadow-lg">
+          <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ShieldAlert className="w-6 h-6 text-primary" />
-                Report Tracking System
+                <Bot className="w-6 h-6 text-primary" />
+                AI Reporting Assistant
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex gap-4">
-                <Input
-                  placeholder="Enter Tracking ID"
-                  value={trackingId}
-                  onChange={(e) => setTrackingId(e.target.value)}
-                />
-                <Button>Track Report</Button>
-              </div>
-
-              {selectedReport && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">{selectedReport.title}</h3>
-                    <Badge variant={statusVariantMap[selectedReport.status] || "default"}>
-                      {selectedReport.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <Progress value={
-                    selectedReport.status === 'submitted' ? 25 :
-                    selectedReport.status === 'in-review' ? 50 :
-                    selectedReport.status === 'resolved' ? 75 : 100
-                  } />
-                  <div className="grid grid-cols-4 gap-4 text-sm">
-                    <div className="text-center">
-                      <div className="font-medium">Submitted</div>
-                      <div className="text-gray-500">{selectedReport.date.toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                Start Smart Report
+              </Button>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Community Engagement */}
-        <TabsContent value="engagement" className="mt-6">
-          <div className="grid grid-cols-2 gap-6">
-            {/* Emergency Alerts */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="w-6 h-6 text-red-500" />
-                  Emergency Alerts
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {alerts.map((alert) => (
-                <Alert variant={alertVariantMap[alert.type] || "default"}>
-                    <AlertTitle>{alert.title}</AlertTitle>
+          <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Camera className="w-6 h-6 text-primary" />
+                Image Recognition
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Input type="file" accept="image/*" className="cursor-pointer" />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="reporting">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="reporting">Incident Reporting</TabsTrigger>
+            <TabsTrigger value="tracking">Case Tracking</TabsTrigger>
+            <TabsTrigger value="community">Community Services</TabsTrigger>
+            <TabsTrigger value="public-reports">Public Reports</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="reporting">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Reporting Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>New Incident Report</CardTitle>
+                  <CardDescription>
+                    AI-powered smart form with auto-complete
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input placeholder="Location (auto-detected)" />
+                  <Textarea 
+                    placeholder="Describe the incident..." 
+                    className="min-h-[150px]" 
+                  />
+                  <div className="flex gap-2">
+                    <Input type="file" multiple />
+                    <Button variant="outline">Scan Image</Button>
+                  </div>
+                  <Alert className="dark:bg-gray-800 dark:border-gray-700">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertTitle>Possible duplicate detected</AlertTitle>
                     <AlertDescription>
-                      {alert.date.toLocaleString()}
+                      Similar report from 2 hours ago
                     </AlertDescription>
                   </Alert>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Services Section */}
-            <div className="space-y-6">
-              <Card className="shadow-lg">
-                <CardContent className="p-6 space-y-4">
-                  <Button className="w-full gap-2" onClick={() => setShowChatbot(true)}>
-                    <MessageSquare className="w-4 h-4" />
-                    AI Chatbot Assistance
-                  </Button>
-                  <Button variant="outline" className="w-full gap-2">
-                    <CalendarCheck className="w-4 h-4" />
-                    Book Appointment
-                  </Button>
                 </CardContent>
+                <CardFooter>
+                  <Button className="w-full">Submit Report</Button>
+                </CardFooter>
               </Card>
 
-              {/* Announcements */}
-              <Card className="shadow-lg">
+              {/* Recent Reports */}
+              <Card>
                 <CardHeader>
-                  <CardTitle>Latest Announcements</CardTitle>
+                  <CardTitle>Recent Reports</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="border-l-4 border-primary pl-4">
-                      <div className="font-medium">New LGU Guidelines</div>
-                      <div className="text-sm text-gray-500">Posted 2 hours ago</div>
-                    </div>
-                  </div>
+                <Table className="dark:bg-gray-800">
+                  <TableHeader className="dark:bg-gray-700">
+                      <TableRow>
+                        <TableHead>Case ID</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Last Update</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[1, 2, 3].map((item) => (
+                        <TableRow key={item}>
+                          <TableCell>#CASE-{item}23</TableCell>
+                          <TableCell>
+                          <Badge className="dark:bg-gray-700 dark:text-white" variant="outline">In Progress</Badge>
+                          </TableCell>
+                          <TableCell>2 hours ago</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
 
-      {/* Chatbot Dialog */}
-      <Dialog open={showChatbot} onOpenChange={setShowChatbot}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>DILG AI Assistant</DialogTitle>
-          </DialogHeader>
-          <div className="h-96 bg-gray-50 rounded-lg p-4">
-            {/* Chatbot interface implementation */}
-          </div>
-        </DialogContent>
-      </Dialog>
+          <TabsContent value="tracking">
+                      <h1>hello this is for tracking your document</h1>
+          </TabsContent>
+
+          <TabsContent value="community">
+             <h1>hello this is for the community</h1>
+          </TabsContent>
+
+          <TabsContent value="public-reports">
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
+                <CardHeader>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <CardTitle>Official Public Reports</CardTitle>
+                      <CardDescription>
+                        View all government-issued reports and updates
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="gap-2">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              fill="none"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
+                            Filters
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-64">
+                          <DropdownMenuLabel>Category</DropdownMenuLabel>
+                          {categories.map(category => (
+                            <DropdownMenuItem key={category}>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedCategories.includes(category)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedCategories([...selectedCategories, category]);
+                                    } else {
+                                      setSelectedCategories(selectedCategories.filter(c => c !== category));
+                                    }
+                                  }}
+                                />
+                                {category}
+                              </label>
+                            </DropdownMenuItem>
+                          ))}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel>Status</DropdownMenuLabel>
+                          {['pending', 'in_progress', 'resolved'].map(status => (
+                            <DropdownMenuItem key={status}>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedStatus.includes(status)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedStatus([...selectedStatus, status]);
+                                    } else {
+                                      setSelectedStatus(selectedStatus.filter(s => s !== status));
+                                    }
+                                  }}
+                                />
+                                {status.replace('_', ' ').toUpperCase()}
+                              </label>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Table className="dark:bg-gray-800">
+                    <TableHeader className="dark:bg-gray-700">
+                      <TableRow>
+                        <TableHead>Report ID</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date Created</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentReports.map((report) => (
+                        <TableRow key={report.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <TableCell className="font-medium">{report.id}</TableCell>
+                          <TableCell>{report.title}</TableCell>
+                          <TableCell>{report.category}</TableCell>
+                          <TableCell>
+                          <Badge 
+                          variant={
+                            report.status === 'resolved' ? 'default' :
+                            report.status === 'in_progress' ? 'secondary' : 'destructive'
+                          }
+                          className={
+                            report.status === 'resolved' ? 'bg-green-500 hover:bg-green-600' :
+                            report.status === 'in_progress' ? 'bg-orange-500 hover:bg-orange-600' : ''
+                          }
+                        >
+                          {report.status.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(report.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                console.log('View report:', report.id);
+                              }}
+                            >
+                              View Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  
+                  {/* Pagination */}
+                  <div className="mt-6">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                        <PaginationPrevious
+                          className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
+                          onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                          size={6}
+                        />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => (
+                          <PaginationItem key={i + 1}>
+                            <PaginationLink
+                              isActive={currentPage === i + 1}
+                              onClick={() => setCurrentPage(i + 1)}
+                              size={6}
+                            >
+                              {i + 1}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+
+                        <PaginationItem>                     
+                          <PaginationNext
+                            className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
+                            onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                            size={6}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+        </Tabs>
+
+        {/* Emergency Section */}
+        <Card className="border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/30">
+          <CardHeader className="flex flex-row items-center gap-4">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div>
+              <CardTitle>Emergency Alerts</CardTitle>
+              <CardDescription>Storm warning in your area</CardDescription>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Services Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Chat Support
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button variant="link" className="text-primary">
+                Start Conversation
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Appointments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button variant="link" className="text-primary">
+                Book Meeting
+              </Button>
+            </CardContent>
+          </Card>
+
+        </div>
+      </main>
     </div>
-  )
+    </ThemeProvider>
+  );
 }

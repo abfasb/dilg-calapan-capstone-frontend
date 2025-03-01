@@ -63,7 +63,7 @@ export const Sidebar = ({
       icon: <FiBarChart className="w-5 h-5" />,
       subItems: [
         { text: "Create Reports", section: "add-reports", icon: <FiFileText /> },
-        { text: "Custom Reports", section: "custom-reports", icon: <FiSettings /> },
+        { text: "Manage Reports", section: "custom-reports", icon: <FiSettings /> },
         { text: "Resolution Analytics", section: "resolution", icon: <FiActivity /> },
         { text: "AI Reports", section: "ai-reports", icon: <FiDatabase /> }
       ]

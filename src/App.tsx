@@ -33,8 +33,8 @@ function App() {
         { /* Admin*/ }
         <Route path='/account/admin/:id' element={<AdminPanelPage />} />
 
-        { /* Forgot Password*/ }
-        <Route path='/account/citizen/' element={<CitizenPage />}/>
+        { /* Citizen*/ }
+        <Route path='/account/citizen/:id' element={<CitizenPage />}/>
 
 
         <Route path='*' element={ <NotFoundPage />}/>

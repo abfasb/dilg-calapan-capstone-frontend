@@ -24,7 +24,10 @@ import { useTheme } from "../../../contexts/theme-provider";
   } from "lucide-react";
   
   export function Header() {
-    const [unreadNotifications] = useState(3); // Connect to real data
+
+    const email = localStorage.getItem('adminEmail');
+    const name = localStorage.getItem('name');
+    const [unreadNotifications] = useState(3); 
     const { theme, toggleTheme } = useTheme();  
     
     return (
@@ -149,9 +152,9 @@ import { useTheme } from "../../../contexts/theme-provider";
               <DropdownMenuContent className="w-64" align="end">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">John Citizen</p>
+                    <p className="text-sm font-medium">{name}</p>
                     <p className="text-xs text-muted-foreground">
-                      john.citizen@example.com
+                      {email}
                     </p>
                   </div>
                 </DropdownMenuLabel>

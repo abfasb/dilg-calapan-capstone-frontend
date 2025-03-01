@@ -65,8 +65,9 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
       } shadow-xl transition-all duration-300`}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20 py-4 flex justify-between items-center">
+     
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-lg shadow-lg overflow-hidden p-1">
+          <div className="w-10 h-10 rounded-lg shadow-lg overflow-hidden p-1 ">
             <img
               src="https://i.ibb.co/QFh5dS8r/images-1.png"
               alt="DILG Logo"
@@ -78,7 +79,7 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
               DILG eGov
             </span>
             <span className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"} mt-0.5`}>
-              Calapan LGUs
+              Calapan City
             </span>
           </div>
         </div>
@@ -95,21 +96,27 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
                 href={link.href}
                 className={`flex items-center space-x-1 ${
                   theme === "dark" ? "text-gray-200" : "text-gray-800"
-                } hover:text-blue-400 transition-colors duration-300`}
+                } hover:text-blue-400 transition-colors duration-300 ${
+                  isServicesOpen ? "text-blue-400" : ""
+                }`}
               >
                 <span>{link.name}</span>
                 {link.hasDropdown && <FiChevronDown className="w-4 h-4" />}
               </a>
 
               {link.hasDropdown && isServicesOpen && (
-                <div className="absolute top-full left-0 w-[800px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl mt-4 p-6 grid grid-cols-3 gap-6 border dark:border-gray-700">
+                <div 
+                  className="absolute top-full left-1/2 -translate-x-1/2 w-[900px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl mt-4 p-8 grid grid-cols-3 gap-8 border dark:border-gray-700"
+                  onMouseEnter={() => setIsServicesOpen(true)}
+                  onMouseLeave={() => setIsServicesOpen(false)}
+                >
                   {servicesDropdown.map((service) => (
                     <a
                       key={service.title}
                       href="#"
-                      className="group relative overflow-hidden rounded-lg transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      className="group relative overflow-hidden rounded-xl transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
-                      <div className="h-40 bg-gray-100 dark:bg-gray-600 rounded-t-lg overflow-hidden">
+                      <div className="h-48 bg-gradient-to-r from-cyan-400/10 to-blue-500/10 dark:from-gray-600/50 dark:to-gray-700/50 rounded-xl overflow-hidden">
                         <img
                           src={service.image}
                           alt={service.title}
@@ -117,9 +124,11 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
                         />
                       </div>
                       <div className="p-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          {service.icon}
-                          <h3 className={`font-semibold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className="p-2 rounded-lg bg-gradient-to-r from-cyan-400/20 to-blue-500/20">
+                            {service.icon}
+                          </div>
+                          <h3 className={`font-semibold text-lg ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                             {service.title}
                           </h3>
                         </div>
@@ -134,6 +143,7 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
             </div>
           ))}
         </div>
+
         <div className="hidden md:flex items-center gap-4">
           <button
             onClick={toggleTheme}

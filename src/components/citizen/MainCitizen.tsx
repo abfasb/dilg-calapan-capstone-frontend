@@ -33,13 +33,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "../ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider 
-} from "../ui/tooltip";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -52,18 +45,15 @@ import {
   AlertCircle,
   Shield,
   Bot,
-  Bell,
   Camera,
-  Mail,
   MessageSquare,
   Calendar,
-  AlertTriangle,
-  FileText,
-  User
+  AlertTriangle
 } from "lucide-react";
 import { Header } from "./ui/Header";
 import { useEffect } from "react";
 import { ThemeProvider } from "../../contexts/theme-provider";
+import { useNavigate } from "react-router-dom";
 
 interface Report {
   id: string;
@@ -77,6 +67,7 @@ interface Report {
 
 export default function CitizenPanelPage() {
   const [anonymousMode, setAnonymousMode] = useState(false);
+  const navigate = useNavigate();
 
   const [reports, setReports] = useState<Report[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,7 +75,16 @@ export default function CitizenPanelPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
 
-  // Mock categories - replace with your actual categories
+  const name =localStorage.getItem("name");
+  const email = localStorage.getItem("adminEmail");
+  const token = localStorage.getItem("token");
+
+  useEffect(() => { 
+    if (!name || !email || !token) {
+      navigate('/account/login');
+    }
+  }, [] )
+
   const categories = [
     'Road Issues',
     'Sanitation',
@@ -93,9 +93,7 @@ export default function CitizenPanelPage() {
     'Other'
   ];
 
-  // Mock data - replace with actual API call
   useEffect(() => {
-    // Simulate API call
     const mockReports: Report[] = Array.from({ length: 25 }, (_, i) => ({
       id: `REPORT-${i + 1}`,
       title: `Public Report ${i + 1}`,
@@ -109,7 +107,7 @@ export default function CitizenPanelPage() {
     setReports(mockReports);
   }, []);
 
-  // Filtering logic
+
   const filteredReports = reports.filter(report => {
     const categoryMatch = selectedCategories.length === 0 || 
       selectedCategories.includes(report.category);
@@ -118,7 +116,6 @@ export default function CitizenPanelPage() {
     return categoryMatch && statusMatch;
   });
 
-  // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentReports = filteredReports.slice(indexOfFirstItem, indexOfLastItem);

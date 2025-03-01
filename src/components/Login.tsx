@@ -78,7 +78,6 @@ const Login: React.FC = () => {
         className="relative bg-white/5 dark:bg-gray-900/50 p-8 rounded-2xl shadow-2xl w-full max-w-[440px]
                    backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all duration-300"
       >
-        
 
     <div className="flex flex-col items-center space-y-1 mb-8">
           <motion.div

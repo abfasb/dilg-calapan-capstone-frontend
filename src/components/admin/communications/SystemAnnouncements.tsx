@@ -1,172 +1,459 @@
-import { useState, useEffect } from 'react'
-import { Button } from '../../ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog'
-import { DataTable } from '../../ui/data-table'
-import { Input } from '../../ui/input'
-import { Skeleton } from '../../ui/skeleton'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '../../ui/dropdown-menu'
-import { MoreHorizontal, Plus, Edit, Trash } from 'lucide-react'
-import { Announcement } from '../../../lib/options';
+import { useState, useEffect } from 'react';
+import { FiEdit, FiTrash, FiPlus } from 'react-icons/fi';
+import { fetchBlogs, fetchFAQs, saveData, deleteData } from '../../../api/faqApi';
+import { toast, Toaster} from 'react-hot-toast';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../ui/tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../../ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../../ui/alert-dialog"
+import { Button } from "../../ui/button"
+import { Input } from "../../ui/input"
+import { Textarea } from "../../ui/textarea"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../ui/table"
+import { Skeleton } from "../../ui/skeleton"
+import { Badge } from "../../ui/badge"
 
-const SystemAnnouncements: React.FC = () => {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editData, setEditData] = useState<Announcement | null>(null)
-  const [openDialog, setOpenDialog] = useState(false)
-
-  useEffect(() => {
-    fetchAnnouncements()
-  }, [])
-
-  const fetchAnnouncements = async () => {
-    try {
-      const response = await fetch('/api/announcements')
-      const data = await response.json()
-      setAnnouncements(data)
-    } catch (error) {
-      console.error('Error fetching announcements:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget as HTMLFormElement)
-    
-    try {
-      const response = await fetch('/api/announcements', {
-        method: editData?._id ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          _id: editData?._id,
-          title: formData.get('title'),
-          content: formData.get('content')
-        })
-      })
-
-      if (response.ok) {
-        fetchAnnouncements()
-        setOpenDialog(false)
-        setEditData(null)
-      }
-    } catch (error) {
-      console.error('Error saving announcement:', error)
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    try {
-      await fetch(`/api/announcements/${id}`, { method: 'DELETE' })
-      fetchAnnouncements()
-    } catch (error) {
-      console.error('Error deleting announcement:', error)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-[200px]" />
-        <Skeleton className="h-[300px] w-full" />
-      </div>
-    )
-  }
-
-  return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">System Announcements</h2>
-        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Announcement
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editData ? 'Edit Announcement' : 'Create Announcement'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input 
-                name="title" 
-                placeholder="Title" 
-                defaultValue={editData?.title} 
-                required 
-              />
-              <Input 
-                name="content" 
-                placeholder="Content" 
-                defaultValue={editData?.content} 
-                required 
-                multiline 
-                className="min-h-[100px]"
-              />
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setOpenDialog(false)
-                    setEditData(null)
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Save</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <DataTable
-        data={announcements}
-        columns={[
-          { header: 'Title', accessorKey: 'title' },
-          { header: 'Content', accessorKey: 'content' },
-          {
-            id: 'actions',
-            cell: ({ row }) => (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setEditData(row.original)
-                      setOpenDialog(true)
-                    }}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleDelete(row.original._id)}
-                  >
-                    <Trash className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )
-          }
-        ]}
-      />
-    </div>
-  )
+interface FAQ {
+  _id?: string;
+  question: string;
+  answer: string;
 }
 
-export default SystemAnnouncements
+interface BlogPost {
+  _id?: string;
+  title: string;
+  content: string;
+  date: string;
+  status: 'draft' | 'published';
+}
+
+const SystemAnnouncements: React.FC = () => {
+  const [activeTab, setActiveTab] = useState("faqs");
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [editingItem, setEditingItem] = useState<FAQ | BlogPost | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deleteItem, setDeleteItem] = useState<{ id: string; type: 'faq' | 'blog' } | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [faqData, blogData] = await Promise.all([
+          fetchFAQs().catch(() => []),
+          fetchBlogs().catch(() => [])
+        ]);
+        setFaqs(faqData);
+        setBlogs(blogData);
+      } catch (error) {
+        toast.error('Failed to load data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const handleSubmit = async (data: FAQ | BlogPost) => {
+    try {
+      await toast.promise(
+        saveData(data, setIsDialogOpen),
+        {
+          loading: 'Saving...',
+          success: 'Saved successfully!',
+          error: 'Failed to save',
+        }
+      );
+      
+      const [updatedFaqs, updatedBlogs] = await Promise.all([
+        fetchFAQs().catch(() => []),
+        fetchBlogs().catch(() => [])
+      ]);
+      
+      setFaqs(updatedFaqs);
+      setBlogs(updatedBlogs);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteItem) return;
+  
+    try {
+      await toast.promise(
+        deleteData(deleteItem.id, deleteItem.type === "faq" ? "faqs" : "blogs"),
+        {
+          loading: "Deleting...",
+          success: "Deleted successfully!",
+          error: "Failed to delete",
+        }
+      );
+  
+      const [updatedFaqs, updatedBlogs] = await Promise.all([
+        fetchFAQs(),
+        fetchBlogs()
+      ]);
+  
+      setFaqs(updatedFaqs);
+      setBlogs(updatedBlogs);
+      
+    } catch (error) {
+      console.error("Error deleting:", error);
+    } finally {
+      setDeleteItem(null);
+    }
+  };
+  
+
+  return (
+    <>
+      <Toaster
+        position="top-right"
+        gutter={32}
+        containerClassName="!top-4 !right-6"
+        toastOptions={{
+          className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+        }}
+      />
+      <div className="p-8 max-w-7xl mx-auto">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="faqs">FAQs</TabsTrigger>
+              <TabsTrigger value="blogs">Blog Posts</TabsTrigger>
+            </TabsList>
+            
+            <Button
+              onClick={() => {
+                setEditingItem(null);
+                setIsDialogOpen(true);
+              }}
+              className="gap-2 w-full sm:w-auto"
+            >
+              <FiPlus /> Add New
+            </Button>
+          </div>
+
+          <TabsContent value="faqs">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[70%]">Question</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array(4).fill(0).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-full max-w-[400px]" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Skeleton className="h-8 w-8" />
+                          <Skeleton className="h-8 w-8" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : faqs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center h-24">
+                      No FAQs found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  faqs.map(faq => (
+                    <TableRow key={faq._id}>
+                      <TableCell className="font-medium truncate max-w-[300px]">
+                        {faq.question}
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingItem(faq);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <FiEdit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => setDeleteItem({ id: faq._id!, type: 'faq' })}
+                        >
+                          <FiTrash className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TabsContent>
+
+          <TabsContent value="blogs">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50%]">Title</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array(4).fill(0).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Skeleton className="h-8 w-8" />
+                          <Skeleton className="h-8 w-8" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : blogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center h-24">
+                      No blog posts found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  blogs.map(blog => (
+                    <TableRow key={blog._id}>
+                      <TableCell className="font-medium truncate max-w-[200px]">
+                        {blog.title}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={blog.status === 'published' ? 'default' : 'secondary'}>
+                          {blog.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(blog.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingItem(blog);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <FiEdit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => setDeleteItem({ id: blog._id!, type: 'blog' })}
+                        >
+                          <FiTrash className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TabsContent>
+        </Tabs>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingItem?._id ? 'Edit' : 'Create New'} {activeTab === 'faqs' ? 'FAQ' : 'Blog Post'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {activeTab === 'faqs' ? (
+              <FAQForm 
+                initialData={editingItem as FAQ || { question: '', answer: '' }}
+                onSubmit={handleSubmit}
+                onCancel={() => setIsDialogOpen(false)}
+              />
+            ) : (
+              <BlogForm 
+                initialData={editingItem as BlogPost || { 
+                  title: '', 
+                  content: '', 
+                  date: new Date().toISOString(),
+                  status: 'draft'
+                }}
+                onSubmit={handleSubmit}
+                onCancel={() => setIsDialogOpen(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Single Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this {deleteItem?.type}? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </>
+  );
+};
+
+const FAQForm: React.FC<{ 
+  initialData: FAQ;
+  onSubmit: (faq: FAQ) => void;
+  onCancel: () => void;
+}> = ({ initialData, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState<FAQ>(initialData);
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
+      <div>
+        <label className="text-sm font-medium mb-2 block">Question</label>
+        <Input
+          value={formData.question}
+          onChange={(e) => setFormData({ ...formData, question: e.target.value })}
+          required
+          maxLength={200}
+        />
+        <div className="text-xs text-muted-foreground text-right mt-1">
+          {formData.question.length}/200
+        </div>
+      </div>
+      <div>
+        <label className="text-sm font-medium mb-2 block">Answer</label>
+        <Textarea
+          value={formData.answer}
+          onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
+          className="min-h-[120px]"
+          required
+          maxLength={1000}
+        />
+        <div className="text-xs text-muted-foreground text-right mt-1">
+          {formData.answer.length}/1000
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button type="submit">Save Changes</Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
+const BlogForm: React.FC<{ 
+  initialData: BlogPost;
+  onSubmit: (blog: BlogPost) => void;
+  onCancel: () => void;
+}> = ({ initialData, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState<BlogPost>(initialData);
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
+      <div>
+        <label className="text-sm font-medium mb-2 block">Title</label>
+        <Input
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          required
+          maxLength={120}
+        />
+        <div className="text-xs text-muted-foreground text-right mt-1">
+          {formData.title.length}/120
+        </div>
+      </div>
+      <div>
+        <label className="text-sm font-medium mb-2 block">Content</label>
+        <Textarea
+          value={formData.content}
+          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+          className="min-h-[200px]"
+          required
+          maxLength={5000}
+        />
+        <div className="text-xs text-muted-foreground text-right mt-1">
+          {formData.content.length}/5000
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium mb-2 block">Date</label>
+          <Input
+            type="date"
+            value={formData.date.split('T')[0]}
+            onChange={(e) => setFormData({ ...formData, date: new Date(e.target.value).toISOString() })}
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-2 block">Status</label>
+          <select
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as 'draft' | 'published' })}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+          </select>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button type="submit">Save Changes</Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
+export default SystemAnnouncements;

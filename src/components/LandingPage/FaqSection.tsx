@@ -55,7 +55,7 @@ const FaqSection: React.FC = () => {
   if (isLoading) return null;
 
   return (
-    <section id="faq" className="py-20 bg-white dark:bg-gray-800">
+    <section id="faq" className="py-20 bg-white  dark:bg-gray-800">
     <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20">
       <div className="text-center mb-16">
         <div className="inline-flex items-center gap-3 mb-4 text-cyan-500">
@@ -74,7 +74,7 @@ const FaqSection: React.FC = () => {
             className="border rounded-xl dark:border-gray-700 overflow-hidden"
           >
             <button
-              className="flex justify-between items-center w-full p-6 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="flex justify-between items-center w-full p-6 bg-cyan-500 dark:bg-gray-900 hover:bg-cyan-700 dark:hover:bg-gray-800 transition-colors"
               onClick={() => setActiveIndex(activeIndex === index ? null : index)}
             >
               <h3 className="text-lg font-semibold text-left dark:text-white">
@@ -95,7 +95,7 @@ const FaqSection: React.FC = () => {
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <div className="p-6 pt-2 dark:text-gray-300">
+                  <div className="p-6 pt-2 text-black dark:text-gray-300">
                     {faq.answer}
                   </div>
                 </motion.div>

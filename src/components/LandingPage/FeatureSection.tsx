@@ -38,7 +38,7 @@ const FeaturesSection : React.FC = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   return (
-    <section id="features" className="py-20 bg-gray-900/50">
+    <section id="features" className="py-20 bg-white dark:bg-gray-900/50">
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20">
         <motion.div 
           className="text-center mb-16"
@@ -46,7 +46,7 @@ const FeaturesSection : React.FC = () => {
           initial={{ opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
         >
-          <h2 className="text-4xl font-bold mb-4">Transformative Features</h2>
+          <h2 className="text-4xl text-black dark:text-white font-bold mb-4">Transformative Features</h2>
           <p className="text-gray-400 text-xl max-w-2xl mx-auto">
             Cutting-edge solutions designed specifically for local government digital transformation
           </p>
@@ -56,7 +56,7 @@ const FeaturesSection : React.FC = () => {
           {features.map((feature, index) => (
             <motion.div
               key={index}
-              className="bg-gray-800/50 hover:bg-gray-800/80 p-8 rounded-2xl border border-gray-700/50 transition-all cursor-pointer group"
+              className="shadow-lg  dark:bg-gray-800/50 hover:bg-white-800/80 p-8 rounded-2xl dark:border dark:border-gray-700/50 transition-all cursor-pointer group"
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: index * 0.1 }}
@@ -65,7 +65,7 @@ const FeaturesSection : React.FC = () => {
               <div className="mb-6 text-5xl transform group-hover:rotate-12 transition-transform">
                 {feature.icon}
               </div>
-              <h3 className="text-2xl font-semibold mb-4">{feature.title}</h3>
+              <h3 className="text-2xl text-black dark:text-white font-semibold mb-4">{feature.title}</h3>
               <p className="text-gray-400 leading-relaxed">
                 {feature.description}
               </p>

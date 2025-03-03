@@ -3,9 +3,9 @@ import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
 
 const stats = [
-  { value: 80, suffix: "%", label: "Process Automation" },
+  { value: 78, suffix: "%", label: "Process Automation" },
   { value: 40, suffix: "+", label: "Integrated Services" },
-  { value: 100, suffix: "+", label: "Documents Processed" },
+  { value: 17, suffix: "+", label: "Documents Processed" },
   { value: 24, suffix: "/7", label: "Real-time Monitoring" }
 ];
 

@@ -55,7 +55,6 @@ export default function ResetPassword() {
       }
     };
     
-    
   
     fetchUserEmail();
   }, [token]);

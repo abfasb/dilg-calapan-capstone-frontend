@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
 
-// UI Components
 import { Button } from '../..//ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../..//ui/card';
 import { Input } from '../../ui/input';

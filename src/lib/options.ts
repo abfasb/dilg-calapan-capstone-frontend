@@ -12,3 +12,12 @@ export const departments = [
     { value: 'field_supervisor', label: 'Field Supervisor' },
     { value: 'executive_assistant', label: 'Executive Assistant' },
   ];
+  
+  export interface Announcement {
+    _id: string;
+    title: string;
+    content: string;
+    createdAt: string;
+    updatedAt?: string;
+  }
+  

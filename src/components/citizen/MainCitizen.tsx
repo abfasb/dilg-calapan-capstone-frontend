@@ -35,14 +35,6 @@ import {
   TabsTrigger,
 } from "../ui/tabs";
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuLabel
-  ,DropdownMenuSeparator
-} from "../ui/dropdown-menu";
-import { 
   AlertCircle,
   Shield,
   Bot,

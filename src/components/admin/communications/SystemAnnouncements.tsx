@@ -328,7 +328,6 @@ const SystemAnnouncements: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Single Delete Confirmation Dialog */}
         <AlertDialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -448,6 +447,7 @@ const BlogForm: React.FC<{
           </select>
         </div>
       </div>
+      
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>Cancel</Button>
         <Button type="submit">Save Changes</Button>

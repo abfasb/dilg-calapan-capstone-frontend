@@ -29,32 +29,48 @@ api.interceptors.response.use(
 );
 
 export const getSystemMetrics = async (): Promise<SystemMetrics> => {
-  try {
-    const response = await api.get('/metrics');
-    return {
-      ...response.data,
-      timestamp: new Date(response.data.timestamp),
-    };
-  } catch (error) {
-    console.error('Failed to fetch system metrics:', error);
-    throw error;
-  }
-};
+    try {
+      const response = await api.get('/metrics');
+  
+      if (!response.data || !response.data.timestamp) {
+        console.error("Invalid system metrics response:", response);
+        throw new Error("Invalid system metrics data");
+      }
+  
+      return {
+        ...response.data,
+        timestamp: new Date(response.data.timestamp),
+      };
+    } catch (error) {
+      console.error("Failed to fetch system metrics:", error);
+      throw error;
+    }
+  };
+  
+  
+
 
 export const getHistoricalData = async (
-  hours: number = 24
-): Promise<HistoricalDataPoint[]> => {
-  try {
-    const response = await api.get(`/history?hours=${hours}`);
-    return response.data.map((item: any) => ({
-      ...item,
-      timestamp: new Date(item.timestamp),
-    }));
-  } catch (error) {
-    console.error('Failed to fetch historical data:', error);
-    throw error;
-  }
-};
+    hours: number = 24
+  ): Promise<HistoricalDataPoint[]> => {
+    try {
+      const response = await api.get(`/history?hours=${hours}`);
+  
+      if (!response.data || !Array.isArray(response.data)) {
+        console.error("Invalid historical data response:", response);
+        throw new Error("Invalid response from server");
+      }
+  
+      return response.data.map((item: any) => ({
+        ...item,
+        timestamp: new Date(item.timestamp),
+      }));
+    } catch (error) {
+      console.error("Failed to fetch historical data:", error);
+      throw error;
+    }
+  };
+  
 
 export const getActiveAlerts = async (): Promise<Alert[]> => {
   try {

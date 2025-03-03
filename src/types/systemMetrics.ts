@@ -1,9 +1,9 @@
 export interface SystemMetrics {
     cpu: {
-      utilization: number;
-      load1: number;
-      load5: number;
-      load15: number;
+      utilization: string;
+      load1: string;
+      load5: string;
+      load15: string;
     };
     memoryUsage: {
       percentage: number;
@@ -43,7 +43,6 @@ export interface SystemMetrics {
     acknowledged: boolean;
   }
   
-  // Other type declarations remain the same as in your original types file
   export interface SystemHealth {
     cpu: number;
     memory: number;

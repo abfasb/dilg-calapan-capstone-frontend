@@ -148,10 +148,6 @@ export default function CitizenPanelPage() {
     return categoryMatch && statusMatch;
   });
 
-  const handleViewDetails = (reportId: string) => {
-      console.log('Viewing report:', reportId);
-      toast.success(`Opening report ${reportId.substring(0, 6)}...`);
-    };
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -179,6 +175,10 @@ if (isLoading) {
       </Card>
     );
   }
+
+  const handleViewDetails = (reportId: string) => {
+    navigate(`/report/${reportId}`);
+  };
 
 
   return (
@@ -341,39 +341,39 @@ if (isLoading) {
                       </TableHeader>
                       <TableBody>
                         {currentReport.map((report : any) => (
-                          <TableRow key={report._id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <TableCell className="font-medium text-sm">
-                              <span className="font-mono">#{report._id.substring(0, 6)}</span>
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {report.title}
-                            </TableCell>
-                            <TableCell className="max-w-[300px] truncate">
-                              {report.description}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {report.fields.length} fields
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(report.createdAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewDetails(report._id)}
-                                className="dark:bg-gray-700 dark:hover:bg-gray-600"
-                              >
-                                View Details
-                              </Button>
-                            </TableCell>
-                          </TableRow>
+                         <TableRow key={report._id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                         <TableCell className="font-medium text-sm">
+                           <span className="font-mono">#{report._id.substring(0, 6)}</span>
+                         </TableCell>
+                         <TableCell className="max-w-[200px] truncate">
+                           {report.title}
+                         </TableCell>
+                         <TableCell className="max-w-[300px] truncate">
+                           {report.description}
+                         </TableCell>
+                         <TableCell>
+                           <Badge variant="outline">
+                             {report.fields.length} fields
+                           </Badge>
+                         </TableCell>
+                         <TableCell>
+                           {new Date(report.createdAt).toLocaleDateString('en-US', {
+                             year: 'numeric',
+                             month: 'short',
+                             day: 'numeric',
+                           })}
+                         </TableCell>
+                         <TableCell>
+                           <Button 
+                             variant="outline"
+                             size="sm"
+                             onClick={() => handleViewDetails(report._id)} 
+                             className="dark:bg-gray-700 dark:hover:bg-gray-600"
+                           >
+                             View Details
+                           </Button>
+                         </TableCell>
+                       </TableRow>
                         ))}
                       </TableBody>
                     </Table>

@@ -7,8 +7,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../ui/card
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
-import { ImageIcon, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { ImageIcon, CheckCircle, XCircle, Loader2, X } from "lucide-react";
 import axios from "axios";
+import toast, { Toaster} from "react-hot-toast";
 
 interface ReportField {
   id: string;
@@ -33,21 +34,24 @@ export default function ReportForm() {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filePreviews, setFilePreviews] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filePreviews, setFilePreviews] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const response = await axios.get(`/api/reports/${id}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/form/${id}`);
         setReport(response.data);
-        // Initialize form data
         const initialData: Record<string, any> = {};
         response.data.fields.forEach((field: ReportField) => {
           initialData[field.id] = field.type === 'checkbox' ? [] : '';
         });
         setFormData(initialData);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching report:', error);
+        toast.error('Failed to load form');
         navigate('/');
       }
     };
@@ -56,14 +60,8 @@ export default function ReportForm() {
   }, [id, navigate]);
 
   const handleInputChange = (fieldId: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [fieldId]: value
-    }));
-    // Clear error when user starts typing
-    if (errors[fieldId]) {
-      setErrors(prev => ({ ...prev, [fieldId]: '' }));
-    }
+    setFormData(prev => ({ ...prev, [fieldId]: value }));
+    if (errors[fieldId]) setErrors(prev => ({ ...prev, [fieldId]: '' }));
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
@@ -71,19 +69,37 @@ export default function ReportForm() {
     if (files) {
       const newFiles = Array.from(files);
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-      setFilePreviews(prev => [...prev, ...newPreviews]);
+      setFilePreviews(prev => ({
+        ...prev,
+        [fieldId]: [...(prev[fieldId] || []), ...newPreviews]
+      }));
       handleInputChange(fieldId, [...(formData[fieldId] || []), ...newFiles]);
     }
+  };
+
+  const handleRemoveFile = (fieldId: string, index: number) => {
+    const updatedPreviews = [...filePreviews[fieldId]];
+    updatedPreviews.splice(index, 1);
+    setFilePreviews(prev => ({ ...prev, [fieldId]: updatedPreviews }));
+
+    const updatedFiles = [...formData[fieldId]];
+    updatedFiles.splice(index, 1);
+    handleInputChange(fieldId, updatedFiles);
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     report?.fields.forEach(field => {
+      const value = formData[field.id];
       if (field.required) {
-        if (field.type === 'checkbox' && formData[field.id].length === 0) {
-          newErrors[field.id] = 'This field is required';
-        } else if (!formData[field.id]) {
-          newErrors[field.id] = 'This field is required';
+        if (field.type === 'checkbox' && value.length === 0) {
+          newErrors[field.id] = `${field.label} is required`;
+        } else if (field.type === 'image' && (!value || value.length === 0)) {
+          newErrors[field.id] = `${field.label} is required`;
+        } else if (typeof value === 'string' && value.trim() === '') {
+          newErrors[field.id] = `${field.label} is required`;
+        } else if (field.type === 'number' && (value === '' || isNaN(value))) {
+          newErrors[field.id] = `${field.label} must be a valid number`;
         }
       }
     });
@@ -100,69 +116,107 @@ export default function ReportForm() {
       const formPayload = new FormData();
       Object.entries(formData).forEach(([fieldId, value]) => {
         if (value instanceof FileList || Array.isArray(value)) {
-          Array.from(value).forEach(file => {
-            formPayload.append(fieldId, file);
-          });
+          Array.from(value).forEach(file => formPayload.append(fieldId, file));
         } else {
           formPayload.append(fieldId, value);
         }
       });
 
-      await axios.post(`/api/reports/${id}/responses`, formPayload, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      await axios.post(`${import.meta.env.VITE_API_URL}/form/${id}/responses`, formPayload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      navigate('/submission-success');
+      toast.success('Report submitted successfully!');
+      // Reset form
+      const initialData: Record<string, any> = {};
+      report?.fields.forEach(field => {
+        initialData[field.id] = field.type === 'checkbox' ? [] : '';
+      });
+      setFormData(initialData);
+      setFilePreviews({});
     } catch (error) {
       console.error('Submission failed:', error);
+      toast.error('Failed to submit report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!report) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <span className="ml-2 text-lg">Loading report...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Alert variant="destructive" className="w-auto">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+          <Button className="mt-4" onClick={() => navigate(-1)}>
+            Go Back
+          </Button>
+        </Alert>
       </div>
     );
   }
 
   return (
+      <>
+      <Toaster
+          position="top-right"
+          gutter={32}
+          containerClassName="!top-4 !right-6"
+          toastOptions={{
+            className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+          }}
+        />
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-4xl mx-auto p-6">
         <Card className="shadow-lg dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-3xl font-bold mb-2">{report.title}</CardTitle>
-            <p className="text-muted-foreground">{report.description}</p>
+            <CardTitle className="text-3xl font-bold mb-2 flex items-center gap-2">
+              {report?.title}
+              <Badge variant="outline" className="text-sm py-1">
+                {report?.fields.filter(f => f.required).length} required fields
+              </Badge>
+            </CardTitle>
+            <p className="text-muted-foreground">{report?.description}</p>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-8">
-              {report.fields.map((field) => (
-                <div key={field.id} className="space-y-2">
-                  <Label className="flex items-center gap-2 text-lg">
-                    {field.label}
-                    {field.required && <Badge variant="destructive">Required</Badge>}
-                  </Label>
-                  
-                  {field.description && (
-                    <p className="text-sm text-muted-foreground">{field.description}</p>
-                  )}
+              {report?.fields.map((field) => (
+                <div key={field.id} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-lg flex items-center gap-2">
+                      {field.label}
+                      {field.required && (
+                        <span className="text-red-500">*</span>
+                      )}
+                    </Label>
+                    {errors[field.id] && (
+                      <span className="text-sm text-red-500">
+                        {errors[field.id]}
+                      </span>
+                    )}
+                  </div>
 
-                  {errors[field.id] && (
-                    <Alert variant="destructive" className="border-red-200 dark:border-red-800">
-                      <AlertDescription>{errors[field.id]}</AlertDescription>
-                    </Alert>
+                  {field.description && (
+                    <p className="text-sm text-muted-foreground">
+                      {field.description}
+                    </p>
                   )}
 
                   {field.type === 'text' && (
                     <Input
                       value={formData[field.id] || ''}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
-                      className="h-12 text-lg"
+                      className={`h-12 text-lg ${errors[field.id] ? 'border-red-500' : ''}`}
                     />
                   )}
 
@@ -171,14 +225,19 @@ export default function ReportForm() {
                       type="number"
                       value={formData[field.id] || ''}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
-                      className="h-12 text-lg"
+                      className={`h-12 text-lg ${errors[field.id] ? 'border-red-500' : ''}`}
                     />
                   )}
 
                   {field.type === 'checkbox' && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {field.options?.map((option) => (
-                        <label key={option} className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-accent cursor-pointer">
+                        <label
+                          key={option}
+                          className={`flex items-center space-x-2 p-4 border rounded-lg hover:bg-accent cursor-pointer ${
+                            errors[field.id] ? 'border-red-500' : ''
+                          }`}
+                        >
                           <input
                             type="checkbox"
                             checked={formData[field.id].includes(option)}
@@ -198,21 +257,41 @@ export default function ReportForm() {
 
                   {field.type === 'image' && (
                     <div className="space-y-4">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => handleFileUpload(e, field.id)}
-                        className="cursor-pointer h-12"
-                      />
+                      <div className={`border-2 border-dashed rounded-lg p-6 ${
+                        errors[field.id] ? 'border-red-500' : 'border-gray-200'
+                      }`}>
+                        <Label className="flex flex-col items-center justify-center gap-2 cursor-pointer">
+                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                          <span className="font-medium">
+                            Click to upload or drag and drop
+                          </span>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => handleFileUpload(e, field.id)}
+                            className="hidden"
+                          />
+                        </Label>
+                      </div>
+                      
                       <div className="flex flex-wrap gap-4">
-                        {filePreviews.map((preview, index) => (
-                          <div key={index} className="relative group">
+                        {filePreviews[field.id]?.map((preview, index) => (
+                          <div key={preview} className="relative group">
                             <img
                               src={preview}
                               alt={`Preview ${index + 1}`}
                               className="h-32 w-32 object-cover rounded-lg shadow-md"
                             />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4"
+                              onClick={() => handleRemoveFile(field.id, index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
                         ))}
                       </div>
@@ -239,5 +318,6 @@ export default function ReportForm() {
         </Card>
       </div>
     </div>
+    </>
   );
 }

@@ -14,6 +14,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
 import { Switch } from "../ui/switch";
+import { Skeleton } from "../ui/skeleton";
 import { 
   Table,
   TableBody,
@@ -54,6 +55,8 @@ import { Header } from "./ui/Header";
 import { useEffect } from "react";
 import { ThemeProvider } from "../../contexts/theme-provider";
 import { useNavigate } from "react-router-dom";
+import { toast, Toaster} from 'react-hot-toast';
+
 
 interface Report {
   id: string;
@@ -72,8 +75,45 @@ export default function CitizenPanelPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [totalPage, setTotalPage] = useState(1);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+  const reportsPerPage = 8;
+
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.API_BASE_URL}/form/get-report`);
+        const data = await response.json();
+        
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch reports');
+        
+        setReports(data);
+        setTotalPage(Math.ceil(data.length / reportsPerPage));
+        toast.success('Reports loaded successfully');
+      } catch (error) {
+        console.error('Fetch error:', error);
+        toast.error('Failed to load reports. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    toast.promise(fetchReports(), {
+      loading: 'Loading reports...',
+      success: <b>Reports loaded!</b>,
+      error: <b>Could not load reports.</b>,
+    });
+  }, []);
+
+  const currentReport = reports.slice(
+    (currentPage - 1) * reportsPerPage,
+    currentPage * reportsPerPage
+  );
+
 
   const name =localStorage.getItem("name");
   const email = localStorage.getItem("adminEmail");
@@ -116,10 +156,37 @@ export default function CitizenPanelPage() {
     return categoryMatch && statusMatch;
   });
 
+  const handleViewDetails = (reportId: string) => {
+      console.log('Viewing report:', reportId);
+      toast.success(`Opening report ${reportId.substring(0, 6)}...`);
+    };
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentReports = filteredReports.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+
+if (isLoading) {
+    return (
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-6 w-[250px]" />
+          </CardTitle>
+          <CardDescription>
+            <Skeleton className="h-4 w-[400px]" />
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Array(5).fill(0).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
 
   return (
@@ -257,164 +324,105 @@ export default function CitizenPanelPage() {
           </TabsContent>
 
           <TabsContent value="public-reports">
-              <Card className="dark:bg-gray-800 dark:border-gray-700">
-                <CardHeader>
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                      <CardTitle>Official Public Reports</CardTitle>
-                      <CardDescription>
-                        View all government-issued reports and updates
-                      </CardDescription>
+                <Card className="dark:bg-gray-800 dark:border-gray-700">
+                  <CardHeader>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <CardTitle>Official Public Reports</CardTitle>
+                        <CardDescription>
+                          View all government-issued reports and updates
+                        </CardDescription>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="gap-2">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              fill="none"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                            </svg>
-                            Filters
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-64">
-                          <DropdownMenuLabel>Category</DropdownMenuLabel>
-                          {categories.map(category => (
-                            <DropdownMenuItem key={category}>
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedCategories.includes(category)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedCategories([...selectedCategories, category]);
-                                    } else {
-                                      setSelectedCategories(selectedCategories.filter(c => c !== category));
-                                    }
-                                  }}
-                                />
-                                {category}
-                              </label>
-                            </DropdownMenuItem>
-                          ))}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuLabel>Status</DropdownMenuLabel>
-                          {['pending', 'in_progress', 'resolved'].map(status => (
-                            <DropdownMenuItem key={status}>
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedStatus.includes(status)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedStatus([...selectedStatus, status]);
-                                    } else {
-                                      setSelectedStatus(selectedStatus.filter(s => s !== status));
-                                    }
-                                  }}
-                                />
-                                {status.replace('_', ' ').toUpperCase()}
-                              </label>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Table className="dark:bg-gray-800">
-                    <TableHeader className="dark:bg-gray-700">
-                      <TableRow>
-                        <TableHead>Report ID</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date Created</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentReports.map((report) => (
-                        <TableRow key={report.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                          <TableCell className="font-medium">{report.id}</TableCell>
-                          <TableCell>{report.title}</TableCell>
-                          <TableCell>{report.category}</TableCell>
-                          <TableCell>
-                          <Badge 
-                          variant={
-                            report.status === 'resolved' ? 'default' :
-                            report.status === 'in_progress' ? 'secondary' : 'destructive'
-                          }
-                          className={
-                            report.status === 'resolved' ? 'bg-green-500 hover:bg-green-600' :
-                            report.status === 'in_progress' ? 'bg-orange-500 hover:bg-orange-600' : ''
-                          }
-                        >
-                          {report.status.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(report.createdAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => {
-                                console.log('View report:', report.id);
-                              }}
-                            >
-                              View Details
-                            </Button>
-                          </TableCell>
+                  </CardHeader>
+                  <CardContent>
+                    <Table className="dark:bg-gray-800">
+                      <TableHeader className="dark:bg-gray-700">
+                        <TableRow>
+                          <TableHead>Report ID</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Fields</TableHead>
+                          <TableHead>Date Created</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  
-                  {/* Pagination */}
-                  <div className="mt-6">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                        <PaginationPrevious
-                          className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
-                          onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-                          size={6}
-                        />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: totalPages }, (_, i) => (
-                          <PaginationItem key={i + 1}>
-                            <PaginationLink
-                              isActive={currentPage === i + 1}
-                              onClick={() => setCurrentPage(i + 1)}
-                              size={6}
-                            >
-                              {i + 1}
-                            </PaginationLink>
-                          </PaginationItem>
+                      </TableHeader>
+                      <TableBody>
+                        {currentReport.map((report : any) => (
+                          <TableRow key={report._id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <TableCell className="font-medium text-sm">
+                              <span className="font-mono">#{report._id.substring(0, 6)}</span>
+                            </TableCell>
+                            <TableCell className="max-w-[200px] truncate">
+                              {report.title}
+                            </TableCell>
+                            <TableCell className="max-w-[300px] truncate">
+                              {report.description}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {report.fields.length} fields
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(report.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewDetails(report._id)}
+                                className="dark:bg-gray-700 dark:hover:bg-gray-600"
+                              >
+                                View Details
+                              </Button>
+                            </TableCell>
+                          </TableRow>
                         ))}
-
-                        <PaginationItem>                     
-                          <PaginationNext
-                            className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
-                            onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-                            size={6}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                      </TableBody>
+                    </Table>
+          
+                    {/* Pagination */}
+                    <div className="mt-6">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
+                              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                              size={6}
+                            />
+                          </PaginationItem>
+                          
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <PaginationItem key={i + 1}>
+                              <PaginationLink
+                                isActive={currentPage === i + 1}
+                                onClick={() => setCurrentPage(i + 1)}
+                                size={6}
+                              >
+                                {i + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+          
+                          <PaginationItem>                     
+                            <PaginationNext
+                              className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
+                              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                              size={6}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
         </Tabs>
 
         {/* Emergency Section */}

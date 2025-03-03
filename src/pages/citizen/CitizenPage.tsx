@@ -1,7 +1,7 @@
 import React from 'react'
 import CitizenPanel from '../../components/citizen/MainCitizen'
 
-const CitizenPage = () => {
+const CitizenPage : React.FC = () => {
 
   return (
     <>
@@ -9,5 +9,3 @@ const CitizenPage = () => {
     </>
   )
 }
-
-export default CitizenPage

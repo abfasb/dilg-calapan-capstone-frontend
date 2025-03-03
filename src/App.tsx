@@ -9,6 +9,8 @@ import LguMainDashboardPage from './pages/lgus/LguMainDashboardPage';
 import AdminPanelPage from './pages/admin/AdminPanelPage';
 import LGURegistrationPage from './pages/lgus/LGURegistrationPage';
 import CitizenPage from './pages/citizen/CitizenPage';
+import ReportFormPage from './pages/citizen/ReportFormPage';
+import SubmissionSuccessPage from './pages/citizen/SubmissionSuccessPage';
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
 
         { /* Citizen*/ }
         <Route path='/account/citizen/:id' element={<CitizenPage />}/>
+        <Route path="/report/:id" element={<ReportFormPage />} />
+        <Route path="/submission-success" element={<SubmissionSuccessPage />} />
 
 
         <Route path='*' element={ <NotFoundPage />}/>

@@ -86,7 +86,7 @@ export default function CitizenPanelPage() {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const response = await fetch(`${import.meta.env.API_BASE_URL}/form/get-report`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/form/get-report`);
         const data = await response.json();
         
         if (!response.ok) throw new Error(data.message || 'Failed to fetch reports');

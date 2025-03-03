@@ -9,3 +9,5 @@ const CitizenPage : React.FC = () => {
     </>
   )
 }
+
+export default CitizenPage;

@@ -51,18 +51,20 @@ import { toast, Toaster} from 'react-hot-toast';
 
 
 interface Report {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   category: string;
   status: 'pending' | 'in_progress' | 'resolved';
   createdAt: string;
   updatedAt: string;
+  hasSubmitted?: boolean;
 }
 
 export default function CitizenPanelPage() {
   const [anonymousMode, setAnonymousMode] = useState(false);
   const navigate = useNavigate();
+
 
   const [reports, setReports] = useState<Report[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,8 +84,13 @@ export default function CitizenPanelPage() {
         const data = await response.json();
         
         if (!response.ok) throw new Error(data.message || 'Failed to fetch reports');
+
+        const reportsWithStatus = data.map(report => ({
+          ...report,
+          hasSubmitted: report.submittedUsers?.includes(localStorage.getItem("userId"))
+        }));
         
-        setReports(data);
+        setReports(reportsWithStatus);
         setTotalPage(Math.ceil(data.length / reportsPerPage));
         toast.success('Reports loaded successfully');
       } catch (error) {
@@ -125,20 +132,7 @@ export default function CitizenPanelPage() {
     'Other'
   ];
 
-  useEffect(() => {
-    const mockReports: Report[] = Array.from({ length: 25 }, (_, i) => ({
-      id: `REPORT-${i + 1}`,
-      title: `Public Report ${i + 1}`,
-      description: `Description of report ${i + 1} detailing the issue...`,
-      category: categories[Math.floor(Math.random() * categories.length)],
-      status: ['pending', 'in_progress', 'resolved'][Math.floor(Math.random() * 3)] as Report['status'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
-    
-    setReports(mockReports);
-  }, []);
-
+ 
 
   const filteredReports = reports.filter(report => {
     const categoryMatch = selectedCategories.length === 0 || 
@@ -364,15 +358,21 @@ if (isLoading) {
                            })}
                          </TableCell>
                          <TableCell>
-                           <Button 
-                             variant="outline"
-                             size="sm"
-                             onClick={() => handleViewDetails(report._id)} 
-                             className="dark:bg-gray-700 dark:hover:bg-gray-600"
-                           >
-                             View Details
-                           </Button>
-                         </TableCell>
+                          {report.hasSubmitted ? (
+                            <Badge variant="outline" className="dark:bg-green-900/20 dark:text-green-400">
+                              Submitted
+                            </Badge>
+                          ) : (
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewDetails(report._id)} 
+                              className="dark:bg-gray-700 dark:hover:bg-gray-600"
+                            >
+                              View Details
+                            </Button>
+                          )}
+                        </TableCell>
                        </TableRow>
                         ))}
                       </TableBody>

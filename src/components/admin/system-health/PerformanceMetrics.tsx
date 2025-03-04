@@ -16,10 +16,10 @@ const dummyData = {
   cpuUsage: 45,
   memoryUsage: 68,
   databaseStatus: 'normal',
-  uptime: '99.99%',
-  networkLatency: 42,
+  uptime: '94.87%',
+  networkLatency: 98,
   storage: {
-    used: 234,
+    used: 48,
     total: 512,
     breakdown: [
       { type: 'Data', value: 160, color: '#10aa50' },
@@ -75,9 +75,9 @@ const PerformanceMetrics = () => {
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-muted-foreground">Storage Usage</h3>
                 <div className="text-2xl font-bold">
-                  {dummyData.storage.used}GB
+                  {dummyData.storage.used}MB
                   <span className="text-sm text-muted-foreground ml-2">
-                    / {dummyData.storage.total}GB
+                    / {dummyData.storage.total}MB
                   </span>
                 </div>
                 <div className="relative pt-4">
@@ -129,7 +129,7 @@ const PerformanceMetrics = () => {
                   <h3 className="text-sm font-medium text-muted-foreground">Document Count</h3>
                   <span className="text-xs text-[#10aa50]">+12.4%</span>
                 </div>
-                <div className="text-2xl font-bold">1.2M</div>
+                <div className="text-2xl font-bold">98</div>
                 <div className="h-24">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={dummyData.cpuHistory}>
@@ -289,7 +289,7 @@ const PerformanceMetrics = () => {
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-2">
                 <h3 className="text-sm text-muted-foreground">Avg. Query Latency</h3>
-                <div className="text-3xl font-bold">42ms</div>
+                <div className="text-3xl font-bold">98ms</div>
                 <div className="text-sm text-muted-foreground">
                   <span className="text-red-500">↑</span> 8% from last week
                 </div>

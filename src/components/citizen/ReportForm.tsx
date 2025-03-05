@@ -7,9 +7,20 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../ui/card
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
-import { ImageIcon, CheckCircle, XCircle, Loader2, X } from "lucide-react";
+import { 
+  ImageIcon, 
+  CheckCircle, 
+  XCircle, 
+  Loader2, 
+  X, 
+  ChevronLeft,
+  UploadCloud,
+  Check,
+  AlertCircle
+} from "lucide-react";
 import axios from "axios";
-import toast, { Toaster} from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
+import { useDropzone } from "react-dropzone";
 
 interface ReportField {
   id: string;
@@ -64,17 +75,13 @@ export default function ReportForm() {
     if (errors[fieldId]) setErrors(prev => ({ ...prev, [fieldId]: '' }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
-    const files = e.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-      setFilePreviews(prev => ({
-        ...prev,
-        [fieldId]: [...(prev[fieldId] || []), ...newPreviews]
-      }));
-      handleInputChange(fieldId, [...(formData[fieldId] || []), ...newFiles]);
-    }
+  const onDrop = (acceptedFiles: File[], fieldId: string) => {
+    const newPreviews = acceptedFiles.map(file => URL.createObjectURL(file));
+    setFilePreviews(prev => ({
+      ...prev,
+      [fieldId]: [...(prev[fieldId] || []), ...newPreviews]
+    }));
+    handleInputChange(fieldId, [...(formData[fieldId] || []), ...acceptedFiles]);
   };
 
   const handleRemoveFile = (fieldId: string, index: number) => {
@@ -127,13 +134,7 @@ export default function ReportForm() {
       });
 
       toast.success('Report submitted successfully!');
-      // Reset form
-      const initialData: Record<string, any> = {};
-      report?.fields.forEach(field => {
-        initialData[field.id] = field.type === 'checkbox' ? [] : '';
-      });
-      setFormData(initialData);
-      setFilePreviews({});
+      navigate('/submissions', { state: { success: true } });
     } catch (error) {
       console.error('Submission failed:', error);
       toast.error('Failed to submit report. Please try again.');
@@ -142,182 +143,242 @@ export default function ReportForm() {
     }
   };
 
+  const FileUploadArea = ({ field }: { field: ReportField }) => {
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+      onDrop: (files) => onDrop(files, field.id),
+      accept: {'image/*': []},
+      multiple: true
+    });
+
+    return (
+      <div className="space-y-4">
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-xl p-8 transition-all cursor-pointer
+            ${errors[field.id] ? 'border-red-500 bg-red-500/10' : 'border-gray-200 dark:border-gray-700'}
+            ${isDragActive ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : ''}`}
+        >
+          <input {...getInputProps()} />
+          <div className="flex flex-col items-center justify-center gap-4 text-center">
+            <UploadCloud className={`h-8 w-8 ${isDragActive ? 'text-blue-500' : 'text-muted-foreground'}`} />
+            <div className="space-y-1">
+              <p className="font-medium">
+                {isDragActive ? 'Drop files here' : 'Click to upload or drag and drop'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                PNG, JPG up to 10MB
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {filePreviews[field.id]?.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filePreviews[field.id].map((preview, index) => (
+              <div key={preview} className="relative group">
+                <div className="aspect-square overflow-hidden rounded-lg border">
+                  <img
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    className="h-full w-full object-cover hover:scale-105 transition-transform"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-7 w-7 rounded-full"
+                  onClick={() => handleRemoveFile(field.id, index)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <span className="ml-2 text-lg">Loading report...</span>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-lg font-medium">Loading Report Form...</p>
+          <p className="text-muted-foreground">Please wait while we load the form</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Alert variant="destructive" className="w-auto">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-          <Button className="mt-4" onClick={() => navigate(-1)}>
-            Go Back
-          </Button>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Loading Error</AlertTitle>
+          <AlertDescription className="mb-4">{error}</AlertDescription>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Go Back
+            </Button>
+            <Button onClick={() => window.location.reload()}>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Retry
+            </Button>
+          </div>
         </Alert>
       </div>
     );
   }
 
   return (
-      <>
+    <>
       <Toaster
-          position="top-right"
-          gutter={32}
-          containerClassName="!top-4 !right-6"
-          toastOptions={{
-            className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
-          }}
-        />
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
-      <div className="max-w-4xl mx-auto p-6">
-        <Card className="shadow-lg dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold mb-2 flex items-center gap-2">
-              {report?.title}
-              <Badge variant="outline" className="text-sm py-1">
-                {report?.fields.filter(f => f.required).length} required fields
-              </Badge>
-            </CardTitle>
-            <p className="text-muted-foreground">{report?.description}</p>
-          </CardHeader>
+        position="top-right"
+        gutter={32}
+        containerClassName="!top-4 !right-6"
+        toastOptions={{
+          className: '!bg-background !text-foreground !rounded-xl !border !shadow-lg',
+          success: {
+            icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+            style: {
+              padding: '16px',
+              border: '1px solid #2f3b52',
+            },
+          },
+          error: {
+            icon: <XCircle className="h-5 w-5 text-red-500" />,
+          },
+        }}
+      />
+      
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="gap-1 pl-0 hover:bg-transparent"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              Back to Reports
+            </Button>
+          </div>
 
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {report?.fields.map((field) => (
-                <div key={field.id} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-lg flex items-center gap-2">
-                      {field.label}
-                      {field.required && (
-                        <span className="text-red-500">*</span>
-                      )}
-                    </Label>
-                    {errors[field.id] && (
-                      <span className="text-sm text-red-500">
-                        {errors[field.id]}
-                      </span>
-                    )}
-                  </div>
+          <Card className="shadow-xl rounded-2xl border-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <CardHeader className="pb-0">
+              <div className="flex items-center justify-between mb-4">
+                <CardTitle className="text-3xl font-bold tracking-tight">
+                  {report?.title}
+                </CardTitle>
+                <Badge variant="secondary" className="text-sm py-1.5 px-3">
+                  {report?.fields.filter(f => f.required).length} Required Fields
+                </Badge>
+              </div>
+              <p className="text-lg text-muted-foreground">{report?.description}</p>
+            </CardHeader>
 
-                  {field.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {field.description}
-                    </p>
-                  )}
-
-                  {field.type === 'text' && (
-                    <Input
-                      value={formData[field.id] || ''}
-                      onChange={(e) => handleInputChange(field.id, e.target.value)}
-                      className={`h-12 text-lg ${errors[field.id] ? 'border-red-500' : ''}`}
-                    />
-                  )}
-
-                  {field.type === 'number' && (
-                    <Input
-                      type="number"
-                      value={formData[field.id] || ''}
-                      onChange={(e) => handleInputChange(field.id, e.target.value)}
-                      className={`h-12 text-lg ${errors[field.id] ? 'border-red-500' : ''}`}
-                    />
-                  )}
-
-                  {field.type === 'checkbox' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {field.options?.map((option) => (
-                        <label
-                          key={option}
-                          className={`flex items-center space-x-2 p-4 border rounded-lg hover:bg-accent cursor-pointer ${
-                            errors[field.id] ? 'border-red-500' : ''
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData[field.id].includes(option)}
-                            onChange={(e) => {
-                              const newValue = e.target.checked
-                                ? [...formData[field.id], option]
-                                : formData[field.id].filter((opt: string) => opt !== option);
-                              handleInputChange(field.id, newValue);
-                            }}
-                            className="h-5 w-5"
-                          />
-                          <span>{option}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-
-                  {field.type === 'image' && (
-                    <div className="space-y-4">
-                      <div className={`border-2 border-dashed rounded-lg p-6 ${
-                        errors[field.id] ? 'border-red-500' : 'border-gray-200'
-                      }`}>
-                        <Label className="flex flex-col items-center justify-center gap-2 cursor-pointer">
-                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                          <span className="font-medium">
-                            Click to upload or drag and drop
-                          </span>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={(e) => handleFileUpload(e, field.id)}
-                            className="hidden"
-                          />
+            <CardContent className="pt-8">
+              <form onSubmit={handleSubmit} className="space-y-10">
+                {report?.fields.map((field) => (
+                  <div key={field.id} className="space-y-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-base font-medium">
+                          {field.label}
+                          {field.required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </Label>
+                        {errors[field.id] && (
+                          <span className="text-sm text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-4 w-4" />
+                            {errors[field.id]}
+                          </span>
+                        )}
                       </div>
-                      
-                      <div className="flex flex-wrap gap-4">
-                        {filePreviews[field.id]?.map((preview, index) => (
-                          <div key={preview} className="relative group">
-                            <img
-                              src={preview}
-                              alt={`Preview ${index + 1}`}
-                              className="h-32 w-32 object-cover rounded-lg shadow-md"
+                      {field.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {field.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {field.type === 'text' && (
+                      <Input
+                        value={formData[field.id] || ''}
+                        onChange={(e) => handleInputChange(field.id, e.target.value)}
+                        className={`h-12 text-base ${errors[field.id] ? 'border-red-500' : ''}`}
+                      />
+                    )}
+
+                    {field.type === 'number' && (
+                      <Input
+                        type="number"
+                        value={formData[field.id] || ''}
+                        onChange={(e) => handleInputChange(field.id, e.target.value)}
+                        className={`h-12 text-base ${errors[field.id] ? 'border-red-500' : ''}`}
+                      />
+                    )}
+
+                    {field.type === 'checkbox' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {field.options?.map((option) => (
+                          <label
+                            key={option}
+                            className={`flex items-center gap-3 p-4 border rounded-xl transition-colors
+                              ${errors[field.id] ? 'border-red-500' : 'hover:border-primary'}
+                              ${formData[field.id].includes(option) ? 'border-primary bg-primary/5' : ''}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData[field.id].includes(option)}
+                              onChange={(e) => {
+                                const newValue = e.target.checked
+                                  ? [...formData[field.id], option]
+                                  : formData[field.id].filter((opt: string) => opt !== option);
+                                handleInputChange(field.id, newValue);
+                              }}
+                              className="h-5 w-5 text-primary rounded border-gray-300 focus:ring-primary"
                             />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4"
-                              onClick={() => handleRemoveFile(field.id, index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
+                            <span className="text-sm font-medium">{option}</span>
+                          </label>
                         ))}
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
 
-              <CardFooter className="flex justify-end gap-4 px-0 pb-0">
-                <Button
-                  type="submit"
-                  className="h-12 px-8 text-lg"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <>Submit Report</>
-                  )}
-                </Button>
-              </CardFooter>
-            </form>
-          </CardContent>
-        </Card>
+                    {field.type === 'image' && <FileUploadArea field={field} />}
+                  </div>
+                ))}
+
+                <CardFooter className="flex justify-end gap-4 px-0 pb-0 pt-8">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-12 px-8 text-base font-semibold gap-2"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-5 w-5" />
+                        Submit Report
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
     </>
   );
 }

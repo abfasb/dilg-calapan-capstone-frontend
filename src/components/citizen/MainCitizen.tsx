@@ -46,7 +46,7 @@ import {
 import { Header } from "./ui/Header";
 import { useEffect } from "react";
 import { ThemeProvider } from "../../contexts/theme-provider";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation , useParams} from "react-router-dom";
 import { toast, Toaster} from 'react-hot-toast';
 
 
@@ -64,6 +64,8 @@ interface Report {
 export default function CitizenPanelPage() {
   const [anonymousMode, setAnonymousMode] = useState(false);
   const navigate = useNavigate();
+
+  const { id } = useParams();
 
 
   const [reports, setReports] = useState<Report[]>([]);
@@ -92,7 +94,6 @@ export default function CitizenPanelPage() {
         
         setReports(reportsWithStatus);
         setTotalPage(Math.ceil(data.length / reportsPerPage));
-        toast.success('Reports loaded successfully');
       } catch (error) {
         console.error('Fetch error:', error);
         toast.error('Failed to load reports. Please try again.');
@@ -100,12 +101,9 @@ export default function CitizenPanelPage() {
         setIsLoading(false);
       }
     };
+    fetchReports();
 
-    toast.promise(fetchReports(), {
-      loading: 'Loading reports...',
-      success: <b>Reports loaded!</b>,
-      error: <b>Could not load reports.</b>,
-    });
+   
   }, []);
 
   const currentReport = reports.slice(
@@ -119,11 +117,16 @@ export default function CitizenPanelPage() {
   const token = localStorage.getItem("token");
 
   useEffect(() => { 
-    if (!name || !email || !token) {
+    console.log("Checking authentication...");
+    console.log("ID:", id);
+  
+    if (!id) {
+      console.log("Redirecting to login...");
       navigate('/account/login');
     }
-  }, [] )
-
+  }, [id, navigate]); 
+  
+  
   const categories = [
     'Road Issues',
     'Sanitation',
@@ -239,7 +242,6 @@ if (isLoading) {
 
           <TabsContent value="reporting">
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Reporting Form */}
               <Card>
                 <CardHeader>
                   <CardTitle>New Incident Report</CardTitle>
@@ -270,7 +272,6 @@ if (isLoading) {
                 </CardFooter>
               </Card>
 
-              {/* Recent Reports */}
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Reports</CardTitle>

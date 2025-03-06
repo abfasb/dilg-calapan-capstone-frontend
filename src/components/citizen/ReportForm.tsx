@@ -114,34 +114,52 @@ export default function ReportForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  const userId = localStorage.getItem("userId");
 
-    setIsSubmitting(true);
-    try {
-      const formPayload = new FormData();
-      Object.entries(formData).forEach(([fieldId, value]) => {
-        if (value instanceof FileList || Array.isArray(value)) {
-          Array.from(value).forEach(file => formPayload.append(fieldId, file));
-        } else {
-          formPayload.append(fieldId, value);
-        }
-      });
+  // ReportForm.tsx (changes highlighted)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-      await axios.post(`${import.meta.env.VITE_API_URL}/form/${id}/responses`, formPayload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+  setIsSubmitting(true);
+  try {
+    const formPayload = new FormData();
+    
+    // Add user ID to the form data
+    const userId = localStorage.getItem("userId");
+    if (userId) formPayload.append("userId", userId);
 
-      toast.success('Report submitted successfully!');
-      navigate('/submissions', { state: { success: true } });
-    } catch (error) {
-      console.error('Submission failed:', error);
-      toast.error('Failed to submit report. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    Object.entries(formData).forEach(([fieldId, value]) => {
+      if (value instanceof FileList || Array.isArray(value)) {
+        Array.from(value).forEach(file => formPayload.append(fieldId, file));
+      } else {
+        formPayload.append(fieldId, value);
+      }
+    });
+
+    const response = await axios.post<{ 
+      referenceNumber: string;
+      submissionData: Record<string, any>;
+    }>(`${import.meta.env.VITE_API_URL}/form/${id}/responses`, formPayload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+
+    navigate(`/account/citizen/submission/success/${userId}`, { 
+      state: { 
+        success: true,
+        referenceNumber: response.data.referenceNumber,
+        formData: response.data.submissionData
+      }
+    });
+
+    toast.success('Report submitted successfully!');
+  } catch (error) {
+    console.error('Submission failed:', error);
+    toast.error('Failed to submit report. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const FileUploadArea = ({ field }: { field: ReportField }) => {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({

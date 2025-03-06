@@ -38,7 +38,7 @@ function App() {
         { /* Citizen*/ }
         <Route path='/account/citizen/:id' element={<CitizenPage />}/>
         <Route path="/report/:id" element={<ReportFormPage />} />
-        <Route path="/submission-success" element={<SubmissionSuccessPage />} />
+        <Route path='/account/citizen/submission/success/:userId' element={<SubmissionSuccessPage />} />
 
 
         <Route path='*' element={ <NotFoundPage />}/>

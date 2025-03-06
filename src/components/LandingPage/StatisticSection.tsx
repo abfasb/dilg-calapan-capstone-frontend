@@ -1,3 +1,4 @@
+// StatisticsSection.tsx
 import { motion, useAnimation } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
@@ -18,13 +19,13 @@ const StatisticsSection = () => {
   }, [controls, inView]);
 
   return (
-    <section className="py-20 bg-gradient-to-br from-blue-900/30 to-indigo-900/30">
+    <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
             <motion.div
               key={index}
-              className="text-center p-8 bg-gray-900/50 rounded-2xl border border-gray-800"
+              className="text-center p-8 bg-white/50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800 backdrop-blur-sm"
               ref={ref}
               initial="hidden"
               animate={controls}
@@ -34,11 +35,11 @@ const StatisticsSection = () => {
               }}
               transition={{ delay: index * 0.2 }}
             >
-              <div className="text-5xl font-bold mb-4 text-cyan-400">
+              <div className="text-5xl font-bold mb-4 text-cyan-600 dark:text-cyan-400">
                 <Counter from={0} to={stat.value} duration={2} />
                 {stat.suffix}
               </div>
-              <div className="text-gray-400 text-lg">{stat.label}</div>
+              <div className="text-gray-600 dark:text-gray-400 text-lg">{stat.label}</div>
             </motion.div>
           ))}
         </div>

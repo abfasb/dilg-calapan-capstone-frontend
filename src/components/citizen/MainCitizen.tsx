@@ -59,6 +59,11 @@ interface Report {
   createdAt: string;
   updatedAt: string;
   hasSubmitted?: boolean;
+  submissions?: Array<{ 
+    userId: string;
+    responseId: string;
+    createdAt: string;
+  }>;
 }
 
 export default function CitizenPanelPage() {

@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FiEdit, FiTrash, FiPlus, FiX } from 'react-icons/fi';
+import { FiEdit, FiTrash, FiPlus, FiX, FiImage } from 'react-icons/fi';
 import { useDropzone } from 'react-dropzone';
-import { fetchBlogs, fetchFAQs, saveData, deleteData } from '../../../api/faqApi';
-import { toast, Toaster} from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
 import {
   Tabs,
   TabsContent,
@@ -40,7 +39,6 @@ import {
 } from "../../ui/table"
 import { Skeleton } from "../../ui/skeleton"
 import { Badge } from "../../ui/badge"
-import BlogManagement from './BlogForm';
 
 interface FAQ {
   _id?: string;
@@ -48,30 +46,33 @@ interface FAQ {
   answer: string;
 }
 
-interface BlogPost {
-  _id?: string;
+interface Blog {
+  _id: string;
   title: string;
-  content: string;
-  date: string;
   status: 'draft' | 'published';
+  date: string;
+  content: string;
+  images: string[];
 }
 
 const SystemAnnouncements: React.FC = () => {
   const [activeTab, setActiveTab] = useState("faqs");
   const [faqs, setFaqs] = useState<FAQ[]>([]);
-  const [blogs, setBlogs] = useState<BlogPost[]>([]);
-  const [editingItem, setEditingItem] = useState<FAQ | BlogPost | null>(null);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [editingItem, setEditingItem] = useState<FAQ | Blog | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteItem, setDeleteItem] = useState<{ id: string; type: 'faq' | 'blog' } | null>(null);
+
+  const base_url = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
         const [faqData, blogData] = await Promise.all([
-          fetchFAQs().catch(() => []),
-          fetchBlogs().catch(() => [])
+          fetch(`${base_url}/api/faqs`).then(res => res.json()),
+          fetch(`${base_url}/api/blogs/get-blogs`).then(res => res.json())
         ]);
         setFaqs(faqData);
         setBlogs(blogData);
@@ -82,60 +83,78 @@ const SystemAnnouncements: React.FC = () => {
       }
     };
     loadData();
-  }, []);
+  }, [base_url]);
 
-  const handleSubmit = async (data: FAQ | BlogPost) => {
+  const handleSubmit = async (data: FAQ | Blog) => {
     try {
-      await toast.promise(
-        saveData(data, setIsDialogOpen),
-        {
-          loading: 'Saving...',
-          success: 'Saved successfully!',
-          error: 'Failed to save',
-        }
-      );
+      const isEdit = !!data._id;
+      const endpoint = activeTab === 'faqs' 
+        ? `faqs/${isEdit ? data._id : ''}`
+        : `blogs/${isEdit ? 'update/' + data._id : 'create-blog'}`;
+
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const formPayload = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== '_id' && key !== 'images') formPayload.append(key, value);
+      });
+
+      if (activeTab === 'blogs') {
+        const blogData = data as Blog;
+        formPayload.append('existingImages', JSON.stringify(blogData.images));
+      }
+
+      const response = await fetch(`${base_url}/api/${endpoint}`, {
+        method,
+        body: formPayload,
+      });
+
+      if (!response.ok) throw new Error('Request failed');
+
+      const result = await response.json();
       
-      const [updatedFaqs, updatedBlogs] = await Promise.all([
-        fetchFAQs().catch(() => []),
-        fetchBlogs().catch(() => [])
-      ]);
-      
-      setFaqs(updatedFaqs);
-      setBlogs(updatedBlogs);
+      if (activeTab === 'faqs') {
+        setFaqs(prev => isEdit 
+          ? prev.map(f => f._id === result._id ? result : f)
+          : [...prev, result]
+        );
+      } else {
+        setBlogs(prev => isEdit 
+          ? prev.map(b => b._id === result._id ? result : b)
+          : [...prev, result]
+        );
+      }
+
       setIsDialogOpen(false);
+      toast.success(`Successfully ${isEdit ? 'updated' : 'created'}`);
     } catch (error) {
-      console.error('Error saving:', error);
+      console.error('Submission error:', error);
+      toast.error('Error saving data');
     }
   };
 
   const handleDelete = async () => {
     if (!deleteItem) return;
-  
+    
     try {
-      await toast.promise(
-        deleteData(deleteItem.id, deleteItem.type === "faq" ? "faqs" : "blogs"),
-        {
-          loading: "Deleting...",
-          success: "Deleted successfully!",
-          error: "Failed to delete",
-        }
-      );
-  
-      const [updatedFaqs, updatedBlogs] = await Promise.all([
-        fetchFAQs(),
-        fetchBlogs()
-      ]);
-  
-      setFaqs(updatedFaqs);
-      setBlogs(updatedBlogs);
+      await fetch(`${base_url}/api/${deleteItem.type}s/${deleteItem.id}`, {
+        method: 'DELETE',
+      });
       
+      if (deleteItem.type === 'faq') {
+        setFaqs(prev => prev.filter(f => f._id !== deleteItem.id));
+      } else {
+        setBlogs(prev => prev.filter(b => b._id !== deleteItem.id));
+      }
+      
+      toast.success('Successfully deleted');
     } catch (error) {
-      console.error("Error deleting:", error);
+      console.error('Delete error:', error);
+      toast.error('Error deleting item');
     } finally {
       setDeleteItem(null);
     }
   };
-  
 
   return (
     <>
@@ -232,9 +251,10 @@ const SystemAnnouncements: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50%]">Title</TableHead>
+                  <TableHead>Title</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Images</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -245,6 +265,7 @@ const SystemAnnouncements: React.FC = () => {
                       <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[50px]" /></TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-2">
                           <Skeleton className="h-8 w-8" />
@@ -255,7 +276,7 @@ const SystemAnnouncements: React.FC = () => {
                   ))
                 ) : blogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center h-24">
+                    <TableCell colSpan={5} className="text-center h-24">
                       No blog posts found
                     </TableCell>
                   </TableRow>
@@ -272,6 +293,16 @@ const SystemAnnouncements: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {new Date(blog.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {blog.images.slice(0,3).map((_, i) => (
+                            <FiImage key={i} className="w-5 h-5 text-muted-foreground" />
+                          ))}
+                          {blog.images.length > 3 && (
+                            <span className="text-muted-foreground">+{blog.images.length - 3}</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
@@ -302,7 +333,7 @@ const SystemAnnouncements: React.FC = () => {
         </Tabs>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl overflow-y-auto max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>
                 {editingItem?._id ? 'Edit' : 'Create New'} {activeTab === 'faqs' ? 'FAQ' : 'Blog Post'}
@@ -316,7 +347,12 @@ const SystemAnnouncements: React.FC = () => {
                 onCancel={() => setIsDialogOpen(false)}
               />
             ) : (
-              <BlogManagement />
+              <BlogForm
+                initialData={editingItem as Blog || {}}
+                onSubmit={handleSubmit}
+                onCancel={() => setIsDialogOpen(false)}
+                isEditMode={!!editingItem?._id}
+              />
             )}
           </DialogContent>
         </Dialog>
@@ -384,5 +420,198 @@ const FAQForm: React.FC<{
   );
 };
 
+interface BlogFormProps {
+  initialData: Partial<Blog>;
+  onSubmit: (blog: Blog) => void;
+  onCancel: () => void;
+  isEditMode?: boolean;
+}
+
+const BlogForm = ({ 
+  initialData,
+  onSubmit,
+  onCancel,
+  isEditMode = false
+}: BlogFormProps) => {
+  const [formData, setFormData] = useState({
+    title: initialData.title || '',
+    content: initialData.content || '',
+    date: initialData.date || new Date().toISOString().split('T')[0],
+    status: initialData.status || 'draft',
+  });
+  
+  const [existingImages, setExistingImages] = useState<string[]>(initialData.images || []);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [removedImages, setRemovedImages] = useState<string[]>([]);
+
+  const totalImages = existingImages.length - removedImages.length + newImages.length;
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const remainingSlots = 8 - totalImages;
+    const filesToAdd = acceptedFiles.slice(0, remainingSlots);
+    setNewImages(prev => [...prev, ...filesToAdd]);
+  }, [totalImages]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {'image/*': []},
+    multiple: true,
+    disabled: totalImages >= 8
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (totalImages < 1) {
+      alert('Please upload at least one image');
+      return;
+    }
+
+    const formPayload = new FormData();
+    const keptExistingImages = existingImages.filter(url => !removedImages.includes(url));
+
+    formPayload.append('existingImages', JSON.stringify(keptExistingImages));
+    newImages.forEach(file => formPayload.append('images', file));
+
+    Object.entries(formData).forEach(([key, value]) => {
+      formPayload.append(key, value);
+    });
+
+    onSubmit({
+      ...initialData,
+      ...formData,
+      images: keptExistingImages,
+      _id: initialData._id || '',
+    } as Blog);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium mb-2">Title</label>
+        <Input
+          value={formData.title}
+          onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          required
+          maxLength={120}
+        />
+        <div className="text-xs text-muted-foreground text-right mt-1">
+          {formData.title.length}/120
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">Content</label>
+        <Textarea
+          value={formData.content}
+          onChange={e => setFormData(prev => ({ ...prev, content: e.target.value }))}
+          className="min-h-[200px]"
+          required
+          maxLength={5000}
+        />
+        <div className="text-xs text-muted-foreground text-right mt-1">
+          {formData.content.length}/5000
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          Images ({totalImages}/8)
+        </label>
+        
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+            ${isDragActive ? 'border-primary bg-primary/10' : 'border-muted'}
+            ${totalImages >= 8 ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <input {...getInputProps()} />
+          <p className="text-muted-foreground">
+            {isDragActive 
+              ? 'Drop images here...' 
+              : 'Drag & drop images here, or click to select'}
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Minimum 1 image, maximum 8 images
+          </p>
+        </div>
+
+        <div className="mt-6 grid grid-cols-3 gap-4">
+          {existingImages.map((url, index) => (
+            !removedImages.includes(url) && (
+              <div key={url} className="relative group">
+                <img
+                  src={url}
+                  alt={`Preview ${index}`}
+                  className="w-full h-32 object-cover rounded-lg border"
+                />
+                <button
+                  type="button"
+                  onClick={() => setRemovedImages([...removedImages, url])}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  disabled={totalImages === 1}
+                >
+                  <FiX className="w-4 h-4" />
+                </button>
+              </div>
+            )
+          ))}
+
+          {newImages.map((file, index) => (
+            <div key={file.name} className="relative group">
+              <img
+                src={URL.createObjectURL(file)}
+                alt={`Preview ${index}`}
+                className="w-full h-32 object-cover rounded-lg border"
+              />
+              <button
+                type="button"
+                onClick={() => setNewImages(prev => prev.filter((_, i) => i !== index))}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Date</label>
+          <Input
+            type="date"
+            value={formData.date}
+            onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Status</label>
+          <select
+            value={formData.status}
+            onChange={e => setFormData(prev => ({ 
+              ...prev, 
+              status: e.target.value as "draft" | "published" 
+            }))}            
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+          </select>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={onCancel} type="button">
+          Cancel
+        </Button>
+        <Button type="submit">
+          {isEditMode ? 'Update Post' : 'Create Post'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
 
 export default SystemAnnouncements;

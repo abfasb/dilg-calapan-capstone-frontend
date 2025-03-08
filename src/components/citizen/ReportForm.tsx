@@ -116,7 +116,6 @@ export default function ReportForm() {
 
   const userId = localStorage.getItem("userId");
 
-  // ReportForm.tsx (changes highlighted)
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!validateForm()) return;
@@ -125,9 +124,12 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     const formPayload = new FormData();
     
-    // Add user ID to the form data
     const userId = localStorage.getItem("userId");
     if (userId) formPayload.append("userId", userId);
+
+    const userResponse = await axios.get(`${import.meta.env.VITE_API_URL}/admin/users/${userId}`);
+    const userData = userResponse.data.user;
+    console.log("Full API response:", userResponse.data);
 
     Object.entries(formData).forEach(([fieldId, value]) => {
       if (value instanceof FileList || Array.isArray(value)) {
@@ -148,7 +150,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       state: { 
         success: true,
         referenceNumber: response.data.referenceNumber,
-        formData: response.data.submissionData
+        formData: response.data.submissionData,
+        userData: {
+          firstName: userData?.firstName || '',
+          lastName: userData?.lastName || '',
+          position: userData?.position || '',
+          barangay: userData?.barangay || '',
+          phoneNumber: userData?.phoneNumber || ''
+        }
       }
     });
 

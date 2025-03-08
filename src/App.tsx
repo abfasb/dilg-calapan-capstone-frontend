@@ -11,6 +11,7 @@ import LGURegistrationPage from './pages/lgus/LGURegistrationPage';
 import CitizenPage from './pages/citizen/CitizenPage';
 import ReportFormPage from './pages/citizen/ReportFormPage';
 import SubmissionSuccessPage from './pages/citizen/SubmissionSuccessPage';
+import MyReportPage from './pages/citizen/MyReportPage';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
         <Route path='/account/citizen/:id' element={<CitizenPage />}/>
         <Route path="/report/:id" element={<ReportFormPage />} />
         <Route path='/account/citizen/submission/success/:userId' element={<SubmissionSuccessPage />} />
+        <Route path='/account/citizen/my-report/:userId' element={<MyReportPage />} />
 
 
         <Route path='*' element={ <NotFoundPage />}/>

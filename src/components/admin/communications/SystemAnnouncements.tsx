@@ -85,30 +85,33 @@ const SystemAnnouncements: React.FC = () => {
     loadData();
   }, [base_url]);
 
-  const handleSubmit = async (data: FAQ | Blog) => {
+  const handleSubmit = async (data: FAQ | FormData) => {
     try {
-      const isEdit = !!data._id;
-      const endpoint = activeTab === 'faqs' 
-        ? `faqs/${isEdit ? data._id : ''}`
-        : `blogs/${isEdit ? 'update/' + data._id : 'create-blog'}`;
+      let isEdit = false;
+      let endpoint = '';
+      let options: RequestInit = {};
 
-      const method = isEdit ? 'PUT' : 'POST';
-
-      const formPayload = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (key !== '_id' && key !== 'images') formPayload.append(key, value);
-      });
-
-      if (activeTab === 'blogs') {
-        const blogData = data as Blog;
-        formPayload.append('existingImages', JSON.stringify(blogData.images));
+      if (activeTab === 'faqs') {
+        const faqData = data as FAQ;
+        isEdit = !!faqData._id;
+        endpoint = `faqs/${isEdit ? faqData._id : ''}`;
+        options = {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(faqData),
+        };
+      } else {
+        const formData = data as FormData;
+        isEdit = formData.has('_id');
+        endpoint = `blogs/${isEdit ? 'update/' + formData.get('_id') : 'create-blog'}`;
+        options = {
+          method: isEdit ? 'PUT' : 'POST',
+          body: formData,
+        };
       }
 
-      const response = await fetch(`${base_url}/api/${endpoint}`, {
-        method,
-        body: formPayload,
-      });
-
+      const response = await fetch(`${base_url}/api/${endpoint}`, options);
+      
       if (!response.ok) throw new Error('Request failed');
 
       const result = await response.json();
@@ -348,8 +351,14 @@ const SystemAnnouncements: React.FC = () => {
               />
             ) : (
               <BlogForm
-                initialData={editingItem as Blog || {}}
-                onSubmit={handleSubmit}
+                initialData={editingItem as Blog || { 
+                  title: '', 
+                  content: '', 
+                  status: 'draft', 
+                  date: new Date().toISOString().split('T')[0], 
+                  images: [] 
+                }}
+                onSubmit={(data) => handleSubmit(data)}
                 onCancel={() => setIsDialogOpen(false)}
                 isEditMode={!!editingItem?._id}
               />
@@ -385,6 +394,7 @@ const FAQForm: React.FC<{
 }> = ({ initialData, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState<FAQ>(initialData);
 
+
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
       <div>
@@ -419,10 +429,9 @@ const FAQForm: React.FC<{
     </form>
   );
 };
-
 interface BlogFormProps {
   initialData: Partial<Blog>;
-  onSubmit: (blog: Blog) => void;
+  onSubmit: (formData: FormData) => void;
   onCancel: () => void;
   isEditMode?: boolean;
 }
@@ -463,26 +472,27 @@ const BlogForm = ({
     e.preventDefault();
 
     if (totalImages < 1) {
-      alert('Please upload at least one image');
+      toast.error('Please upload at least one image');
       return;
     }
 
     const formPayload = new FormData();
-    const keptExistingImages = existingImages.filter(url => !removedImages.includes(url));
 
+    formPayload.append('title', formData.title);
+    formPayload.append('content', formData.content);
+    formPayload.append('date', formData.date);
+    formPayload.append('status', formData.status);
+
+    const keptExistingImages = existingImages.filter(url => !removedImages.includes(url));
     formPayload.append('existingImages', JSON.stringify(keptExistingImages));
+
     newImages.forEach(file => formPayload.append('images', file));
 
-    Object.entries(formData).forEach(([key, value]) => {
-      formPayload.append(key, value);
-    });
+    if (isEditMode && initialData._id) {
+      formPayload.append('_id', initialData._id);
+    }
 
-    onSubmit({
-      ...initialData,
-      ...formData,
-      images: keptExistingImages,
-      _id: initialData._id || '',
-    } as Blog);
+    onSubmit(formPayload);
   };
 
   return (

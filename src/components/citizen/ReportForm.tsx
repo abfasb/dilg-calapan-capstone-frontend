@@ -380,7 +380,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     {field.type === 'image' && <FileUploadArea field={field} />}
                   </div>
                 ))}
-
+                
                 <CardFooter className="flex justify-end gap-4 px-0 pb-0 pt-8">
                   <Button
                     type="submit"

@@ -16,7 +16,7 @@ const teamMembers: TeamMember[] = [
   {
     name: 'Emmanuel Calica',
     role: 'Project Manager & Backend Developer',
-    image: 'https://i.ibb.co/8gRDWFTf/Matt-ID-1-1.jpg',
+    image: 'https://i.ibb.co/dw7N7KB0/474862650-1850779965731720-7251136394819950153-n.jpg',
     description: 'Specializes in AI-driven analytics and automation for the project.',
     socials: {
       github: 'https://github.com/johndoe',
@@ -38,7 +38,7 @@ const teamMembers: TeamMember[] = [
   {
     name: 'Jamaica Mistiola',
     role: 'System Analyst & Technical Writer',
-    image: 'https://i.ibb.co/8gRDWFTf/Matt-ID-1-1.jpg',
+    image: 'https://i.ibb.co/XTYsNW0/462579078-928813822492507-2147962897797461503-n.jpg',
     description: 'Manages the server, database, and API development for our system.',
     socials: {
       github: 'https://github.com/alexjohnson',

@@ -15,16 +15,19 @@ import MyReportPage from './pages/citizen/MyReportPage';
 import BlogListPage from './pages/BlogListPage';
 import BlogDetailPage from './pages/BlogDetailPage';
 import MeetTheTeamPage from './pages/MeetTheTeamPage';
+import Layout from './layouts/Layout';
 
 function App() {
   return (
       <Router>
         <Routes>
 
-        <Route path='/' element={ <LandingPage />}/>
-        <Route path='/blogs' element={ <BlogListPage />}/>
-        <Route path='/blogs/:id' element={ <BlogDetailPage />}/>
-        <Route path='/meet-the-team' element={ <MeetTheTeamPage />}/>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<LandingPage />} />
+          <Route path="blogs" element={<BlogListPage />} />
+          <Route path="blogs/:id" element={<BlogDetailPage />} />
+          <Route path="meet-the-team" element={<MeetTheTeamPage />} />
+        </Route>
 
          { /* Authentication*/ }
          <Route path='/account/register' element={ <RegistrationPage />}/>

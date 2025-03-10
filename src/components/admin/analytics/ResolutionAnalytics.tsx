@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../../ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart,AreaChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, Cell, Pie, PieChart } from 'recharts';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../../ui/table";
 import { Skeleton } from "../../ui/skeleton";
+import { Separator } from '../../ui/separator';
 import { Badge } from "../../ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/tabs";
-import { Users, FileText, Clock, AlertCircle, CheckCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, FileText, Clock, RefreshCw, Download, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Activity, PieChart as PieChartIcon, FileStack, Paperclip } from 'lucide-react';
 import { cn } from "../../../lib/utils";
-import { Activity, PieChart, FileStack, Paperclip } from 'lucide-react';
-import { Cell, Pie } from 'recharts';
+import { Button } from "../../ui/button";
+
 interface AnalyticsData {
   userStats?: {
     totalUsers: number;
@@ -26,7 +27,6 @@ interface AnalyticsData {
     recentUsers: any[];
     recentForms: any[];
   };
-
   responseStats?: {
     totalResponses: number;
     responsesByStatus: Array<{ _id: string; count: number }>;
@@ -47,41 +47,19 @@ const AdminAnalytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const BASE_URL = import.meta.env.VITE_API_URL;
-
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [userStats, formStats, recentActivity, responseStats, formResponses, submissionTrends] = await Promise.all([
-          fetch(`${BASE_URL}/analytics/user-stats`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch user stats');
-            return res.json();
-          }),
-          fetch(`${BASE_URL}/analytics/form-stats`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch form stats');
-            return res.json();
-          }),
-          fetch(`${BASE_URL}/analytics/recent-activity`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch recent activity');
-            return res.json();
-          }),
-
-          fetch(`${BASE_URL}/analytics/response-stats`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch user stats');
-            return res.json();
-          }),
-          fetch(`${BASE_URL}/analytics/form-responses`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch form stats');
-            return res.json();
-          }),
-          fetch(`${BASE_URL}/analytics/submission-trends`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch recent activity');
-            return res.json();
-          })
+          fetch(`${BASE_URL}/analytics/user-stats`).then(handleResponse),
+          fetch(`${BASE_URL}/analytics/form-stats`).then(handleResponse),
+          fetch(`${BASE_URL}/analytics/recent-activity`).then(handleResponse),
+          fetch(`${BASE_URL}/analytics/response-stats`).then(handleResponse),
+          fetch(`${BASE_URL}/analytics/form-responses`).then(handleResponse),
+          fetch(`${BASE_URL}/analytics/submission-trends`).then(handleResponse)
         ]);
-
-        
 
         setData({ userStats, formStats, recentActivity, responseStats, formResponses, submissionTrends });
         setError(null);
@@ -93,49 +71,66 @@ const AdminAnalytics: React.FC = () => {
       }
     };
 
+    const handleResponse = (res: Response) => {
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+      return res.json();
+    };
+
     fetchData();
   }, []);
 
-  if (error) {
-    return (
-      <div className="p-8 flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
-          <AlertCircle className="w-12 h-12 mx-auto text-red-500" />
-          <h2 className="text-xl font-semibold">Error Loading Analytics</h2>
-          <p className="text-muted-foreground">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-          >
-            Retry
-          </button>
+  const renderLoading = () => (
+    <div className="p-8 space-y-8">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-32 w-full rounded-xl" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Skeleton className="h-[400px] w-full rounded-xl" />
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-1/3 rounded-lg" />
+          <Skeleton className="h-[350px] w-full rounded-xl" />
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (loading) {
-    return (
-      <div className="p-8 space-y-8">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-xl" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Skeleton className="h-[400px] w-full rounded-xl" />
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-1/3 rounded-lg" />
-            <Skeleton className="h-[350px] w-full rounded-xl" />
-          </div>
-        </div>
+  const renderError = () => (
+    <div className="p-8 flex items-center justify-center h-screen">
+      <div className="text-center space-y-4 max-w-md">
+        <AlertCircle className="w-12 h-12 mx-auto text-red-500" />
+        <h2 className="text-xl font-semibold">Error Loading Analytics</h2>
+        <p className="text-muted-foreground">{error}</p>
+        <Button 
+          onClick={() => window.location.reload()}
+          className="gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Retry
+        </Button>
       </div>
-    );
-  }
+    </div>
+  );
+
+  if (error) return renderError();
+  if (loading) return renderLoading();
 
   return (
     <div className="p-8 space-y-8 bg-muted/40">
-      {/* Key Metrics */}
+      {/* Header Section */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Municipal Analytics Dashboard</h1>
+          <p className="text-muted-foreground">Real-time insights and performance metrics</p>
+        </div>
+        <Button variant="outline" className="gap-2">
+          <Download className="w-4 h-4" />
+          Export Report
+        </Button>
+      </div>
+
+      {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Total Users"
@@ -143,323 +138,274 @@ const AdminAnalytics: React.FC = () => {
           icon={<Users className="w-5 h-5" />}
           trend={data.userStats?.growthRate ?? 0}
           chartData={data.userStats?.usersByBarangay}
+          color="#3B82F6"
         />
         <MetricCard
           title="LGU Officials"
           value={data.userStats?.lguUsers}
           icon={<CheckCircle className="w-5 h-5" />}
           trend={5.8}
+          color="#10B981"
         />
         <MetricCard
           title="Pending Approvals"
           value={data.userStats?.pendingApprovals}
           icon={<AlertCircle className="w-5 h-5" />}
           trend={-2.1}
+          color="#EF4444"
         />
         <MetricCard
           title="Avg Form Fields"
-          value={data.formStats?.averageFields?.toFixed(1) ?? '0.0'}
+          value={data.formStats?.averageFields?.toFixed(1)}
           icon={<FileText className="w-5 h-5" />}
           trend={data.formStats?.formsLastMonth ?? 0}
+          color="#F59E0B"
         />
       </div>
 
-      {/* Data Visualization Section */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Users by Barangay */}
-        <Card className="p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold flex items-center">
-              <Users className="w-5 h-5 mr-2 text-blue-500" />
-              Users Distribution by Barangay
-            </h3>
-            <Badge variant="secondary" className="px-3 py-1">
-              Last 30 days
-            </Badge>
-          </div>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.userStats?.usersByBarangay}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
-                <XAxis 
-                  dataKey="_id" 
-                  tick={{ fill: '#64748B' }}
-                  angle={-45}
-                  textAnchor="end"
-                  interval={0}
-                />
-                <YAxis 
-                  tick={{ fill: '#64748B' }}
-                  label={{
-                    value: 'Number of Users',
-                    angle: -90,
-                    position: 'insideLeft',
-                    fill: '#64748B'
-                  }}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Bar 
-                  dataKey="count" 
-                  fill="#3B82F6" 
-                  radius={[4, 4, 0, 0]}
-                  animationDuration={400}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <CardFooter className="mt-4 text-sm text-muted-foreground">
-            Updated in real-time from municipal database
-          </CardFooter>
-        </Card>
-
-        {/* Activity Overview */}
-        <Card className="p-6 shadow-lg">
-          <Tabs defaultValue="users" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold flex items-center">
-                <Clock className="w-5 h-5 mr-2 text-purple-500" />
-                Recent Activity
-              </h3>
-              <TabsList>
-                <TabsTrigger value="users">Users</TabsTrigger>
-                <TabsTrigger value="forms">Forms</TabsTrigger>
-              </TabsList>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold">User Distribution</h3>
+                <p className="text-sm text-muted-foreground">By barangay</p>
+              </div>
+              <Badge variant="secondary" className="px-3 py-1">
+                Real-time
+              </Badge>
             </div>
+            <div className="h-80">
+              <ResponsiveContainer>
+                <BarChart data={data.userStats?.usersByBarangay}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis 
+                    dataKey="_id"
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                  />
+                  <YAxis 
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                    label={{ 
+                      value: 'Users', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      fill: '#6B7280'
+                    }}
+                  />
+                  <Tooltip 
+                    cursor={false}
+                    contentStyle={{
+                      background: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill="#3B82F6" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
 
-            <TabsContent value="users">
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader className="bg-muted/50">
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Barangay</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.recentActivity?.recentUsers?.map((user) => (
-                      <TableRow key={user._id} className="hover:bg-muted/20 cursor-pointer">
-                        <TableCell className="font-medium">{`${user.firstName} ${user.lastName}`}</TableCell>
-                        <TableCell>{user.barangay}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={user.role === 'admin' ? 'default' : 'outline'}
-                            className={cn({
-                              'bg-green-100 text-green-800': user.role === 'user',
-                              'bg-blue-100 text-blue-800': user.role === 'admin'
-                            })}
-                          >
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+          <Card className="p-6 shadow-sm">
+            <Tabs defaultValue="responses">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold">Form Analytics</h3>
+                  <p className="text-sm text-muted-foreground">Response trends and distribution</p>
+                </div>
+                <TabsList>
+                  <TabsTrigger value="responses">Responses</TabsTrigger>
+                  <TabsTrigger value="sectors">Sectors</TabsTrigger>
+                </TabsList>
               </div>
-            </TabsContent>
+              
+              <TabsContent value="responses">
+                <div className="h-80">
+                  <ResponsiveContainer>
+                    <BarChart data={data.formResponses?.responsesPerForm}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis 
+                        dataKey="formTitle"
+                        tick={{ fill: '#6B7280', fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                      />
+                      <YAxis 
+                        tick={{ fill: '#6B7280', fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        cursor={false}
+                        contentStyle={{
+                          background: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        fill="#F59E0B" 
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </TabsContent>
 
-            <TabsContent value="forms">
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader className="bg-muted/50">
-                    <TableRow>
-                      <TableHead>Form Title</TableHead>
-                      <TableHead>Fields</TableHead>
-                      <TableHead>Type</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.recentActivity?.recentForms?.map((form) => (
-                      <TableRow key={form._id} className="hover:bg-muted/20 cursor-pointer">
-                        <TableCell className="font-medium">{form.title}</TableCell>
-                        <TableCell>{form.fields?.length} fields</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-orange-100 text-orange-800">
-                            {form.type || 'General'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <TabsContent value="sectors">
+                <div className="h-80 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={data.formResponses?.sectorDistribution}
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="count"
+                      >
+                        {data.formResponses?.sectorDistribution?.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend 
+                        layout="vertical"
+                        align="right"
+                        verticalAlign="middle"
+                        formatter={(value) => <span className="text-sm">{value}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold">Recent Activity</h3>
+                <p className="text-sm text-muted-foreground">Last 30 days</p>
               </div>
-            </TabsContent>
-          </Tabs>
-        </Card>
+              <Button variant="ghost" size="sm" className="text-primary">
+                View All
+              </Button>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">New Users</span>
+                  <span className="font-medium">{data.recentActivity?.recentUsers?.length}</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {data.recentActivity?.recentUsers?.map((user) => (
+                    <div key={user._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                      <div>
+                        <p className="font-medium">{`${user.firstName} ${user.lastName}`}</p>
+                        <p className="text-sm text-muted-foreground">{user.barangay}</p>
+                      </div>
+                      <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                        {user.role}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Form Submissions</span>
+                  <span className="font-medium">{data.recentActivity?.recentForms?.length}</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {data.recentActivity?.recentForms?.map((form) => (
+                    <div key={form._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                      <div>
+                        <p className="font-medium">{form.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {form.fields?.length} fields • {form.type || 'General'}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-primary">
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Response Status</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {data.responseStats?.responsesByStatus?.map((status, index) => (
+                <div key={status._id} className="flex items-center p-4 rounded-lg bg-muted/50">
+                  <div className="flex-shrink-0 w-2 h-10 rounded-full" style={{ backgroundColor: COLORS[index] }} />
+                  <div className="ml-4">
+                    <p className="font-medium">{status._id}</p>
+                    <p className="text-2xl font-bold">{status.count}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+          
+        </div>
       </div>
-
-      {/* Additional Metrics */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-sm font-medium text-muted-foreground">User Growth</h4>
-            <span className={cn(
-              "flex items-center text-sm",
-              (data.userStats?.growthRate ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'
-            )}>
-              {(data.userStats?.growthRate ?? 0) >= 0 ? (
-                <ArrowUp className="w-4 h-4 mr-1" />
-              ) : (
-                <ArrowDown className="w-4 h-4 mr-1" />
-              )}
-              {Math.abs(data.userStats?.growthRate ?? 0).toFixed(1)}%
-            </span>
-          </div>
-          <div className="h-32">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.userStats?.usersByBarangay}>
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#3B82F6" 
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <StatCard 
-          title="Total Forms Processed"
-          value={data.formStats?.totalForms}
-          subtitle={`${data.formStats?.formsLastMonth ?? 0} last month`}
-          icon={<FileText className="w-6 h-6" />}
-          color="bg-orange-100"
-        />
-
-        <StatCard 
-          title="Active LGUs"
-          value={data.userStats?.usersByBarangay?.length}
-          subtitle="Across municipality"
-          icon={<CheckCircle className="w-6 h-6" />}
-          color="bg-green-100"
-        />
-     
     </div>
-
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <StatCard 
-        title="Total Responses"
-        value={data.responseStats?.totalResponses}
-        subtitle={`${data.responseStats?.totalDocuments} documents`}
-        icon={<FileStack className="w-6 h-6" />}
-        color="bg-blue-100"
-      />
-      <StatCard 
-        title="Avg Processing Time"
-        value={data.responseStats?.averageProcessingTime?.toFixed(1)}
-        subtitle="Days per response"
-        icon={<Clock className="w-6 h-6" />}
-        color="bg-yellow-100"
-      />
-      <StatCard 
-        title="Avg Documents/Response"
-        value={data.responseStats?.avgDocumentsPerResponse?.toFixed(1)}
-        subtitle="Files uploaded"
-        icon={<Paperclip className="w-6 h-6" />}
-        color="bg-green-100"
-      />
-      <MetricCard
-        title="Sector Distribution"
-        value={data.formResponses?.sectorDistribution?.length}
-        icon={<PieChart className="w-5 h-5" />}
-        chartData={data.formResponses?.sectorDistribution}
-      />
-    </div>
-
-    {/* Form Response Breakdown */}
-    <Card className="p-6 shadow-lg">
-      <h3 className="text-lg font-semibold mb-6 flex items-center">
-        <FileText className="w-5 h-5 mr-2 text-orange-500" />
-        Responses per Form
-      </h3>
-      <div className="h-96">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data.formResponses?.responsesPerForm}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="formTitle"
-              angle={-45}
-              textAnchor="end"
-              tick={{ fill: '#64748B' }}
-            />
-            <YAxis />
-            <Tooltip />
-            <Bar 
-              dataKey="count" 
-              fill="#f59e0b" 
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </Card>
-      </div>
-  )
+  );
 };
 
-const MetricCard = ({ title, value, icon, trend = 0, chartData }: any) => (
-  <Card className="relative overflow-hidden shadow-lg">
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-          <div className="text-3xl font-bold mt-2">{value ?? '-'}</div>
+const MetricCard = ({ title, value, icon, trend, color }: any) => (
+  <Card className="relative overflow-hidden transition-all hover:shadow-md">
+    <CardContent className="p-6">
+      <div className="flex justify-between items-start">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {icon}
+            {title}
+          </div>
+          <div className="text-3xl font-bold">{value ?? '-'}</div>
         </div>
-        <div className="p-3 rounded-full bg-blue-100">{icon}</div>
+        <div className="relative w-24 h-16">
+          <ResponsiveContainer width="100%" height="100%">
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stroke={color} 
+                fill={color}
+                fillOpacity={0.2}
+                strokeWidth={1.5}
+              />
+          </ResponsiveContainer>
+        </div>
       </div>
-      <div className="flex items-center text-sm">
+      <div className="flex items-center gap-2 mt-4 text-sm">
         <span className={cn(
           "flex items-center",
           trend >= 0 ? 'text-green-500' : 'text-red-500'
         )}>
-          {trend >= 0 ? (
-            <ArrowUp className="w-4 h-4 mr-1" />
-          ) : (
-            <ArrowDown className="w-4 h-4 mr-1" />
-          )}
+          {trend >= 0 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
           {Math.abs(trend).toFixed(1)}%
         </span>
-        <span className="ml-2 text-muted-foreground">vs last month</span>
+        <span className="text-muted-foreground">vs previous month</span>
       </div>
-    </div>
-    {chartData && (
-      <div className="h-20 bg-muted/20">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <Line 
-              type="monotone" 
-              dataKey="count" 
-              stroke="#3B82F6" 
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    )}
-  </Card>
-);
-
-const StatCard = ({ title, value, subtitle, icon, color }: any) => (
-  <Card className="p-6 shadow-lg">
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-        <div className="text-3xl font-bold mt-2">{value ?? '-'}</div>
-        {subtitle && <div className="text-sm text-muted-foreground mt-1">{subtitle}</div>}
-      </div>
-      <div className={`p-3 rounded-full ${color}`}>{icon}</div>
-    </div>
+    </CardContent>
   </Card>
 );
 

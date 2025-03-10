@@ -51,7 +51,7 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
   const links = [
     { name: "Home", href: "#home" },
     { name: "Services", href: "#services", hasDropdown: true },
-    { name: "Contact", href: "#contact" },
+    { name: "Team", href: "/meet-the-team" },
     { name: "Blogs", href: "/blogs" },
     { name: "LGUs", href: "/account/lgu/register" },
   ];

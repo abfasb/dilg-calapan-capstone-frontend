@@ -12,6 +12,8 @@ import CitizenPage from './pages/citizen/CitizenPage';
 import ReportFormPage from './pages/citizen/ReportFormPage';
 import SubmissionSuccessPage from './pages/citizen/SubmissionSuccessPage';
 import MyReportPage from './pages/citizen/MyReportPage';
+import BlogListPage from './pages/BlogListPage';
+import BlogDetailPage from './pages/BlogDetailPage';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
         <Routes>
 
         <Route path='/' element={ <LandingPage />}/>
+        <Route path='/blogs' element={ <BlogListPage />}/>
+        <Route path='/blogs/:id' element={ <BlogDetailPage />}/>
 
          { /* Authentication*/ }
          <Route path='/account/register' element={ <RegistrationPage />}/>

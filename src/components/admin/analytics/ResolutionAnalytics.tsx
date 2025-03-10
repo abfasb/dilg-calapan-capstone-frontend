@@ -7,7 +7,8 @@ import { Badge } from "../../ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/tabs";
 import { Users, FileText, Clock, AlertCircle, CheckCircle, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from "../../../lib/utils";
-
+import { Activity, PieChart, FileStack, Paperclip } from 'lucide-react';
+import { Cell, Pie } from 'recharts';
 interface AnalyticsData {
   userStats?: {
     totalUsers: number;
@@ -25,6 +26,19 @@ interface AnalyticsData {
     recentUsers: any[];
     recentForms: any[];
   };
+
+  responseStats?: {
+    totalResponses: number;
+    responsesByStatus: Array<{ _id: string; count: number }>;
+    averageProcessingTime: number;
+    totalDocuments: number;
+    avgDocumentsPerResponse: number;
+  };
+  formResponses?: {
+    responsesPerForm: Array<{ formTitle: string; count: number }>;
+    sectorDistribution: Array<{ _id: string; count: number }>;
+  };
+  submissionTrends?: Array<{ _id: { year: number; month: number; week: number }; count: number }>;
 }
 
 const AdminAnalytics: React.FC = () => {
@@ -34,10 +48,12 @@ const AdminAnalytics: React.FC = () => {
   
   const BASE_URL = import.meta.env.VITE_API_URL;
 
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userStats, formStats, recentActivity] = await Promise.all([
+        const [userStats, formStats, recentActivity, responseStats, formResponses, submissionTrends] = await Promise.all([
           fetch(`${BASE_URL}/analytics/user-stats`).then(res => {
             if (!res.ok) throw new Error('Failed to fetch user stats');
             return res.json();
@@ -49,10 +65,25 @@ const AdminAnalytics: React.FC = () => {
           fetch(`${BASE_URL}/analytics/recent-activity`).then(res => {
             if (!res.ok) throw new Error('Failed to fetch recent activity');
             return res.json();
+          }),
+
+          fetch(`${BASE_URL}/analytics/response-stats`).then(res => {
+            if (!res.ok) throw new Error('Failed to fetch user stats');
+            return res.json();
+          }),
+          fetch(`${BASE_URL}/analytics/form-responses`).then(res => {
+            if (!res.ok) throw new Error('Failed to fetch form stats');
+            return res.json();
+          }),
+          fetch(`${BASE_URL}/analytics/submission-trends`).then(res => {
+            if (!res.ok) throw new Error('Failed to fetch recent activity');
+            return res.json();
           })
         ]);
 
-        setData({ userStats, formStats, recentActivity });
+        
+
+        setData({ userStats, formStats, recentActivity, responseStats, formResponses, submissionTrends });
         setError(null);
       } catch (error) {
         console.error('Error fetching analytics:', error);
@@ -312,9 +343,68 @@ const AdminAnalytics: React.FC = () => {
           icon={<CheckCircle className="w-6 h-6" />}
           color="bg-green-100"
         />
-      </div>
+     
     </div>
-  );
+
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <StatCard 
+        title="Total Responses"
+        value={data.responseStats?.totalResponses}
+        subtitle={`${data.responseStats?.totalDocuments} documents`}
+        icon={<FileStack className="w-6 h-6" />}
+        color="bg-blue-100"
+      />
+      <StatCard 
+        title="Avg Processing Time"
+        value={data.responseStats?.averageProcessingTime?.toFixed(1)}
+        subtitle="Days per response"
+        icon={<Clock className="w-6 h-6" />}
+        color="bg-yellow-100"
+      />
+      <StatCard 
+        title="Avg Documents/Response"
+        value={data.responseStats?.avgDocumentsPerResponse?.toFixed(1)}
+        subtitle="Files uploaded"
+        icon={<Paperclip className="w-6 h-6" />}
+        color="bg-green-100"
+      />
+      <MetricCard
+        title="Sector Distribution"
+        value={data.formResponses?.sectorDistribution?.length}
+        icon={<PieChart className="w-5 h-5" />}
+        chartData={data.formResponses?.sectorDistribution}
+      />
+    </div>
+
+    {/* Form Response Breakdown */}
+    <Card className="p-6 shadow-lg">
+      <h3 className="text-lg font-semibold mb-6 flex items-center">
+        <FileText className="w-5 h-5 mr-2 text-orange-500" />
+        Responses per Form
+      </h3>
+      <div className="h-96">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data.formResponses?.responsesPerForm}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="formTitle"
+              angle={-45}
+              textAnchor="end"
+              tick={{ fill: '#64748B' }}
+            />
+            <YAxis />
+            <Tooltip />
+            <Bar 
+              dataKey="count" 
+              fill="#f59e0b" 
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+      </div>
+  )
 };
 
 const MetricCard = ({ title, value, icon, trend = 0, chartData }: any) => (

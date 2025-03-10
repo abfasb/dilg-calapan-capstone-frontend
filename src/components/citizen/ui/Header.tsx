@@ -59,7 +59,11 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
       setUser(null); 
       navigate('/account/login');
     };
-    
+    const userId = localStorage.getItem("userId");
+
+    const navigateToReports = () => {
+      navigate(`/account/citizen/my-report/${userId}}`)
+    }
     
     return (
         <TooltipProvider>
@@ -74,7 +78,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
             <div className="hidden lg:flex items-center gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2">
+                  <Button variant="ghost" size="sm" onClick={navigateToReports} className="gap-2">
                     <FileText className="h-4 w-4" />
                     <span className="hidden xl:inline">My Reports</span>
                   </Button>

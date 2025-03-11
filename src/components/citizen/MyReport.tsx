@@ -230,7 +230,7 @@ export default function MyReport() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button asChild className="gap-2 bg-gradient-to-r from-primary to-blue-600 hover:to-blue-700 text-white">
+              <Button asChild className="gap-2 bg-black text-white hover:to-blue-700">
                 <Link to="/report/new">
                   <Plus className="w-4 h-4" />
                   New Submission

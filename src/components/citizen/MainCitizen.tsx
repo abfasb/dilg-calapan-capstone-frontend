@@ -156,6 +156,59 @@ export default function CitizenPanelPage() {
   const currentReports = filteredReports.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
 
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    location: '',
+    anonymous: false,
+  });
+  
+  const handleSubmitComplaint = async () => {
+    try {
+      if (!formData.title || !formData.description || !formData.category || !formData.location) {
+        toast.error('Please fill all required fields');
+        return;
+      }
+  
+      const formPayload = new FormData();
+      formPayload.append('title', formData.title);
+      formPayload.append('description', formData.description);
+      formPayload.append('category', formData.category);
+      formPayload.append('location', formData.location);
+      formPayload.append('anonymous', formData.anonymous.toString());
+  
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/complaints`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ 
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          location: formData.location,
+          anonymous: formData.anonymous,
+        }),
+      });
+  
+      if (!response.ok) throw new Error('Submission failed');
+  
+      toast.success('Complaint submitted successfully!');
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        location: '',
+        anonymous: false,
+      });
+    } catch (error) {
+      toast.error('Failed to submit complaint. Please try again.');
+    }
+  };
+
+  
 if (isLoading) {
     return (
       <Card className="dark:bg-gray-800 dark:border-gray-700">
@@ -189,64 +242,119 @@ if (isLoading) {
       
       <Header />
       <main className="max-w-7xl mx-auto p-4 grid gap-6">
-        {/* Quick Actions Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-6 h-6 text-primary" />
-                Anonymous Reporting
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <span>Enable Anonymous Mode</span>
-                <Switch 
-                  checked={anonymousMode}
-                  onCheckedChange={setAnonymousMode}
+                <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Shield className="w-6 h-6 text-primary" />
+                        Anonymous Reporting
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <span>Enable Anonymous Mode</span>
+                        <Switch 
+                          checked={anonymousMode}
+                          onCheckedChange={setAnonymousMode}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Bot className="w-6 h-6 text-primary" />
+                        AI Reporting Assistant
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Button className="w-full" variant="outline">
+                        Start Smart Report
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Camera className="w-6 h-6 text-primary" />
+                        Image Recognition
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Input type="file" accept="image/*" className="cursor-pointer" />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Tabs defaultValue="reporting">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="reporting">Incident Reporting</TabsTrigger>
+                    <TabsTrigger value="tracking">Case Tracking</TabsTrigger>
+                    <TabsTrigger value="community">Community Services</TabsTrigger>
+                    <TabsTrigger value="public-reports">Public Reports</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="reporting">
+                    <div className="grid md:grid-cols-2 gap-6">
+                    <Card>
+              <CardHeader>
+                <CardTitle>New Complaint Report</CardTitle>
+                <CardDescription>
+                  Submit your concern to DILG Calapan City Office
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input 
+                  placeholder="Complaint Title" 
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
                 />
-              </div>
-            </CardContent>
-          </Card>
+                
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                >
+                  <option value="">Select Complaint Category</option>
+                  <option value="Road Issues">Road Issues</option>
+                  <option value="Sanitation">Sanitation</option>
+                  <option value="Public Safety">Public Safety</option>
+                  <option value="Local Ordinances">Local Ordinances</option>
+                  <option value="Other">Other</option>
+                </select>
 
-          <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="w-6 h-6 text-primary" />
-                AI Reporting Assistant
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="outline">
-                Start Smart Report
-              </Button>
-            </CardContent>
-          </Card>
+                <Input 
+                  placeholder="Location in Calapan City" 
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                />
 
-          <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="w-6 h-6 text-primary" />
-                Image Recognition
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input type="file" accept="image/*" className="cursor-pointer" />
-            </CardContent>
-          </Card>
-        </div>
+                <Textarea
+                  placeholder="Detailed description of your complaint..."
+                  className="min-h-[150px]"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                />
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="reporting">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="reporting">Incident Reporting</TabsTrigger>
-            <TabsTrigger value="tracking">Case Tracking</TabsTrigger>
-            <TabsTrigger value="community">Community Services</TabsTrigger>
-            <TabsTrigger value="public-reports">Public Reports</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="reporting">
-            <div className="grid md:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between p-2 border rounded-lg">
+                  <span className="text-sm">Submit Anonymously</span>
+                  <Switch 
+                    checked={formData.anonymous}
+                    onCheckedChange={(checked) => setFormData({...formData, anonymous: checked})}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full" 
+                  onClick={handleSubmitComplaint}
+                >
+                  Submit Complaint
+                </Button>
+              </CardFooter>
+            </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>New Incident Report</CardTitle>

@@ -72,14 +72,11 @@ export default function SubmissionSuccess() {
           </p>
         </div>
 
-        {/* Official Receipt Card */}
         <div id="official-receipt" className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 border-4 border-blue-900 relative print:shadow-none print:border-2 print:rounded-none print:p-6 force-light-mode:bg-white">
-          {/* Security Patterns */}
           <div className="absolute inset-0 z-0 opacity-10 pointer-events-none print:opacity-20">
             <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMCAwaDYwdjYwSDB6IiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTAgMEw2MCA2ME0wIDYwTDYwIDAiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')]"></div>
           </div>
 
-          {/* Watermark */}
           <div className="absolute inset-0 z-0 opacity-5 pointer-events-none print:opacity-10 rotate-[-15deg]">
             <div className="flex items-center justify-center h-full">
               <div className="text-4xl font-bold tracking-widest text-blue-900 whitespace-nowrap">
@@ -88,7 +85,6 @@ export default function SubmissionSuccess() {
             </div>
           </div>
 
-          {/* Header Section */}
           <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b-2 border-blue-900 pb-6 print:pb-4">
             <div className="mb-4 md:mb-0 flex items-center gap-4">
               <img 
@@ -132,7 +128,7 @@ export default function SubmissionSuccess() {
                 </div>
                 <div className="bg-white p-2 rounded print:p-1">
                   <QRCodeCanvas
-                    value={`https://dilg.gov.ph/verify/${referenceNo}`} 
+                    value={`https://${import.meta.env.VITE_API_URL}/verify/${referenceNo}`} 
                     size={80}
                     className="print:h-16 print:w-16"
                     includeMargin

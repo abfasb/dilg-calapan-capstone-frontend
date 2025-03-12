@@ -26,13 +26,12 @@ export default function MainDashboard() {
       <div className={`transition-all ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
         <TopNav user={user} />
         
-        <main className="p-8 space-y-8">
-        <DashboardHome />
+        <main className="p-8 spacey-8">
           <Routes>
-            <Route path="/account/lgu/:id" element={<DashboardHome />} />
-            <Route path="/account/lgu/reports/:id" element={<Reports />} />
-            <Route path="/account/lgu/staff/:id" element={<Staff />} />
-            <Route path="/account/lgu/settings/:id" element={<Settings />} />
+            <Route path="/" element={<DashboardHome />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/staff" element={<Staff />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
       </div>

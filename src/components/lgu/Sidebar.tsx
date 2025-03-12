@@ -24,12 +24,12 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
         {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
       </button>
     </div>
-    <div className="space-y-2 px-4">
-      <NavItem icon={<FiBarChart2 />} text="Dashboard" to="/account/lgu/:id" isOpen={isOpen} />
-      <NavItem icon={<FiFileText />} text="Reports" to="/account/lgu/reports/" isOpen={isOpen} />
-      <NavItem icon={<FiUsers />} text="Staff" to="/dashboard/staff" isOpen={isOpen} />
-      <NavItem icon={<FiSettings />} text="Settings" to="/dashboard/settings" isOpen={isOpen} />
-    </div>
+      <div className="space-y-2 px-4">
+        <NavItem icon={<FiBarChart2 />} text="Dashboard" to="dashboard" isOpen={isOpen} />
+        <NavItem icon={<FiFileText />} text="Reports" to="reports" isOpen={isOpen} />
+        <NavItem icon={<FiUsers />} text="Staff" to="staff" isOpen={isOpen} />
+        <NavItem icon={<FiSettings />} text="Settings" to="settings" isOpen={isOpen} />
+      </div>
   </motion.nav>
 );
 

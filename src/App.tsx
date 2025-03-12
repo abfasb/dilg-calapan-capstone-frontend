@@ -16,6 +16,11 @@ import BlogListPage from './pages/BlogListPage';
 import BlogDetailPage from './pages/BlogDetailPage';
 import MeetTheTeamPage from './pages/MeetTheTeamPage';
 import Layout from './layouts/Layout';
+import DashboardLayout from './layouts/DashboardLayout';
+import DashboardHomePage from './pages/lgus/DashboardHomePage';
+import ReportsPage from './pages/lgus/ReportsPage';
+import StaffPage from './pages/lgus/StaffPage';
+import SettingsPage from './pages/lgus/SettingsPage';
 
 function App() {
   return (
@@ -39,7 +44,12 @@ function App() {
          <Route path='/account/forgot-password/' element={ <SubForgotPasswordPage />}/>
 
          { /* LGU*/ }
-          <Route path='/account/lgu/:id' element={<LguMainDashboardPage />} />
+         <Route path="/account/lgu/:id" element={<DashboardLayout />}>
+            <Route index element={<DashboardHomePage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="staff" element={<StaffPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
 
 
         { /* Admin*/ }

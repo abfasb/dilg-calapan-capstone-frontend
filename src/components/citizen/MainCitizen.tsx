@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { 
   Card, 
   CardHeader, 
@@ -7,20 +8,14 @@ import {
   CardContent, 
   CardFooter 
 } from "../ui/card";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationPrevious, 
-  PaginationLink, 
-  PaginationNext 
-} from "../ui/pagination";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationLink, PaginationNext } from "../ui/pagination";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
 import { Switch } from "../ui/switch";
 import { Skeleton } from "../ui/skeleton";
+import { toaster, ToastContainer } from 'react-hot-toast';
 import { 
   Table,
   TableBody,
@@ -50,13 +45,15 @@ import {
   AlertTriangle,
   MapPin,
   Megaphone,
-  ClipboardList
+  ClipboardList,
+  CheckCircleIcon
 } from "lucide-react";
-import { Label } from "../ui/label";
 import { Header } from "./ui/Header";
+  import { useEffect } from "react";
 import { ThemeProvider } from "../../contexts/theme-provider";
-import { useNavigate, useParams } from "react-router-dom";
-import { toast, Toaster } from 'react-hot-toast';
+import { useNavigate, useLocation , useParams} from "react-router-dom";
+import { toast, Toaster} from 'react-hot-toast';
+
 
 interface Report {
   _id: string;
@@ -74,32 +71,23 @@ interface Report {
   }>;
 }
 
-const services = [
-  { title: "Chat Support", icon: MessageSquare, action: "Start Conversation" },
-  { title: "Appointments", icon: Calendar, action: "Schedule Meeting" },
-  { title: "Track Issue", icon: MapPin, action: "View Status" },
-  { title: "Public Alerts", icon: Megaphone, action: "View Notices" }
-];
-
-export default function MainCitizen() {
+export default function CitizenPanelPage() {
   const [anonymousMode, setAnonymousMode] = useState(false);
+  const navigate = useNavigate();
+
+  const { id } = useParams();
+
+
   const [reports, setReports] = useState<Report[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [totalPage, setTotalPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const { id } = useParams();
-  const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    location: '',
-    anonymous: false,
-  });
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
   const reportsPerPage = 8;
+
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -109,9 +97,9 @@ export default function MainCitizen() {
         
         if (!response.ok) throw new Error(data.message || 'Failed to fetch reports');
 
-        const reportsWithStatus = data.map((report: Report) => ({
+        const reportsWithStatus = data.map(report => ({
           ...report,
-          hasSubmitted: report.submissions?.some(sub => sub.userId === localStorage.getItem("userId"))
+          hasSubmitted: report.submittedUsers?.includes(localStorage.getItem("userId"))
         }));
         
         setReports(reportsWithStatus);
@@ -124,6 +112,8 @@ export default function MainCitizen() {
       }
     };
     fetchReports();
+
+   
   }, []);
 
   const currentReport = reports.slice(
@@ -131,109 +121,196 @@ export default function MainCitizen() {
     currentPage * reportsPerPage
   );
 
+
+  const name =localStorage.getItem("name");
+  const email = localStorage.getItem("adminEmail");
+  const token = localStorage.getItem("token");
+
+  useEffect(() => { 
+    console.log("Checking authentication...");
+    console.log("ID:", id);
+  
+    if (!id) {
+      console.log("Redirecting to login...");
+      navigate('/account/login');
+    }
+  }, [id, navigate]); 
+  
+  
+  const categories = [
+    'Road Issues',
+    'Sanitation',
+    'Public Safety',
+    'Infrastructure',
+    'Other'
+  ];
+
+ 
+
+  const filteredReports = reports.filter(report => {
+    const categoryMatch = selectedCategories.length === 0 || 
+      selectedCategories.includes(report.category);
+    const statusMatch = selectedStatus.length === 0 || 
+      selectedStatus.includes(report.status);
+    return categoryMatch && statusMatch;
+  });
+
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentReports = filteredReports.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    location: '',
+    anonymous: false,
+  });
+  
   const handleSubmitComplaint = async () => {
     try {
       if (!formData.title || !formData.description || !formData.category || !formData.location) {
         toast.error('Please fill all required fields');
         return;
       }
-
+  
+      const formPayload = new FormData();
+      formPayload.append('title', formData.title);
+      formPayload.append('description', formData.description);
+      formPayload.append('category', formData.category);
+      formPayload.append('location', formData.location);
+      formPayload.append('anonymous', formData.anonymous.toString());
+  
       const response = await fetch(`${import.meta.env.VITE_API_URL}/complaints`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ 
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          location: formData.location,
+          anonymous: formData.anonymous,
+        }),
       });
-
+  
       if (!response.ok) throw new Error('Submission failed');
-      toast.success('Complaint submitted successfully!');
-      setFormData({ title: '', description: '', category: '', location: '', anonymous: false });
-
+        toast.success('Complaint Submitted Successfully!', {
+                icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
+                style: {
+                  background: '#1a1d24',
+                  color: '#fff',
+                  border: '1px solid #2a2f38',
+                  padding: '16px',
+                },
+                duration: 4000,
+              });
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        location: '',
+        anonymous: false,
+      });
     } catch (error) {
       toast.error('Failed to submit complaint. Please try again.');
     }
   };
 
+  
+if (isLoading) {
+    return (
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-6 w-[250px]" />
+          </CardTitle>
+          <CardDescription>
+            <Skeleton className="h-4 w-[400px]" />
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Array(5).fill(0).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const handleViewDetails = (reportId: string) => {
     navigate(`/report/${reportId}`);
   };
 
-  if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto p-6 grid gap-6">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-        ))}
-      </div>
-    );
-  }
 
-  return (
+  return (<>
+    <Toaster
+          position="top-right"
+          gutter={32}
+          containerClassName="!top-4 !right-6"
+          toastOptions={{
+            className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+          }}
+        />
     <ThemeProvider>
-      <div className="min-h-screen bg-muted/40 dark:bg-gray-900/90">
-        <Header />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid gap-8">
-          {/* Feature Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="hover:shadow-xl transition-all duration-300 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100/20 dark:bg-blue-900/20 rounded-lg">
-                    <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <CardTitle className="text-lg">Anonymous Reporting</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between px-6 pb-4">
-                <span className="text-sm text-muted-foreground">Protect your identity</span>
-                <Switch 
-                  checked={anonymousMode}
-                  onCheckedChange={setAnonymousMode}
-                  className="data-[state=checked]:bg-blue-600"
-                />
-              </CardContent>
-            </Card>
+    <div className="min-h-screen bg-muted/40 dark:bg-gray-900/50">
+      
+      <Header />
+      <main className="max-w-7xl mx-auto p-4 grid gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Shield className="w-6 h-6 text-primary" />
+                        Anonymous Reporting
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <span>Enable Anonymous Mode</span>
+                        <Switch 
+                          checked={anonymousMode}
+                          onCheckedChange={setAnonymousMode}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
 
-            <Card className="hover:shadow-xl transition-all duration-300 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100/20 dark:bg-purple-900/20 rounded-lg">
-                    <Bot className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <CardTitle className="text-lg">AI Assistant</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="px-6 pb-4">
-                <Button className="w-full bg-purple-600 hover:bg-purple-700">
-                  Start Smart Report
-                </Button>
-              </CardContent>
-            </Card>
+                  <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Bot className="w-6 h-6 text-primary" />
+                        AI Reporting Assistant
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Button className="w-full" variant="outline">
+                        Start Smart Report
+                      </Button>
+                    </CardContent>
+                  </Card>
 
-            <Card className="hover:shadow-xl transition-all duration-300 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100/20 dark:bg-green-900/20 rounded-lg">
-                    <Camera className="w-6 h-6 text-green-600 dark:text-green-400" />
-                  </div>
-                  <CardTitle className="text-lg">Image Report</CardTitle>
+                  <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Camera className="w-6 h-6 text-primary" />
+                        Image Recognition
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Input type="file" accept="image/*" className="cursor-pointer" />
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardHeader>
-              <CardContent className="px-6 pb-4">
-                <Input 
-                  type="file" 
-                  accept="image/*" 
-                  className="cursor-pointer file:text-transparent"
-                />
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Main Content Tabs */}
-          <Tabs defaultValue="reporting">
-            <TabsList className="w-full grid grid-cols-2 lg:grid-cols-4 h-14 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl">
+                <Tabs defaultValue="reporting">
+                <TabsList className="w-full grid grid-cols-2 lg:grid-cols-5 h-14 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl">
               <TabsTrigger value="reporting" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Report Incident
@@ -250,266 +327,409 @@ export default function MainCitizen() {
                 <ClipboardList className="w-4 h-4 mr-2" />
                 Public Reports
               </TabsTrigger>
+              <TabsTrigger 
+                value="announcements" 
+                className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm"
+              >
+                <AlertCircle className="w-4 h-4 mr-2" />
+                Announcements
+              </TabsTrigger>
             </TabsList>
 
-            {/* Reporting Tab Content */}
-            <TabsContent value="reporting" className="mt-6">
-              <div className="grid lg:grid-cols-2 gap-8">
-                <Card className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
-                  <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b">
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      <Bot className="w-5 h-5 text-purple-600" />
-                      Smart Report Assistant
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-5">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Incident Title</Label>
-                      <Input 
-                        placeholder="Brief description..."
-                        className="rounded-lg h-11"
-                        value={formData.title}
-                        onChange={(e) => setFormData({...formData, title: e.target.value})}
-                      />
-                    </div>
+                  <TabsContent value="reporting">
+                    <div className="grid md:grid-cols-2 gap-6">
+                    <Card>
+              <CardHeader>
+                <CardTitle>New Complaint Report</CardTitle>
+                <CardDescription>
+                  Submit your concern to DILG Calapan City Office
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input 
+                  placeholder="Complaint Title" 
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                />
+                
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                >
+                  <option value="">Select Complaint Category</option>
+                  <option value="Road Issues">Road Issues</option>
+                  <option value="Sanitation">Sanitation</option>
+                  <option value="Public Safety">Public Safety</option>
+                  <option value="Local Ordinances">Local Ordinances</option>
+                  <option value="Other">Other</option>
+                </select>
 
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Category</Label>
-                      <select
-                        className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        value={formData.category}
-                        onChange={(e) => setFormData({...formData, category: e.target.value})}
-                      >
-                        <option value="">Select Category</option>
-                        <option value="Road Issues">Road Issues</option>
-                        <option value="Sanitation">Sanitation</option>
-                        <option value="Public Safety">Public Safety</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
+                <Input 
+                  placeholder="Location in Calapan City" 
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                />
 
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Location</Label>
-                      <Input 
-                        placeholder="Enter location in Calapan City"
-                        className="rounded-lg h-11"
-                        value={formData.location}
-                        onChange={(e) => setFormData({...formData, location: e.target.value})}
-                      />
-                    </div>
+                <Textarea
+                  placeholder="Detailed description of your complaint..."
+                  className="min-h-[150px]"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                />
 
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Description</Label>
-                      <Textarea
-                        placeholder="Detailed description of the incident..."
-                        className="min-h-[150px] rounded-lg"
-                        value={formData.description}
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-gray-800/30">
-                      <Label className="text-sm">Anonymous Submission</Label>
-                      <Switch
-                        checked={formData.anonymous}
-                        onCheckedChange={(checked) => setFormData({...formData, anonymous: checked})}
-                      />
-                    </div>
-                  </CardContent>
-                  <CardFooter className="bg-gray-50 dark:bg-gray-800/30 px-6 py-4 border-t">
-                    <Button 
-                      className="w-full h-11 rounded-lg bg-blue-600 hover:bg-blue-700"
-                      onClick={handleSubmitComplaint}
-                    >
-                      Submit Report
-                    </Button>
-                  </CardFooter>
-                </Card>
-
-                <Card className="border border-gray-200 dark:border-gray-700 rounded-2xl">
-                  <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b">
-                    <CardTitle className="text-xl">Recent Submissions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table className="min-w-[600px] lg:min-w-full">
-                        <TableHeader className="bg-gray-100/50 dark:bg-gray-700/50">
-                          <TableRow className="hover:bg-transparent">
-                            <TableHead className="pl-6 w-[120px]">Case ID</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="pr-6 text-right">Last Updated</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {currentReport.map((report) => (
-                            <TableRow key={report._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                              <TableCell className="pl-6 font-medium">
-                                <span className="font-mono text-sm">#{report._id.slice(-6)}</span>
-                              </TableCell>
-                              <TableCell>
-                              <Badge 
-                                variant="outline" 
-                                className={`px-2.5 py-1 text-xs ${
-                                  report.status === 'resolved' ? 'bg-green-100/30 text-green-700 dark:bg-green-900/20' :
-                                  report.status === 'in_progress' ? 'bg-blue-100/30 text-blue-700 dark:bg-blue-900/20' :
-                                  'bg-orange-100/30 text-orange-700 dark:bg-orange-900/20'
-                                }`}
-                              >
-                                {report.status ? report.status.replace('_', ' ') : "Unknown"} {/* Fallback for undefined */}
-                              </Badge>
-                            </TableCell>
-
-                              <TableCell className="pr-6 text-right text-sm text-muted-foreground">
-                                {new Date(report.updatedAt).toLocaleDateString()}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* Public Reports Tab */}
-            <TabsContent value="public-reports" className="mt-6">
-              <Card className="border border-gray-200 dark:border-gray-700 rounded-2xl">
-                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-                    <div>
-                      <CardTitle className="text-xl">Public Reports</CardTitle>
-                      <CardDescription className="mt-1">
-                        Official government reports and updates
-                      </CardDescription>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between p-2 border rounded-lg">
+                  <span className="text-sm">Submit Anonymously</span>
+                  <Switch 
+                    checked={formData.anonymous}
+                    onCheckedChange={(checked) => setFormData({...formData, anonymous: checked})}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full" 
+                  onClick={handleSubmitComplaint}
+                >
+                  Submit Complaint
+                </Button>
+              </CardFooter>
+            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>New Incident Report</CardTitle>
+                  <CardDescription>
+                    AI-powered smart form with auto-complete
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table className="min-w-[1000px] lg:min-w-full">
-                      <TableHeader className="bg-gray-100/50 dark:bg-gray-700/50">
+                <CardContent className="space-y-4">
+                  <Input placeholder="Location (auto-detected)" />
+                  <Textarea 
+                    placeholder="Describe the incident..." 
+                    className="min-h-[150px]" 
+                  />
+                  <div className="flex gap-2">
+                    <Input type="file" multiple />
+                    <Button variant="outline">Scan Image</Button>
+                  </div>
+                  <Alert className="dark:bg-gray-800 dark:border-gray-700">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertTitle>Possible duplicate detected</AlertTitle>
+                    <AlertDescription>
+                      Similar report from 2 hours ago
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full">Submit Report</Button>
+                </CardFooter>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Reports</CardTitle>
+                </CardHeader>
+                <CardContent>
+                <Table className="dark:bg-gray-800">
+                  <TableHeader className="dark:bg-gray-700">
+                      <TableRow>
+                        <TableHead>Case ID</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Last Update</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[1, 2, 3].map((item) => (
+                        <TableRow key={item}>
+                          <TableCell>#CASE-{item}23</TableCell>
+                          <TableCell>
+                          <Badge className="dark:bg-gray-700 dark:text-white" variant="outline">In Progress</Badge>
+                          </TableCell>
+                          <TableCell>2 hours ago</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tracking">
+                      <h1>hello this is for tracking your document</h1>
+          </TabsContent>
+
+          <TabsContent value="community">
+             <h1>hello this is for the community</h1>
+          </TabsContent>
+
+          <TabsContent value="public-reports">
+                <Card className="dark:bg-gray-800 dark:border-gray-700">
+                  <CardHeader>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <CardTitle>Official Public Reports</CardTitle>
+                        <CardDescription>
+                          View all government-issued reports and updates
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table className="dark:bg-gray-800">
+                      <TableHeader className="dark:bg-gray-700">
                         <TableRow>
-                          <TableHead className="pl-6">Report ID</TableHead>
+                          <TableHead>Report ID</TableHead>
                           <TableHead>Title</TableHead>
                           <TableHead>Description</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead className="pr-6 text-right">Date Created</TableHead>
+                          <TableHead>Fields</TableHead>
+                          <TableHead>Date Created</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {currentReport.map((report) => (
-                          <TableRow key={report._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                            <TableCell className="pl-6 font-medium">
-                              <span className="font-mono text-sm">#{report._id.slice(-6)}</span>
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {report.title}
-                            </TableCell>
-                            <TableCell className="max-w-[300px] truncate">
-                              {report.description}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="dark:bg-gray-700/50">
-                                {report.category}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="pr-6 text-right text-sm text-muted-foreground">
-                              {new Date(report.createdAt).toLocaleDateString()}
-                            </TableCell>
-                          </TableRow>
+                        {currentReport.map((report : any) => (
+                         <TableRow key={report._id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                         <TableCell className="font-medium text-sm">
+                           <span className="font-mono">#{report._id.substring(0, 6)}</span>
+                         </TableCell>
+                         <TableCell className="max-w-[200px] truncate">
+                           {report.title}
+                         </TableCell>
+                         <TableCell className="max-w-[300px] truncate">
+                           {report.description}
+                         </TableCell>
+                         <TableCell>
+                           <Badge variant="outline">
+                             {report.fields.length} fields
+                           </Badge>
+                         </TableCell>
+                         <TableCell>
+                           {new Date(report.createdAt).toLocaleDateString('en-US', {
+                             year: 'numeric',
+                             month: 'short',
+                             day: 'numeric',
+                           })}
+                         </TableCell>
+                         <TableCell>
+                          {report.hasSubmitted ? (
+                            <Badge variant="outline" className="dark:bg-green-900/20 dark:text-green-400">
+                              Submitted
+                            </Badge>
+                          ) : (
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewDetails(report._id)} 
+                              className="dark:bg-gray-700 dark:hover:bg-gray-600"
+                            >
+                              View Details
+                            </Button>
+                          )}
+                        </TableCell>
+                       </TableRow>
                         ))}
                       </TableBody>
                     </Table>
+          
+                    {/* Pagination */}
+                    <div className="mt-6">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
+                              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                              size={6}
+                            />
+                          </PaginationItem>
+                          
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <PaginationItem key={i + 1}>
+                              <PaginationLink
+                                isActive={currentPage === i + 1}
+                                onClick={() => setCurrentPage(i + 1)}
+                                size={6}
+                              >
+                                {i + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+          
+                          <PaginationItem>                     
+                            <PaginationNext
+                              className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
+                              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                              size={6}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            <TabsContent value="announcements">
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Megaphone className="w-5 h-5" />
+                    Official Announcements
+                  </CardTitle>
+                  <CardDescription>
+                    Important updates from DILG Calapan City Office
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Announcement Card 1 */}
+                    <Card className="hover:shadow-lg transition-shadow dark:bg-gray-700/30">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-base">Road Closure Notice</CardTitle>
+                          <Badge variant="destructive" className="text-xs">Urgent</Badge>
+                        </div>
+                        <CardDescription className="text-sm">July 20, 2023</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          Main Street closure for repairs from July 25-30. Detour routes available.
+                        </p>
+                      </CardContent>
+                      <CardFooter>
+                        <Button variant="outline" size="sm" className="w-full">
+                          View Details
+                        </Button>
+                      </CardFooter>
+                    </Card>
+
+                    {/* Announcement Card 2 */}
+                    <Card className="hover:shadow-lg transition-shadow dark:bg-gray-700/30">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-base">New Waste Policy</CardTitle>
+                          <Badge variant="secondary" className="text-xs">Update</Badge>
+                        </div>
+                        <CardDescription className="text-sm">July 15, 2023</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          Enhanced recycling guidelines effective August 1st. Download the new handbook.
+                        </p>
+                      </CardContent>
+                      <CardFooter>
+                        <Button variant="outline" size="sm" className="w-full">
+                          Download PDF
+                        </Button>
+                      </CardFooter>
+                    </Card>
+
+                    {/* Announcement Card 3 */}
+                    <Card className="hover:shadow-lg transition-shadow dark:bg-gray-700/30">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-base">Public Meeting</CardTitle>
+                          <Badge className="text-xs">Event</Badge>
+                        </div>
+                        <CardDescription className="text-sm">July 18, 2023</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          Town hall meeting on urban development. July 25th, 2PM at City Hall.
+                        </p>
+                      </CardContent>
+                      <CardFooter>
+                        <Button variant="outline" size="sm" className="w-full">
+                          RSVP Now
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </div>
+
+                  {/* Archived Announcements */}
+                  <div className="mt-6">
+                    <Card className="dark:bg-gray-800/50">
+                      <CardHeader className="py-3">
+                        <CardTitle className="text-sm font-medium">
+                          Archived Announcements
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableBody>
+                            <TableRow className="hover:bg-gray-100/50 dark:hover:bg-gray-700/50">
+                              <TableCell className="font-medium">Tax Deadline</TableCell>
+                              <TableCell>April 15, 2023</TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="link" size="sm" className="h-5 text-primary">
+                                  View
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                            <TableRow className="hover:bg-gray-100/50 dark:hover:bg-gray-700/50">
+                              <TableCell className="font-medium">Health Advisory</TableCell>
+                              <TableCell>March 1, 2023</TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="link" size="sm" className="h-5 text-primary">
+                                  View
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
                   </div>
                 </CardContent>
-                <CardFooter className="bg-gray-50 dark:bg-gray-800/30 px-6 py-4 border-t">
-                  <Pagination className="w-full justify-between">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
-                          onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-                          size={6}
-                        />
-                      </PaginationItem>
-                      <div className="flex items-center gap-2">
-                        {Array.from({ length: totalPage }, (_, i) => (
-                          <PaginationItem key={i + 1}>
-                            <PaginationLink
-                              isActive={currentPage === i + 1}
-                              onClick={() => setCurrentPage(i + 1)}
-                              className="rounded-lg"
-                              size={6}
-                            >
-                              {i + 1}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-                      </div>
-                      <PaginationItem>
-                        <PaginationNext
-                          className={currentPage === totalPage ? "opacity-50 cursor-not-allowed" : ""}
-                          onClick={() => currentPage < totalPage && setCurrentPage(currentPage + 1)}
-                          size={6}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </CardFooter>
               </Card>
             </TabsContent>
-          </Tabs>
+        </Tabs>
 
-          {/* Emergency Alert */}
-          <div className="animate-pulse">
-            <Card className="border-red-200 bg-red-100/50 dark:border-red-900/30 dark:bg-red-900/20 rounded-2xl overflow-hidden">
-              <CardHeader className="flex flex-row items-center gap-4 py-3">
-                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
-                <div>
-                  <CardTitle className="text-red-700 dark:text-red-300">Emergency Alert</CardTitle>
-                  <CardDescription className="text-red-600/70 dark:text-red-400/70">
-                    Storm warning in Calapan City area
-                  </CardDescription>
-                </div>
-              </CardHeader>
-            </Card>
-          </div>
+        {/* Emergency Section */}
+        <Card className="border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/30">
+          <CardHeader className="flex flex-row items-center gap-4">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div>
+              <CardTitle>Emergency Alerts</CardTitle>
+              <CardDescription>Storm warning in your area</CardDescription>
+            </div>
+          </CardHeader>
+        </Card>
 
-          {/* Services Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {services.map((service) => (
-              <Card 
-                key={service.title}
-                className="hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 rounded-xl"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    <service.icon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                    <CardTitle className="text-base">{service.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-1 px-6 pb-4">
-                  <Button variant="link" className="text-sm px-0 text-blue-600 dark:text-blue-400">
-                    {service.action}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </main>
+        {/* Services Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Chat Support
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button variant="link" className="text-primary">
+                Start Conversation
+              </Button>
+            </CardContent>
+          </Card>
 
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            className: '!bg-white !text-gray-900 dark:!bg-gray-800 dark:!text-gray-100 !rounded-lg',
-            iconTheme: {
-              primary: '#3b82f6',
-              secondary: '#fff',
-            },
-          }}
-        />
-      </div>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Appointments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button variant="link" className="text-primary">
+                Book Meeting
+              </Button>
+            </CardContent>
+          </Card>
+
+        </div>
+      </main>
+    </div>
     </ThemeProvider>
+    </>
   );
 }

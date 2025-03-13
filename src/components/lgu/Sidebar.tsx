@@ -25,7 +25,7 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
       </button>
     </div>
       <div className="space-y-2 px-4">
-        <NavItem icon={<FiBarChart2 />} text="Dashboard" to="dashboard" isOpen={isOpen} />
+        <NavItem icon={<FiBarChart2 />} text="Dashboard" to="" isOpen={isOpen} />
         <NavItem icon={<FiFileText />} text="Reports" to="reports" isOpen={isOpen} />
         <NavItem icon={<FiUsers />} text="Staff" to="staff" isOpen={isOpen} />
         <NavItem icon={<FiSettings />} text="Settings" to="settings" isOpen={isOpen} />

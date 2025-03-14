@@ -15,7 +15,6 @@ import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
 import { Switch } from "../ui/switch";
 import { Skeleton } from "../ui/skeleton";
-import { toaster, ToastContainer } from 'react-hot-toast';
 import { 
   Table,
   TableBody,
@@ -71,12 +70,11 @@ interface Report {
   }>;
 }
 
-export default function CitizenPanelPage() {
+export default function MainCitizen() {
   const [anonymousMode, setAnonymousMode] = useState(false);
   const navigate = useNavigate();
 
   const { id } = useParams();
-
 
   const [reports, setReports] = useState<Report[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -456,8 +454,184 @@ if (isLoading) {
           </TabsContent>
 
           <TabsContent value="tracking">
-                      <h1>hello this is for tracking your document</h1>
-          </TabsContent>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <CardTitle>Case Tracking</CardTitle>
+                  <CardDescription>
+                    Monitor the status of your submitted reports and cases
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2 w-full md:w-auto">
+                  <Input 
+                    placeholder="Search cases..." 
+                    className="w-full md:w-64"
+                  />
+                  <Button variant="outline">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Filter by Date
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 mb-4 flex-wrap">
+                <Badge 
+                  variant={selectedStatus.length === 0 ? 'default' : 'secondary'} 
+                  className="cursor-pointer"
+                  onClick={() => setSelectedStatus([])}
+                >
+                  All ({reports.length})
+                </Badge>
+                {['pending', 'in_progress', 'resolved'].map((status) => (
+                  <Badge
+                    key={status}
+                    variant={selectedStatus.includes(status) ? 'default' : 'secondary'}
+                    className="cursor-pointer capitalize"
+                    onClick={() => setSelectedStatus(prev => 
+                      prev.includes(status) 
+                        ? prev.filter(s => s !== status) 
+                        : [...prev, status]
+                    )}
+                  >
+                    {status.replace('_', ' ')} ({
+                      reports.filter(r => r.status === status).length
+                    })
+                  </Badge>
+                ))}
+              </div>
+
+              <Table>
+                <TableHeader className="dark:bg-gray-700">
+                  <TableRow>
+                    <TableHead className="w-[120px]">Case ID</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Update</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentReports.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        <div className="flex flex-col items-center gap-2 py-8">
+                          <Shield className="w-12 h-12 text-muted-foreground" />
+                          <p className="text-muted-foreground">
+                            No cases found. Submit a new report to track its status.
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    currentReports.map((report) => (
+                      <TableRow
+                        key={report._id}
+                        className="group hover:bg-gray-100/50 dark:hover:bg-gray-700/50"
+                      >
+                        <TableCell className="font-medium">
+                          #{report._id?.substring(0, 6) || "N/A"}
+                        </TableCell>
+
+                        <TableCell className="max-w-[200px] truncate">
+                          {report.title || "Untitled"}
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {report.category?.toLowerCase() || "Unknown"}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                report.status === "pending"
+                                  ? "bg-yellow-500"
+                                  : report.status === "in_progress"
+                                  ? "bg-blue-500"
+                                  : report.status === "resolved"
+                                  ? "bg-green-500"
+                                  : "bg-gray-400"
+                              }`}
+                            />
+                            <span className="capitalize">
+                              {report.status?.replace("_", " ") || "Unknown"}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          {report.updatedAt
+                            ? new Date(report.updatedAt).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "N/A"}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(report._id)}
+                            className="transition-opacity"
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+
+
+              {/* Pagination */}
+              {currentReports.length > 0 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
+                          onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                          size={6}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => (
+                        <PaginationItem key={i + 1}>
+                          <PaginationLink
+                            isActive={currentPage === i + 1}
+                            onClick={() => setCurrentPage(i + 1)}
+                            size={6}
+                          >
+                            {i + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+
+                      <PaginationItem>                     
+                        <PaginationNext
+                          className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
+                          onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                          size={6}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
           <TabsContent value="community">
              <h1>hello this is for the community</h1>
@@ -646,7 +820,6 @@ if (isLoading) {
                     </Card>
                   </div>
 
-                  {/* Archived Announcements */}
                   <div className="mt-6">
                     <Card className="dark:bg-gray-800/50">
                       <CardHeader className="py-3">
@@ -685,7 +858,6 @@ if (isLoading) {
             </TabsContent>
         </Tabs>
 
-        {/* Emergency Section */}
         <Card className="border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/30">
           <CardHeader className="flex flex-row items-center gap-4">
             <AlertTriangle className="w-8 h-8 text-red-600" />
@@ -696,7 +868,6 @@ if (isLoading) {
           </CardHeader>
         </Card>
 
-        {/* Services Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>

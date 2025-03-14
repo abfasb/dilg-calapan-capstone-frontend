@@ -21,6 +21,7 @@ import DashboardHomePage from './pages/lgus/DashboardHomePage';
 import ReportsPage from './pages/lgus/ReportsPage';
 import StaffPage from './pages/lgus/StaffPage';
 import SettingsPage from './pages/lgus/SettingsPage';
+import AnnouncementPage from './pages/lgus/AnnouncementPage';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
             <Route index element={<DashboardHomePage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="staff" element={<StaffPage />} />
+            <Route path="announcements" element={<AnnouncementPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 

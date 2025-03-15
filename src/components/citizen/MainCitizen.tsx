@@ -85,6 +85,7 @@ interface Appointment {
   time: string;
   description: string;
   status: 'pending' | 'confirmed' | 'cancelled';
+  user: string;
 }
 
 export default function MainCitizen() {
@@ -102,6 +103,7 @@ export default function MainCitizen() {
   const [isLoading, setIsLoading] = useState(true);
 
   const reportsPerPage = 8;
+ 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formDataa, setFormDataa] = useState({
@@ -112,48 +114,56 @@ export default function MainCitizen() {
   });
 
   const userId = localStorage.getItem('userId');
-  
+  const token = localStorage.getItem('token');
+
   const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${token}`,
     },
   });
-
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const res = await api.get(`${import.meta.env.VITE_API_URL}/appointments?userId=${userId}`);
+        const res = await api.get('/appointments', {
+          params: { userId },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          }
+        });
         setAppointments(res.data);
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching appointments:', err);
       }
     };
-    
-    if (userId) fetchAppointments();
-  }, [userId]);
-
+  
+    if (userId) {
+      fetchAppointments();
+    } else {
+      setAppointments([]); 
+    }
+  }, [userId, isDialogOpen]);
+  
   const handleSubmit = async () => {
     try {
-      const res = await api.post(`${import.meta.env.VITE_API_URL}/appointments`, {
-        ...formData,
-        user: userId, 
-      });
+      const payload = {
+        ...formDataa,
+        user: userId,
+        date: new Date(formDataa.date).toISOString(),
+      };
+  
+      const res = await api.post('/appointments', payload);
       
-      setAppointments([...appointments, res.data]);
-      setIsDialogOpen(false);
-      setFormDataa({
-        title: '',
-        date: '',
-        time: '',
-        description: '',
+      const newAppointments = await api.get('/appointments', {
+        params: { userId }
       });
+      setAppointments(newAppointments.data);
+      
+      setIsDialogOpen(false);
+      setFormDataa({ title: '', date: '', time: '', description: '' });
     } catch (err: any) {
-      if (err.response?.data?.error === 'Time slot already booked') {
-        alert('This time slot is already booked. Please choose another.');
-      } else {
-        alert('Error creating appointment');
-      }
+      console.error('Submission error:', err);
+      // Handle errors
     }
   };
 
@@ -192,7 +202,6 @@ export default function MainCitizen() {
 
   const name =localStorage.getItem("name");
   const email = localStorage.getItem("adminEmail");
-  const token = localStorage.getItem("token");
 
   useEffect(() => { 
     console.log("Checking authentication...");
@@ -967,8 +976,13 @@ if (isLoading) {
               </CardHeader>
               <CardContent className="p-6">
                 <ScrollArea className="h-64 pr-4">
-                  <div className="space-y-4">
-                    {appointments.map((appointment) => (
+                {appointments.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No upcoming appointments found
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                       {appointments.map((appointment) => (
                       <div
                         key={appointment._id}
                         className="flex items-start p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
@@ -1006,7 +1020,8 @@ if (isLoading) {
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  )}
                 </ScrollArea>
               </CardContent>
 
@@ -1019,88 +1034,80 @@ if (isLoading) {
                     </Button>
                   </DialogTrigger>
 
-                  <DialogContent className="sm:max-w-md rounded-xl">
-                    <DialogHeader>
-                      <DialogTitle className="text-blue-600">
-                        Schedule New Appointment
-                      </DialogTitle>
-                      <DialogDescription>
-                        Fill in the details to book a new meeting
-                      </DialogDescription>
-                    </DialogHeader>
+                <DialogContent className="sm:max-w-md rounded-xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-blue-600">
+                      Schedule New Appointment
+                    </DialogTitle>
+                  </DialogHeader>
 
-                    <div className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Meeting Title
+                      </label>
+                      <input
+                        type="text"
+                        value={formDataa.title}
+                        onChange={(e) => setFormDataa(prev => ({...prev, title: e.target.value}))}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter meeting title"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                          Meeting Title
+                          Date
                         </label>
                         <input
-                          type="text"
-                          value={formData.title}
-                          onChange={(e) => setFormData({...formData, title: e.target.value})}
+                          type="date"
+                          value={formDataa.date}
+                          onChange={(e) => setFormDataa(prev => ({...prev, date: e.target.value}))}
                           className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Enter meeting title"
                         />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Date
-                          </label>
-                          <input
-                            type="date"
-                            value={formDataa.date}
-                            onChange={(e) => setFormDataa({...formDataa, date: e.target.value})}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Time
-                          </label>
-                          <input
-                            type="time"
-                            value={formDataa.time}
-                            onChange={(e) => setFormDataa({...formDataa, time: e.target.value})}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
                       </div>
 
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                          Description
+                          Time
                         </label>
-                        <textarea
-                          rows={3}
-                          value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        <input
+                          type="time"
+                          value={formDataa.time}
+                          onChange={(e) => setFormDataa(prev => ({...prev, time: e.target.value}))}
                           className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Add meeting details..."
                         />
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 mt-6">
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="default"
-                        onClick={() => {
-                          handleSubmit();
-                          setIsDialogOpen(false);
-                        }}
-                      >
-                        Confirm Booking
-                      </Button>
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Description
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formDataa.description}
+                        onChange={(e) => setFormDataa(prev => ({...prev, description: e.target.value}))}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Add meeting details..."
+                      />
                     </div>
-                  </DialogContent>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="default"   
+                      onClick={handleSubmit}
+                      disabled={!formDataa.title || !formDataa.date || !formDataa.time}
+                    >
+                      Confirm Booking
+                    </Button>
+                  </div>
+                </DialogContent>
                 </Dialog>
               </CardFooter>
             </Card>

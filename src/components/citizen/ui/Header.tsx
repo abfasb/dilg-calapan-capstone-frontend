@@ -56,6 +56,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
       localStorage.removeItem("name");
       localStorage.removeItem("adminEmail");
       localStorage.removeItem("token");
+      localStorage.removeItem("userId");
       setUser(null); 
       navigate('/account/login');
     };

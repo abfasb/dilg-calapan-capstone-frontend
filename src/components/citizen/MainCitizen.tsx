@@ -14,6 +14,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
 import { Switch } from "../ui/switch";
+import axios from "axios";
 import { Skeleton } from "../ui/skeleton";
 import { 
   Table,
@@ -51,7 +52,13 @@ import { Header } from "./ui/Header";
   import { useEffect } from "react";
 import { ThemeProvider } from "../../contexts/theme-provider";
 import { useNavigate, useLocation , useParams} from "react-router-dom";
-import { toast, Toaster} from 'react-hot-toast';
+import { toast, Toaster} from 'react-hot-toast';7
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { Clock, User, Plus } from "lucide-react";
+import { ScrollArea } from "../ui/scroll-area";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
+
+
 
 
 interface Report {
@@ -70,6 +77,16 @@ interface Report {
   }>;
 }
 
+
+interface Appointment {
+  _id: string;
+  title: string;
+  date: string;
+  time: string;
+  description: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
+}
+
 export default function MainCitizen() {
   const [anonymousMode, setAnonymousMode] = useState(false);
   const navigate = useNavigate();
@@ -82,10 +99,63 @@ export default function MainCitizen() {
   const [totalPage, setTotalPage] = useState(1);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const reportsPerPage = 8;
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formDataa, setFormDataa] = useState({
+    title: '',
+    date: '',
+    time: '',
+    description: '',
+  });
 
+  const userId = localStorage.getItem('userId');
+  
+  const api = axios.create({
+    baseURL: import.meta.env.VITE_API_URL,
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const res = await api.get(`${import.meta.env.VITE_API_URL}/appointments?userId=${userId}`);
+        setAppointments(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    
+    if (userId) fetchAppointments();
+  }, [userId]);
+
+  const handleSubmit = async () => {
+    try {
+      const res = await api.post(`${import.meta.env.VITE_API_URL}/appointments`, {
+        ...formData,
+        user: userId, 
+      });
+      
+      setAppointments([...appointments, res.data]);
+      setIsDialogOpen(false);
+      setFormDataa({
+        title: '',
+        date: '',
+        time: '',
+        description: '',
+      });
+    } catch (err: any) {
+      if (err.response?.data?.error === 'Time slot already booked') {
+        alert('This time slot is already booked. Please choose another.');
+      } else {
+        alert('Error creating appointment');
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -742,7 +812,8 @@ if (isLoading) {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+          </TabsContent>
+            
             <TabsContent value="announcements">
               <Card className="dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader>
@@ -868,7 +939,7 @@ if (isLoading) {
           </CardHeader>
         </Card>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -883,19 +954,157 @@ if (isLoading) {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Appointments
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button variant="link" className="text-primary">
-                Book Meeting
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="md:col-span-2">
+            <Card className="hover:shadow-lg transition-shadow rounded-xl w-full border-0 shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2 text-blue-600">
+                  <Calendar className="w-5 h-5" />
+                  <span>Appointments</span>
+                  <Badge variant="secondary" className="ml-2">
+                    {appointments.length} upcoming
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ScrollArea className="h-64 pr-4">
+                  <div className="space-y-4">
+                    {appointments.map((appointment) => (
+                      <div
+                        key={appointment._id}
+                        className="flex items-start p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
+                      >
+                        <Avatar className="h-9 w-9 mr-3">
+                          <AvatarImage src={`/avatars/${appointment._id}.jpg`} />
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium text-gray-900">
+                              {appointment.title}
+                            </h3>
+                            <Badge
+                              variant={
+                                appointment.status === 'confirmed'
+                                  ? 'default'
+                                  : appointment.status === 'pending'
+                                  ? 'secondary'
+                                  : 'destructive'
+                              }
+                            >
+                              {appointment.status}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4" />
+                              <span>
+                                {new Date(appointment.date).toLocaleDateString()}
+                              </span>
+                              <Clock className="w-4 h-4 ml-2" />
+                              <span>{appointment.time}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+
+              <CardFooter className="border-t bg-gray-50">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full" variant="default">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Book New Meeting
+                    </Button>
+                  </DialogTrigger>
+
+                  <DialogContent className="sm:max-w-md rounded-xl">
+                    <DialogHeader>
+                      <DialogTitle className="text-blue-600">
+                        Schedule New Appointment
+                      </DialogTitle>
+                      <DialogDescription>
+                        Fill in the details to book a new meeting
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Meeting Title
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.title}
+                          onChange={(e) => setFormData({...formData, title: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter meeting title"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Date
+                          </label>
+                          <input
+                            type="date"
+                            value={formDataa.date}
+                            onChange={(e) => setFormDataa({...formDataa, date: e.target.value})}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Time
+                          </label>
+                          <input
+                            type="time"
+                            value={formDataa.time}
+                            onChange={(e) => setFormDataa({...formDataa, time: e.target.value})}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Description
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={formData.description}
+                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Add meeting details..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="default"
+                        onClick={() => {
+                          handleSubmit();
+                          setIsDialogOpen(false);
+                        }}
+                      >
+                        Confirm Booking
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </CardFooter>
+            </Card>
+          </div>
 
         </div>
       </main>

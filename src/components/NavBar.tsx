@@ -49,7 +49,7 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
   const handleLGURegisterClick = () => navigate("/account/lgu/register");
 
   const links = [
-    { name: "Home", href: "#home" },
+    { name: "Home", href: "/" },
     { name: "Services", href: "#services", hasDropdown: true },
     { name: "Team", href: "/meet-the-team" },
     { name: "Blogs", href: "/blogs" },

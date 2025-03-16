@@ -22,6 +22,7 @@ import ReportsPage from './pages/lgus/ReportsPage';
 import StaffPage from './pages/lgus/StaffPage';
 import SettingsPage from './pages/lgus/SettingsPage';
 import AnnouncementPage from './pages/lgus/AnnouncementPage';
+import AppointmentPage from './pages/lgus/AppointmentPage';
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
             <Route path="reports" element={<ReportsPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="announcements" element={<AnnouncementPage />} />
+            <Route path='appointments' element={<AppointmentPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
@@ -61,6 +63,7 @@ function App() {
         <Route path='/account/citizen/:id' element={<CitizenPage />}/>
         <Route path="/report/:id" element={<ReportFormPage />} />
         <Route path='/account/citizen/submission/success/:userId' element={<SubmissionSuccessPage />} />
+        <Route path='/account/citizen/submission/:reportId' element={<SubmissionSuccessPage />} />
         <Route path='/account/citizen/my-report/:userId' element={<MyReportPage />} />
 
 

@@ -1,4 +1,4 @@
-import { FiMenu, FiX, FiBarChart2, FiFileText, FiUsers, FiSettings } from 'react-icons/fi';
+import { FiMenu, FiX, FiBarChart2, FiFileText, FiUsers, FiSettings, FiCalendar } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 import { Megaphone } from 'lucide-react';
@@ -30,6 +30,7 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
         <NavItem icon={<FiFileText />} text="Reports" to="reports" isOpen={isOpen} />
         <NavItem icon={<FiUsers />} text="Staff" to="staff" isOpen={isOpen} />
         <NavItem icon={<Megaphone />} text="News & Announcements" to="announcements" isOpen={isOpen} />
+        <NavItem icon={<FiCalendar />} text="Appointments" to="appointments" isOpen={isOpen} />
         <NavItem icon={<FiSettings />} text="Settings" to="settings" isOpen={isOpen} />
       </div>
   </motion.nav>

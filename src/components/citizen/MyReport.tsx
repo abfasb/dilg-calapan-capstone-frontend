@@ -33,7 +33,8 @@ import {
   ArrowLeft,
   File,
   Image,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Receipt
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -304,6 +305,16 @@ export default function MyReport() {
                         <Link to={`/report/${report._id}`} className="flex items-center">
                           <FileText className="w-4 h-4 mr-2" />
                           View Details
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link 
+                          to={`/account/citizen/submission/${report._id}`} 
+                          state={{ report }}  // Add state prop
+                          className="flex items-center"
+                        >
+                          <Receipt className="w-4 h-4 mr-2" />
+                          View Receipt
                         </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>

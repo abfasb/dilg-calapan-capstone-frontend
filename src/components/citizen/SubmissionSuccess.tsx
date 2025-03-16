@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { CheckCircle, Printer, Download, FileText, QrCode } from "lucide-react";
 import { Button } from "../ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useEffect } from "react";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -9,20 +10,54 @@ import { QRCodeCanvas } from "qrcode.react";
 export default function SubmissionSuccess() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { reportId } = useParams();
   const { state } = location;
   
-  const referenceNo = state?.referenceNumber || 'N/A';
-  const submissionData = state?.formData || {};
-  const userData = state?.userData || {};
-  
-  const currentDate = new Date().toLocaleDateString('en-PH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+    
+  interface Report {
+    referenceNumber: string;
+    createdAt: string;
+    data: Record<string, any>;
+  }
 
+  const [report, setReport] = useState<Report | null>(null);
+  const [loading, setLoading] = useState(!state);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (state) {
+      setReport(state.report);
+      setLoading(false);
+    } else if (reportId) {
+      const fetchReport = async () => {
+        try {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/form/reports/${reportId}`);
+          if (!res.ok) throw new Error('Failed to fetch report');
+          const data = await res.json();
+          setReport(data);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch report');
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchReport();
+    }
+  }, [reportId, state]);
+
+  const referenceNo = report?.referenceNumber || 'N/A';
+  const submissionData = report?.data || {};
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  
+  const currentDate = report?.createdAt 
+    ? new Date(report.createdAt).toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : 'N/A';
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);

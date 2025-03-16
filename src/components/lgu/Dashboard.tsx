@@ -7,6 +7,7 @@ import { DashboardHome } from './DashboardHome';
 import Reports from './Reports';
 import Staff from './Staff';
 import Settings from './Settings';
+import Appointment from './Appointment';
 import Announcements from './Announcements';
 
 export default function MainDashboard() {
@@ -33,6 +34,7 @@ export default function MainDashboard() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/staff" element={<Staff />} />
             <Route path="/announcements" element={<Announcements />} />
+            <Route path="/appointments" element={<Appointment />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

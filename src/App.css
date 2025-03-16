@@ -54,3 +54,30 @@
     /* ... other dark mode variables */
   }
 }
+
+.leaflet-control-geosearch form {
+  background: #1f2937;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.leaflet-control-geosearch input {
+  background: #1f2937;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+}
+
+.leaflet-control-geosearch button.reset {
+  color: white;
+}
+
+.leaflet-control-geosearch .results > * {
+  background: #1f2937;
+  color: white;
+  border-bottom: 1px solid #374151;
+}
+
+.leaflet-control-geosearch .results > *.active {
+  background: #374151;
+}

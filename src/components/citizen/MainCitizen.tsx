@@ -52,9 +52,10 @@ import { Header } from "./ui/Header";
   import { useEffect } from "react";
 import { ThemeProvider } from "../../contexts/theme-provider";
 import { useNavigate, useLocation , useParams} from "react-router-dom";
-import { toast, Toaster} from 'react-hot-toast';7
+import { ErrorIcon, toast, Toaster} from 'react-hot-toast';7
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Clock, User, Plus } from "lucide-react";
+import { format } from 'date-fns';
 import { ScrollArea } from "../ui/scroll-area";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 
@@ -88,6 +89,19 @@ interface Appointment {
   user: string;
 }
 
+
+interface Event {
+  _id: string
+  title: string
+  description: string
+  date: string
+  time: string
+  location: string
+  status: 'draft' | 'published'
+  createdAt: string
+  updatedAt: string
+}
+
 export default function MainCitizen() {
   const [anonymousMode, setAnonymousMode] = useState(false);
   const navigate = useNavigate();
@@ -101,6 +115,30 @@ export default function MainCitizen() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [events, setEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/events/citizen`);
+        const data = await response.json()
+        if (response.ok) {
+          setEvents(data)
+        } else {
+          setError('Failed to fetch events')
+        }
+      } catch (err) {
+        setError('Network error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchEvents()
+  }, [])
 
   const reportsPerPage = 8;
  
@@ -146,6 +184,23 @@ export default function MainCitizen() {
   
   const handleSubmit = async () => {
     try {
+      if (!formDataa.title || !formDataa.date || !formDataa.time) {
+        alert('Please fill all required fields');
+        return;
+      }
+    
+      const [hours, minutes] = formDataa.time.split(':');
+      if (minutes !== '00') {
+        alert('Please select a time ending with :00 (e.g., 8:00 AM)');
+        return;
+      }
+    
+      const hoursNum = parseInt(hours, 10);
+      if (hoursNum < 8 || hoursNum > 16) {
+        alert('Appointments are available from 8:00 AM to 4:00 PM');
+        return;
+      }
+
       const payload = {
         ...formDataa,
         user: userId,
@@ -161,9 +216,27 @@ export default function MainCitizen() {
       
       setIsDialogOpen(false);
       setFormDataa({ title: '', date: '', time: '', description: '' });
+      toast.success('Appointment Submitted Successfully. Please wait for confirmation.', {
+        icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
+        style: {
+          background: '#1a1d24',
+          color: '#fff',
+          border: '1px solid #2a2f38',
+          padding: '16px',
+        },
+        duration: 4000,
+      });
     } catch (err: any) {
-      console.error('Submission error:', err);
-      // Handle errors
+      toast.error(err, {
+        icon: <ErrorIcon className="w-6 h-6 text-green-400" />,
+        style: {
+          background: '#1a1d24',
+          color: '#fff',
+          border: '1px solid #2a2f38',
+          padding: '16px',
+        },
+        duration: 4000,
+      });
     }
   };
 
@@ -405,11 +478,11 @@ if (isLoading) {
                 Public Reports
               </TabsTrigger>
               <TabsTrigger 
-                value="announcements" 
+                value="events" 
                 className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm"
               >
                 <AlertCircle className="w-4 h-4 mr-2" />
-                Announcements
+                Events 
               </TabsTrigger>
             </TabsList>
 
@@ -823,119 +896,42 @@ if (isLoading) {
                 </Card>
           </TabsContent>
             
-            <TabsContent value="announcements">
-              <Card className="dark:bg-gray-800 dark:border-gray-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Megaphone className="w-5 h-5" />
-                    Official Announcements
-                  </CardTitle>
-                  <CardDescription>
-                    Important updates from DILG Calapan City Office
-                  </CardDescription>
+          <TabsContent value="events">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {events.map((event) => (
+              <Card key={event._id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row justify-between items-start">
+                  <CardTitle className="text-lg">{event.title}</CardTitle>
+                  <Badge 
+                    variant={event.status === 'published' ? 'default' : 'secondary'}
+                    className="ml-2"
+                  >
+                    {event.status}
+                  </Badge>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {/* Announcement Card 1 */}
-                    <Card className="hover:shadow-lg transition-shadow dark:bg-gray-700/30">
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-base">Road Closure Notice</CardTitle>
-                          <Badge variant="destructive" className="text-xs">Urgent</Badge>
-                        </div>
-                        <CardDescription className="text-sm">July 20, 2023</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          Main Street closure for repairs from July 25-30. Detour routes available.
-                        </p>
-                      </CardContent>
-                      <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">
-                          View Details
-                        </Button>
-                      </CardFooter>
-                    </Card>
-
-                    {/* Announcement Card 2 */}
-                    <Card className="hover:shadow-lg transition-shadow dark:bg-gray-700/30">
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-base">New Waste Policy</CardTitle>
-                          <Badge variant="secondary" className="text-xs">Update</Badge>
-                        </div>
-                        <CardDescription className="text-sm">July 15, 2023</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          Enhanced recycling guidelines effective August 1st. Download the new handbook.
-                        </p>
-                      </CardContent>
-                      <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">
-                          Download PDF
-                        </Button>
-                      </CardFooter>
-                    </Card>
-
-                    {/* Announcement Card 3 */}
-                    <Card className="hover:shadow-lg transition-shadow dark:bg-gray-700/30">
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-base">Public Meeting</CardTitle>
-                          <Badge className="text-xs">Event</Badge>
-                        </div>
-                        <CardDescription className="text-sm">July 18, 2023</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          Town hall meeting on urban development. July 25th, 2PM at City Hall.
-                        </p>
-                      </CardContent>
-                      <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">
-                          RSVP Now
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>
+                      {format(new Date(event.date), 'PPP')}
+                    </span>
                   </div>
-
-                  <div className="mt-6">
-                    <Card className="dark:bg-gray-800/50">
-                      <CardHeader className="py-3">
-                        <CardTitle className="text-sm font-medium">
-                          Archived Announcements
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableBody>
-                            <TableRow className="hover:bg-gray-100/50 dark:hover:bg-gray-700/50">
-                              <TableCell className="font-medium">Tax Deadline</TableCell>
-                              <TableCell>April 15, 2023</TableCell>
-                              <TableCell className="text-right">
-                                <Button variant="link" size="sm" className="h-5 text-primary">
-                                  View
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow className="hover:bg-gray-100/50 dark:hover:bg-gray-700/50">
-                              <TableCell className="font-medium">Health Advisory</TableCell>
-                              <TableCell>March 1, 2023</TableCell>
-                              <TableCell className="text-right">
-                                <Button variant="link" size="sm" className="h-5 text-primary">
-                                  View
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span>{event.time}</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{event.location === 'TBA' ? 'Location TBA' : event.location}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {event.description}
+                  </p>
                 </CardContent>
               </Card>
-            </TabsContent>
+            ))}
+          </div>
+        </TabsContent>
         </Tabs>
 
         <Card className="border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/30">
@@ -1075,8 +1071,33 @@ if (isLoading) {
                         <input
                           type="time"
                           value={formDataa.time}
-                          onChange={(e) => setFormDataa(prev => ({...prev, time: e.target.value}))}
+                          onChange={(e) => {
+                            const time = e.target.value;
+                            const [hours, minutes] = time.split(':');
+                            if (minutes !== '00') {
+                              alert('Please select a time ending with :00 (e.g., 8:00 AM)');
+                              return;
+                            }
+                            const hoursNum = parseInt(hours, 10);
+                            if (hoursNum < 8 || hoursNum > 16) {
+                              toast.error('Appointments are available from 8:00 AM to 4:00 PM', {
+                                icon: <ErrorIcon className="w-6 h-6 text-green-400" />,
+                                style: {
+                                  background: '#1a1d24',
+                                  color: '#fff',
+                                  border: '1px solid #2a2f38',
+                                  padding: '16px',
+                                },
+                                duration: 4000,
+                              });
+                              return;
+                            }
+                            setFormDataa(prev => ({...prev, time}));
+                          }}
                           className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          step="3600"
+                          min="08:00"
+                          max="16:00"
                         />
                       </div>
                     </div>

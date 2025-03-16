@@ -28,7 +28,7 @@ export const fetchFAQs = async () : Promise<FAQ[]> => {
 
 export const fetchBlogs = async () : Promise<Blogs[]>=> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/blogs/get-blogs`);
+    const response = await fetch(`${API_BASE_URL}/api/blogs`);
     const data = await response.json();
     return data;
   } catch (error) {

@@ -56,6 +56,7 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
     { name: "LGUs", href: "/account/lgu/register" },
   ];
 
+
   return (
     <nav
       className={`fixed w-full z-50 ${

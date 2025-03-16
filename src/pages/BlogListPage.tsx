@@ -1,7 +1,7 @@
 import React from 'react'
 import BlogList from '../components/LandingPage/BlogList'
 
-const BlogListPage = () => {
+const BlogListPage : React.FC = () => {
   return (
     <>
         <BlogList />

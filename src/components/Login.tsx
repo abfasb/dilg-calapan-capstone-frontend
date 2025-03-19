@@ -35,6 +35,11 @@ const Login: React.FC = () => {
       localStorage.setItem('adminEmail', response.user.email);
       localStorage.setItem('name', response.user.name);
       localStorage.setItem("userId", response.user.id);
+      localStorage.setItem("firstName", response.user.firstName);
+      localStorage.setItem("lastName", response.user.lastName);
+      localStorage.setItem("position", response.user.position);
+      localStorage.setItem("barangay", response.user.barangay);
+      localStorage.setItem("phoneNunmber", response.user.phoneNumber);
       
       toast.success('Login Successful!', {
         icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,

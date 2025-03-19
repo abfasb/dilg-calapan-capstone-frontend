@@ -26,7 +26,7 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
       </button>
     </div>
       <div className="space-y-2 px-4">
-        <NavItem icon={<FiBarChart2 />} text="Dashboard" to="" isOpen={isOpen} />
+        <NavItem icon={<FiBarChart2 />} text="Dashboard" to="" end isOpen={isOpen} />
         <NavItem icon={<FiFileText />} text="Reports" to="reports" isOpen={isOpen} />
         <NavItem icon={<FiUsers />} text="Staff" to="staff" isOpen={isOpen} />
         <NavItem icon={<Megaphone />} text="News & Announcements" to="announcements" isOpen={isOpen} />
@@ -36,13 +36,14 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
   </motion.nav>
 );
 
-const NavItem = ({ icon, text, to, isOpen }: { 
+const NavItem = ({ icon, text, to, isOpen, end }: { 
   icon: React.ReactNode; 
   text: string; 
   to: string;
-  isOpen: boolean 
+  isOpen: boolean;
+  end?: boolean;
 }) => (
-  <NavLink to={to} className={({ isActive }) => 
+  <NavLink to={to} end={end} className={({ isActive }) => 
     `flex items-center p-3 rounded-lg transition-colors ${
       isActive ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:bg-gray-700/30'
     }`

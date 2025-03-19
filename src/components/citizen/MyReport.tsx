@@ -129,6 +129,12 @@ export default function MyReport() {
     return sort === 'asc' ? dateA - dateB : dateB - dateA;
   });
 
+  const position = localStorage.getItem('position');
+  const firstName = localStorage.getItem('firstName');
+  const lastName = localStorage.getItem('lastName');
+  const barangay = localStorage.getItem('barangay');
+  const phoneNumber = localStorage.getItem('phoneNumber');
+
   const lastUpdated = reports.length > 0 && reports[0].updatedAt
     ? formatDistanceToNow(new Date(reports[0].updatedAt), { addSuffix: true })
     : 'N/A';
@@ -181,7 +187,7 @@ export default function MyReport() {
       <div className="container mx-auto p-6 space-y-8">
         {/* Navigation Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild className="hover:bg-accent/50">
+          <Button variant="ghost" size="sm" asChild className="">
             <Button onClick={navigateToHome} className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back to Dashboard</span>
@@ -308,9 +314,20 @@ export default function MyReport() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link 
-                          to={`/account/citizen/submission/${report._id}`} 
-                          state={{ report }}  // Add state prop
+                        <Link
+                          to={`/account/citizen/submission/${report._id}`}
+                          state={{ 
+                            reportData: report.data,
+                            // formFields: report.fields, 
+                            userData: {
+                              firstName: firstName || "",
+                              lastName: lastName || "",
+                              position: position || "",
+                              barangay: barangay || "",
+                              phoneNumber: phoneNumber || ""
+                            }
+                          }}
+                          
                           className="flex items-center"
                         >
                           <Receipt className="w-4 h-4 mr-2" />

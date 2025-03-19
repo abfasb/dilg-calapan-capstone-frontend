@@ -575,33 +575,7 @@ if (isLoading) {
                 </CardFooter>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Reports</CardTitle>
-                </CardHeader>
-                <CardContent>
-                <Table className="dark:bg-gray-800">
-                  <TableHeader className="dark:bg-gray-700">
-                      <TableRow>
-                        <TableHead>Case ID</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Last Update</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[1, 2, 3].map((item) => (
-                        <TableRow key={item}>
-                          <TableCell>#CASE-{item}23</TableCell>
-                          <TableCell>
-                          <Badge className="dark:bg-gray-700 dark:text-white" variant="outline">In Progress</Badge>
-                          </TableCell>
-                          <TableCell>2 hours ago</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+            
             </div>
           </TabsContent>
 
@@ -945,19 +919,21 @@ if (isLoading) {
         </Card>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
+        <Card className="hover:shadow-2xl transition-shadow p-8 rounded-3xl w-full max-w-lg flex flex-col justify-center items-center gap-8">
+            <CardHeader className="w-full text-center">
+              <CardTitle className="text-2xl flex items-center gap-4 font-bold">
+                <MessageSquare className="w-8 h-8 text-primary" />
                 Chat Support
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <Button variant="link" className="text-primary">
+            <CardContent className="w-full flex flex-col items-center">
+              <Button variant="default" className="w-full py-4 text-lg">
                 Start Conversation
               </Button>
             </CardContent>
           </Card>
+
+
 
           <div className="md:col-span-2">
             <Card className="hover:shadow-lg transition-shadow rounded-xl w-full border-0 shadow-sm">
@@ -1075,7 +1051,16 @@ if (isLoading) {
                             const time = e.target.value;
                             const [hours, minutes] = time.split(':');
                             if (minutes !== '00') {
-                              alert('Please select a time ending with :00 (e.g., 8:00 AM)');
+                              toast.error('Please select a time ending with :00 (e.g., 8:00 AM)', {
+                                icon: <ErrorIcon className="w-6 h-6 text-green-400" />,
+                                style: {
+                                  background: '#1a1d24',
+                                  color: '#fff',
+                                  border: '1px solid #2a2f38',
+                                  padding: '16px',
+                                },
+                                duration: 4000,
+                              });
                               return;
                             }
                             const hoursNum = parseInt(hours, 10);

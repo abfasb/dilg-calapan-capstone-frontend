@@ -145,19 +145,19 @@ const handleSubmit = async (e: React.FormEvent) => {
     }>(`${import.meta.env.VITE_API_URL}/form/${id}/responses`, formPayload, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-
+    
     navigate(`/account/citizen/submission/success/${userId}`, { 
       state: { 
-        success: true,
         referenceNumber: response.data.referenceNumber,
-        formData: response.data.submissionData,
+        submissionData: response.data.submissionData,
         userData: {
           firstName: userData?.firstName || '',
           lastName: userData?.lastName || '',
           position: userData?.position || '',
           barangay: userData?.barangay || '',
           phoneNumber: userData?.phoneNumber || ''
-        }
+        },
+        formFields: report?.fields
       }
     });
 

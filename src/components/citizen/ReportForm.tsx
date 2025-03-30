@@ -16,7 +16,9 @@ import {
   ChevronLeft,
   UploadCloud,
   Check,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  ClipboardList
 } from "lucide-react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -42,23 +44,28 @@ export default function ReportForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState<ReportData | null>(null);
+  const [submissionMode, setSubmissionMode] = useState<'form' | 'file'>('form');
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filePreviews, setFilePreviews] = useState<Record<string, string[]>>({});
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filePreviews, setFilePreviews] = useState<Record<string, string[]>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchReport = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/form/${id}`);
         setReport(response.data);
+        
+        // Initialize form data only if in form mode
         const initialData: Record<string, any> = {};
         response.data.fields.forEach((field: ReportField) => {
           initialData[field.id] = field.type === 'checkbox' ? [] : '';
         });
         setFormData(initialData);
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching report:', error);
@@ -75,7 +82,7 @@ export default function ReportForm() {
     if (errors[fieldId]) setErrors(prev => ({ ...prev, [fieldId]: '' }));
   };
 
-  const onDrop = (acceptedFiles: File[], fieldId: string) => {
+  const onFormFileDrop = (acceptedFiles: File[], fieldId: string) => {
     const newPreviews = acceptedFiles.map(file => URL.createObjectURL(file));
     setFilePreviews(prev => ({
       ...prev,
@@ -84,7 +91,7 @@ export default function ReportForm() {
     handleInputChange(fieldId, [...(formData[fieldId] || []), ...acceptedFiles]);
   };
 
-  const handleRemoveFile = (fieldId: string, index: number) => {
+  const handleRemoveFormFile = (fieldId: string, index: number) => {
     const updatedPreviews = [...filePreviews[fieldId]];
     updatedPreviews.splice(index, 1);
     setFilePreviews(prev => ({ ...prev, [fieldId]: updatedPreviews }));
@@ -95,6 +102,8 @@ export default function ReportForm() {
   };
 
   const validateForm = () => {
+    if (submissionMode === 'file') return true;
+
     const newErrors: Record<string, string> = {};
     report?.fields.forEach(field => {
       const value = formData[field.id];
@@ -114,65 +123,68 @@ export default function ReportForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const userId = localStorage.getItem("userId");
-
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!validateForm()) return;
-
-  setIsSubmitting(true);
-  try {
-    const formPayload = new FormData();
-    
-    const userId = localStorage.getItem("userId");
-    if (userId) formPayload.append("userId", userId);
-
-    const userResponse = await axios.get(`${import.meta.env.VITE_API_URL}/admin/users/${userId}`);
-    const userData = userResponse.data.user;
-    console.log("Full API response:", userResponse.data);
-
-    Object.entries(formData).forEach(([fieldId, value]) => {
-      if (value instanceof FileList || Array.isArray(value)) {
-        Array.from(value).forEach(file => formPayload.append(fieldId, file));
-      } else {
-        formPayload.append(fieldId, value);
-      }
-    });
-
-    const response = await axios.post<{ 
-      referenceNumber: string;
-      submissionData: Record<string, any>;
-    }>(`${import.meta.env.VITE_API_URL}/form/${id}/responses`, formPayload, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    
-    navigate(`/account/citizen/submission/success/${userId}`, { 
-      state: { 
-        referenceNumber: response.data.referenceNumber,
-        submissionData: response.data.submissionData,
-        userData: {
-          firstName: userData?.firstName || '',
-          lastName: userData?.lastName || '',
-          position: userData?.position || '',
-          barangay: userData?.barangay || '',
-          phoneNumber: userData?.phoneNumber || ''
-        },
-        formFields: report?.fields
-      }
-    });
-
-    toast.success('Report submitted successfully!');
-  } catch (error) {
-    console.error('Submission failed:', error);
-    toast.error('Failed to submit report. Please try again.');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-  const FileUploadArea = ({ field }: { field: ReportField }) => {
+  const BulkFileUpload = () => {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
-      onDrop: (files) => onDrop(files, field.id),
+      onDrop: (files) => setBulkFile(files[0]),
+      accept: {
+        'application/pdf': ['.pdf'],
+        'application/msword': ['.doc', '.docx'],
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+        'application/vnd.ms-excel': ['.xls', '.xlsx'],
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+      },
+      multiple: false
+    });
+
+    return (
+      <div className="space-y-6">
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-xl p-8 transition-all cursor-pointer
+            ${isDragActive ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200'}
+            ${bulkFile ? 'border-green-500 bg-green-50/50' : ''}`}
+        >
+          <input {...getInputProps()} />
+          <div className="flex flex-col items-center justify-center gap-4 text-center">
+            <UploadCloud className={`h-12 w-12 ${isDragActive ? 'text-blue-500' : 'text-muted-foreground'}`} />
+            <div className="space-y-1">
+              <p className="font-medium">
+                {bulkFile ? 'File Ready for Upload' : 
+                 isDragActive ? 'Drop file here' : 'Click to upload or drag and drop'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                PDF, DOC, DOCX, XLS, XLSX up to 50MB
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {bulkFile && (
+          <div className="bg-green-50 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="h-5 w-5 text-green-600" />
+              <span className="font-medium">{bulkFile.name}</span>
+              <span className="text-sm text-muted-foreground">
+                {(bulkFile.size / 1024 / 1024).toFixed(2)} MB
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setBulkFile(null)}
+              className="text-red-600 hover:text-red-700"
+            >
+              Remove
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const FormFileUpload = ({ field }: { field: ReportField }) => {
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+      onDrop: (files) => onFormFileDrop(files, field.id),
       accept: {'image/*': []},
       multiple: true
     });
@@ -182,8 +194,8 @@ const handleSubmit = async (e: React.FormEvent) => {
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-xl p-8 transition-all cursor-pointer
-            ${errors[field.id] ? 'border-red-500 bg-red-500/10' : 'border-gray-200 dark:border-gray-700'}
-            ${isDragActive ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : ''}`}
+            ${errors[field.id] ? 'border-red-500 bg-red-500/10' : 'border-gray-200'}
+            ${isDragActive ? 'border-blue-500 bg-blue-50/50' : ''}`}
         >
           <input {...getInputProps()} />
           <div className="flex flex-col items-center justify-center gap-4 text-center">
@@ -215,7 +227,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   variant="destructive"
                   size="icon"
                   className="absolute top-1 right-1 h-7 w-7 rounded-full"
-                  onClick={() => handleRemoveFile(field.id, index)}
+                  onClick={() => handleRemoveFormFile(field.id, index)}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -227,36 +239,77 @@ const handleSubmit = async (e: React.FormEvent) => {
     );
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    if (submissionMode === 'file' && !bulkFile) {
+      toast.error('Please upload a file before submitting');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const formPayload = new FormData();
+      const userId = localStorage.getItem("userId");
+      
+      if (userId) formPayload.append("userId", userId);
+      formPayload.append("submissionType", submissionMode);
+
+      if (submissionMode === 'form') {
+        Object.entries(formData).forEach(([fieldId, value]) => {
+          if (value instanceof FileList || Array.isArray(value)) {
+            Array.from(value).forEach(file => formPayload.append(fieldId, file));
+          } else {
+            formPayload.append(fieldId, value);
+          }
+        });
+      } else if (bulkFile) {
+        formPayload.append("bulkFile", bulkFile);
+      }
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/form/${id}/responses`, 
+        formPayload, 
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      const userResponse = await axios.get(`${import.meta.env.VITE_API_URL}/admin/users/${userId}`);
+      const userData = userResponse.data.user;
+
+      navigate(`/account/citizen/submission/success/${userId}`, { 
+        state: { 
+          referenceNumber: response.data.referenceNumber,
+          submissionType: submissionMode,
+          submissionData: submissionMode === 'form' ? formData : null,
+          fileName: bulkFile?.name || '',
+          userData: {
+            firstName: userData?.firstName || '',
+            lastName: userData?.lastName || '',
+            position: userData?.position || '',
+            barangay: userData?.barangay || '',
+            phoneNumber: userData?.phoneNumber || ''
+          },
+          formFields: submissionMode === 'form' ? report?.fields : []
+        }
+      });
+
+      toast.success('Submission successful!');
+    } catch (error) {
+      console.error('Submission failed:', error);
+      toast.error('Failed to submit. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="text-lg font-medium">Loading Report Form...</p>
-          <p className="text-muted-foreground">Please wait while we load the form</p>
         </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <Alert variant="destructive" className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Loading Error</AlertTitle>
-          <AlertDescription className="mb-4">{error}</AlertDescription>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate(-1)}>
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Go Back
-            </Button>
-            <Button onClick={() => window.location.reload()}>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Retry
-            </Button>
-          </div>
-        </Alert>
       </div>
     );
   }
@@ -271,14 +324,9 @@ const handleSubmit = async (e: React.FormEvent) => {
           className: '!bg-background !text-foreground !rounded-xl !border !shadow-lg',
           success: {
             icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-            style: {
-              padding: '16px',
-              border: '1px solid #2f3b52',
-            },
+            style: { padding: '16px', border: '1px solid #2f3b52' },
           },
-          error: {
-            icon: <XCircle className="h-5 w-5 text-red-500" />,
-          },
+          error: { icon: <XCircle className="h-5 w-5 text-red-500" /> },
         }}
       />
       
@@ -295,92 +343,137 @@ const handleSubmit = async (e: React.FormEvent) => {
             </Button>
           </div>
 
-          <Card className="shadow-xl rounded-2xl border-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <Card className="shadow-xl rounded-2xl border-0 bg-background/95 backdrop-blur">
             <CardHeader className="pb-0">
               <div className="flex items-center justify-between mb-4">
                 <CardTitle className="text-3xl font-bold tracking-tight">
                   {report?.title}
                 </CardTitle>
                 <Badge variant="secondary" className="text-sm py-1.5 px-3">
-                  {report?.fields.filter(f => f.required).length} Required Fields
+                  {submissionMode === 'form' 
+                    ? `${report?.fields.filter(f => f.required).length} Required Fields`
+                    : 'File Upload'}
                 </Badge>
               </div>
               <p className="text-lg text-muted-foreground">{report?.description}</p>
             </CardHeader>
 
             <CardContent className="pt-8">
+              <div className="flex gap-4 mb-8">
+                <Button
+                  variant={submissionMode === 'form' ? 'default' : 'outline'}
+                  onClick={() => setSubmissionMode('form')}
+                  className="gap-2"
+                >
+                  <ClipboardList className="h-4 w-4" />
+                  Fill Form
+                </Button>
+                <Button
+                  variant={submissionMode === 'file' ? 'default' : 'outline'}
+                  onClick={() => setSubmissionMode('file')}
+                  className="gap-2"
+                >
+                  <UploadCloud className="h-4 w-4" />
+                  Upload File
+                </Button>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-10">
-                {report?.fields.map((field) => (
-                  <div key={field.id} className="space-y-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-base font-medium">
-                          {field.label}
-                          {field.required && (
-                            <span className="text-red-500 ml-1">*</span>
+                {submissionMode === 'form' ? (
+                  <>
+                    <Alert className="bg-blue-50 border-blue-200">
+                      <AlertCircle className="h-4 w-4 text-blue-600" />
+                      <AlertTitle>Form Submission Mode</AlertTitle>
+                      <AlertDescription>
+                        Please fill out all required fields in the form below.
+                      </AlertDescription>
+                    </Alert>
+
+                    {report?.fields.map((field) => (
+                      <div key={field.id} className="space-y-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-base font-medium">
+                              {field.label}
+                              {field.required && (
+                                <span className="text-red-500 ml-1">*</span>
+                              )}
+                            </Label>
+                            {errors[field.id] && (
+                              <span className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="h-4 w-4" />
+                                {errors[field.id]}
+                              </span>
+                            )}
+                          </div>
+                          {field.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {field.description}
+                            </p>
                           )}
-                        </Label>
-                        {errors[field.id] && (
-                          <span className="text-sm text-red-500 flex items-center gap-1">
-                            <AlertCircle className="h-4 w-4" />
-                            {errors[field.id]}
-                          </span>
+                        </div>
+
+                        {field.type === 'text' && (
+                          <Input
+                            value={formData[field.id] || ''}
+                            onChange={(e) => handleInputChange(field.id, e.target.value)}
+                            className={`h-12 text-base ${errors[field.id] ? 'border-red-500' : ''}`}
+                          />
                         )}
+
+                        {field.type === 'number' && (
+                          <Input
+                            type="number"
+                            value={formData[field.id] || ''}
+                            onChange={(e) => handleInputChange(field.id, e.target.value)}
+                            className={`h-12 text-base ${errors[field.id] ? 'border-red-500' : ''}`}
+                          />
+                        )}
+
+                        {field.type === 'checkbox' && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {field.options?.map((option) => (
+                              <label
+                                key={option}
+                                className={`flex items-center gap-3 p-4 border rounded-xl transition-colors
+                                  ${errors[field.id] ? 'border-red-500' : 'hover:border-primary'}
+                                  ${formData[field.id].includes(option) ? 'border-primary bg-primary/5' : ''}`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={formData[field.id].includes(option)}
+                                  onChange={(e) => {
+                                    const newValue = e.target.checked
+                                      ? [...formData[field.id], option]
+                                      : formData[field.id].filter((opt: string) => opt !== option);
+                                    handleInputChange(field.id, newValue);
+                                  }}
+                                  className="h-5 w-5 text-primary rounded border-gray-300 focus:ring-primary"
+                                />
+                                <span className="text-sm font-medium">{option}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
+                        {field.type === 'image' && <FormFileUpload field={field} />}
                       </div>
-                      {field.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {field.description}
-                        </p>
-                      )}
-                    </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <BulkFileUpload />
+                    <Alert className="bg-green-50 border-green-200">
+                      <Check className="h-4 w-4 text-green-600" />
+                      <AlertTitle>File Upload Mode</AlertTitle>
+                      <AlertDescription>
+                        Upload complete documents (PDF, Word, Excel). Ensure all required
+                        information is included in the file.
+                      </AlertDescription>
+                    </Alert>
+                  </>
+                )}
 
-                    {field.type === 'text' && (
-                      <Input
-                        value={formData[field.id] || ''}
-                        onChange={(e) => handleInputChange(field.id, e.target.value)}
-                        className={`h-12 text-base ${errors[field.id] ? 'border-red-500' : ''}`}
-                      />
-                    )}
-
-                    {field.type === 'number' && (
-                      <Input
-                        type="number"
-                        value={formData[field.id] || ''}
-                        onChange={(e) => handleInputChange(field.id, e.target.value)}
-                        className={`h-12 text-base ${errors[field.id] ? 'border-red-500' : ''}`}
-                      />
-                    )}
-
-                    {field.type === 'checkbox' && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {field.options?.map((option) => (
-                          <label
-                            key={option}
-                            className={`flex items-center gap-3 p-4 border rounded-xl transition-colors
-                              ${errors[field.id] ? 'border-red-500' : 'hover:border-primary'}
-                              ${formData[field.id].includes(option) ? 'border-primary bg-primary/5' : ''}`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData[field.id].includes(option)}
-                              onChange={(e) => {
-                                const newValue = e.target.checked
-                                  ? [...formData[field.id], option]
-                                  : formData[field.id].filter((opt: string) => opt !== option);
-                                handleInputChange(field.id, newValue);
-                              }}
-                              className="h-5 w-5 text-primary rounded border-gray-300 focus:ring-primary"
-                            />
-                            <span className="text-sm font-medium">{option}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-
-                    {field.type === 'image' && <FileUploadArea field={field} />}
-                  </div>
-                ))}
-                
                 <CardFooter className="flex justify-end gap-4 px-0 pb-0 pt-8">
                   <Button
                     type="submit"
@@ -396,7 +489,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     ) : (
                       <>
                         <Check className="h-5 w-5" />
-                        Submit Report
+                        {submissionMode === 'form' ? 'Submit Form' : 'Upload File'}
                       </>
                     )}
                   </Button>

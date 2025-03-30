@@ -163,7 +163,7 @@ export default function SubmissionSuccess(): JSX.Element {
           <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b-2 border-blue-900 pb-6">
             <div className="mb-4 md:mb-0 flex items-center gap-4">
               <img 
-                src="/dilg-logo.png" 
+                src="https://i.ibb.co/QFh5dS8r/images-1.png" 
                 alt="DILG Logo" 
                 className="h-28 w-28 print:h-20 print:w-20"
               />
@@ -228,24 +228,32 @@ export default function SubmissionSuccess(): JSX.Element {
             />
           </div>
 
-          {/* Submission Details */}
           <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4 text-blue-900 dark:text-blue-200 print:text-base">
-              Submission Particulars
-            </h3>
-            <div className="space-y-4 print:space-y-2">
-              {submission.formFields?.map((field) => (
-                <DetailItem
-                  key={field.id}
-                  label={field.label}
-                  value={submission.submissionData[field.id] || 'N/A'}
-                  print
-                />
-              ))}
-            </div>
-          </div>
+              <h3 className="text-lg font-semibold mb-4 text-blue-900 dark:text-blue-200 print:text-base">
+                Submission Particulars
+              </h3>
+              <div className="space-y-4 print:space-y-2">
+                {submission.formFields?.map((field) => {
+                  const value = submission.submissionData?.[field.id] || 'N/A';
 
-          {/* Official Stamps */}
+                  const displayValue = Array.isArray(value) 
+                    ? value.length > 0 
+                      ? `${value.length} file(s) uploaded` 
+                      : 'No files uploaded'
+                    : value;
+
+                  return (
+                    <DetailItem
+                      key={field.id}
+                      label={field.label}
+                      value={displayValue}
+                      print
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
           <div className="mt-12 pt-8 border-t-2 border-dashed border-blue-900 print:mt-8">
             <div className="grid grid-cols-2 gap-8">
               <div className="text-center">
@@ -351,10 +359,14 @@ function DetailItem({ label, value, print }: { label: string; value: string | Re
         {label}
       </dt>
       <dd className="text-gray-900 text-right flex-1 break-words">
-        {typeof value === 'string' ? (
-          <span className="font-normal">{value}</span>
+        {value ? (
+          typeof value === 'string' ? (
+            <span className="font-normal">{value}</span>
+          ) : (
+            value
+          )
         ) : (
-          value
+          <span className="text-gray-400">N/A</span>
         )}
       </dd>
     </div>

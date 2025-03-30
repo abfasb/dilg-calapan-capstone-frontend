@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { sendStatusNotification } from '../../utils/notifications';
-import { CheckCircleIcon, ChevronLeft, ChevronRight, Loader2, MoreVertical, Sliders } from 'lucide-react';
+import { CheckCircleIcon, ChevronLeft, ChevronRight, Download, ImageIcon, Loader2, MoreVertical, Sliders, FileText } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Skeleton } from '../ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 interface ReportForm {
   _id: string;
@@ -31,16 +32,31 @@ interface FormResponse {
   createdAt: string;
   userId: string;
   data: Record<string, any>;
+  files: Array<{ url: string; filename: string }>;
+  bulkFile?: {
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+  };
+  formId: {
+    fields: Array<{
+      id: string;
+      label: string;
+      type: string;
+    }>;
+  };
 }
 
 export default function Reports() {
   const [forms, setForms] = useState<ReportForm[]>([]);
   const [selectedForm, setSelectedForm] = useState<ReportForm | null>(null);
   const [responses, setResponses] = useState<FormResponse[]>([]);
+  const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState({
     forms: true,
     responses: false,
+    details: false,
   });
 
   const userId = localStorage.getItem('userId');
@@ -73,6 +89,56 @@ export default function Reports() {
     } finally {
       setLoading(prev => ({ ...prev, responses: false }));
     }
+  };
+
+  const viewDetails = async (responseId: string) => {
+    setLoading(prev => ({ ...prev, details: true }));
+    try {
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/response/details/${responseId}`);
+      setSelectedResponse(data);
+    } catch (error) {
+      toast.error('Failed to load response details');
+    } finally {
+      setLoading(prev => ({ ...prev, details: false }));
+    }
+  };
+
+  const downloadFile = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const renderResponseValue = (fieldId: string, value: any) => {
+    const field = selectedResponse?.formId.fields.find(f => f.id === fieldId);
+    
+    if (field?.type === 'image') {
+      return (
+        <div className="grid grid-cols-2 gap-4">
+          {value?.map((url: string, index: number) => (
+            <div key={index} className="relative group">
+              <img
+                src={url}
+                alt={`Upload ${index + 1}`}
+                className="rounded-lg w-full h-32 object-cover border border-gray-700"
+              />
+              <button
+                onClick={() => window.open(url, '_blank')}
+                className="absolute bottom-2 right-2 bg-gray-800/80 px-2 py-1 rounded-md text-sm hover:bg-gray-700/80"
+              >
+                View Full
+              </button>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    if (Array.isArray(value)) return value.join(', ');
+    return value || 'N/A';
   };
 
   const updateStatus = async (responseId: string, status: FormResponse["status"]) => {
@@ -265,7 +331,7 @@ export default function Reports() {
                   <thead className="bg-gray-700/20">
                     <tr>
                       <th className="px-6 py-4 text-left text-gray-300 font-medium">Reference</th>
-                      <th className="px-6 py-4 text-left text-gray-300 font-medium">User</th>
+                      <th className="px-6 py-4 text-left text-gray-300 font-medium">Type</th>
                       <th className="px-6 py-4 text-left text-gray-300 font-medium">Status</th>
                       <th className="px-6 py-4 text-left text-gray-300 font-medium">Date</th>
                       <th className="px-6 py-4 text-left text-gray-300 font-medium">Actions</th>
@@ -292,7 +358,15 @@ export default function Reports() {
                       filteredResponses.map(response => (
                         <tr key={response._id} className="border-b border-gray-700/50 hover:bg-gray-700/10 transition-colors">
                           <td className="px-6 py-4 font-mono text-cyan-400">{response.referenceNumber}</td>
-                          <td className="px-6 py-4 text-gray-400">{response.userId}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              response.bulkFile 
+                                ? 'bg-purple-500/20 text-purple-400' 
+                                : 'bg-cyan-500/20 text-cyan-400'
+                            }`}>
+                              {response.bulkFile ? 'File' : 'Form'}
+                            </span>
+                          </td>
                           <td className="px-6 py-4">
                             <select
                               value={response.status}
@@ -321,7 +395,10 @@ export default function Reports() {
                                 <MoreVertical className="w-5 h-5" />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white">
-                                <DropdownMenuItem className="hover:bg-gray-700/50">
+                                <DropdownMenuItem 
+                                  className="hover:bg-gray-700/50"
+                                  onClick={() => viewDetails(response._id)}
+                                >
                                   View Details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="hover:bg-gray-700/50">
@@ -340,6 +417,123 @@ export default function Reports() {
                 </table>
               </div>
             </div>
+
+            <Dialog open={!!selectedResponse} onOpenChange={() => setSelectedResponse(null)}>
+            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+                {loading.details ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+                  </div>
+                ) : selectedResponse && (
+                  <>
+                    <DialogHeader>
+                      <DialogTitle className="text-cyan-400">
+                        {selectedResponse.referenceNumber}
+                      </DialogTitle>
+                    </DialogHeader>
+
+                    {selectedResponse.bulkFile ? (
+                      <div className="space-y-4 overflow-hidden">
+                      <div className="bg-gray-700/30 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold mb-2">Uploaded Document</h3>
+                        <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-md">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-6 h-6 text-cyan-400" />
+                            <div>
+                              <p className="font-medium">{selectedResponse.bulkFile.fileName}</p>
+                              <p className="text-sm text-gray-400">
+                                {selectedResponse.bulkFile.fileType}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => window.open(selectedResponse.bulkFile?.fileUrl, '_blank')}
+                              className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 px-3 py-1 rounded-md bg-gray-800/50"
+                            >
+                              <ImageIcon className="w-5 h-5" />
+                              Preview
+                            </button>
+                            <button
+                              onClick={() => downloadFile(
+                                selectedResponse.bulkFile?.fileUrl || '',
+                                selectedResponse.bulkFile?.fileName || 'document'
+                              )}
+                              className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 px-3 py-1 rounded-md bg-gray-800/50"
+                            >
+                              <Download className="w-5 h-5" />
+                              Download
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-700/30 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold mb-2">Document Preview</h3>
+                        <iframe 
+                          src={selectedResponse.bulkFile.fileUrl}
+                          className="w-full h-96 rounded-lg border border-gray-700"
+                          title="Document preview"
+                        />
+                      </div>
+                    </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {selectedResponse.formId.fields.map(field => (
+                          <div key={field.id} className="bg-gray-700/30 p-4 rounded-lg">
+                            <h3 className="font-medium mb-2 text-cyan-400">{field.label}</h3>
+                            <div className="text-gray-300">
+                              {renderResponseValue(field.id, selectedResponse.data?.[field.id])}
+                            </div>
+                          </div>
+                        ))}
+
+                        {selectedResponse.files?.length > 0 && (
+                          <div className="bg-gray-700/30 p-4 rounded-lg">
+                            <h3 className="font-medium mb-2 text-cyan-400">Attachments</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                              {selectedResponse.files.map((file, index) => (
+                                <div key={index} className="relative group">
+                                  <img
+                                    src={file.url}
+                                    alt={`Attachment ${index + 1}`}
+                                    className="rounded-lg w-full h-32 object-cover border border-gray-700"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent p-2 flex items-end">
+                                    <button
+                                      onClick={() => window.open(file.url, '_blank')}
+                                      className="text-sm bg-gray-800/80 px-2 py-1 rounded-md hover:bg-gray-700/80"
+                                    >
+                                      {file.filename}
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="mt-6 pt-4 border-t border-gray-700/50">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <label className="text-gray-400">Submission Date</label>
+                          <p className="text-gray-300">
+                            {new Date(selectedResponse.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-gray-400">Submission Type</label>
+                          <p className="text-gray-300 capitalize">
+                            {selectedResponse.bulkFile ? 'File' : 'Form'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </div>

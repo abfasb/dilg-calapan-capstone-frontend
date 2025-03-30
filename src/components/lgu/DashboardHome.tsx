@@ -1,240 +1,327 @@
 import { useEffect, useState } from 'react';
 import { 
-  LineChart, Line, BarChart, Bar, AreaChart, Area,
-  CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend 
+  AreaChart, Area,
+  BarChart, Bar,
+  CartesianGrid, XAxis, YAxis, 
+  Tooltip, ResponsiveContainer
 } from 'recharts';
-import { StatsCard, ChartCard, RecentReportsTable } from './DashboardComponents';
+import { 
+  FiActivity,
+  FiBarChart,
+  FiCalendar,
+  FiClock,
+  FiTrendingUp,
+  FiZap
+} from 'react-icons/fi';
+import { StatsCard } from './StatsCard';
 import { Skeleton } from '../ui/skeleton';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
-import { Button } from '../ui/button';
-import { ChevronDown, AlertCircle, CheckCircle2, Clock, TrendingUp, TrendingDown } from 'lucide-react';
+import { fetchDashboardStats, fetchReportTrends } from '../../api/analyticsApi';
 
-interface Stats {
-  reports: number;
-  resolution: number;
-  users: number;
+interface DashboardStats {
+  totalReports: number;
+  resolutionRate: number;
   avgResponseTime: number;
+  activeUsers: number;
+  complaintsByCategory: Record<string, number>;
+  appointmentStats: Record<string, number>;
 }
 
-interface ChartDataPoint {
-  name: string;
-  reports: number;
-  resolved: number;
-  pending: number;
-}
-
-interface Report {
-  id: number;
-  title: string;
-  status: 'resolved' | 'pending' | 'in-progress';
-  category: string;
-  priority: 'low' | 'medium' | 'high';
-  date: string;
-}
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div 
+        className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-xl"
+        style={{ backdropFilter: 'blur(4px)' }}
+      >
+        <p className="font-medium text-lg mb-2 text-gray-100">{label}</p>
+        <div className="space-y-1">
+          {payload.map((entry: any, index: number) => (
+            <div 
+              key={index}
+              className="flex items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-sm text-gray-300 capitalize">{entry.name}</span>
+              </div>
+              <span className="font-medium text-gray-100">
+                {entry.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 export const DashboardHome = () => {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [recentReports, setRecentReports] = useState<Report[]>([]);
-  const [selectedChart, setSelectedChart] = useState<'reports' | 'resolved'>('reports');
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const dummyStats: Stats = { 
-        reports: 120, 
-        resolution: 85, 
-        users: 432,
-        avgResponseTime: 2.4
-      };
-      
-      const dummyChartData: ChartDataPoint[] = [
-        { name: 'Jan', reports: 30, resolved: 18, pending: 12 },
-        { name: 'Feb', reports: 50, resolved: 35, pending: 15 },
-        { name: 'Mar', reports: 20, resolved: 15, pending: 5 },
-        { name: 'Apr', reports: 80, resolved: 60, pending: 20 },
-        { name: 'May', reports: 40, resolved: 30, pending: 10 },
-        { name: 'Jun', reports: 100, resolved: 85, pending: 15 },
-      ];
+    const loadData = async () => {
+      try {
+        const [statsData, trendsData] = await Promise.all([
+          fetchDashboardStats(),
+          fetchReportTrends()
+        ]);
+        
+        setStats(statsData);
+        setChartData(trendsData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        setLoading(false);
+      }
+    };
 
-      const dummyReports: Report[] = [
-        { id: 1, title: 'Payment Gateway Issue', status: 'resolved', category: 'Finance', priority: 'high', date: '2024-02-15' },
-        { id: 2, title: 'User Login Failure', status: 'pending', category: 'Authentication', priority: 'high', date: '2024-02-14' },
-        { id: 3, title: 'Dashboard Loading Slow', status: 'in-progress', category: 'Performance', priority: 'medium', date: '2024-02-13' },
-        { id: 4, title: 'Dark Mode Request', status: 'resolved', category: 'Feature', priority: 'low', date: '2024-02-12' },
-        { id: 5, title: 'Chart Data Inaccuracy', status: 'pending', category: 'Bug', priority: 'medium', date: '2024-02-11' },
-      ];
-
-      setStats(dummyStats);
-      setChartData(dummyChartData);
-      setRecentReports(dummyReports);
-      setLoading(false);
-    }, 1500);
+    loadData();
   }, []);
 
   if (loading) {
     return (
-      <div className="space-y-8 p-6">
+      <div className="space-y-8 p-6 bg-gray-900 min-h-screen">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl bg-muted/50" />
+            <Skeleton 
+              key={i} 
+              className="h-32 rounded-xl bg-gray-800 animate-pulse" 
+            />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {[...Array(2)].map((_, i) => (
-            <Skeleton key={i} className="h-96 rounded-xl bg-muted/50" />
+            <Skeleton 
+              key={i} 
+              className="h-96 rounded-xl bg-gray-800 animate-pulse" 
+            />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-xl bg-muted/50" />
+        <Skeleton className="h-96 rounded-xl bg-gray-800 animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 p-6 bg-gray-900 text-gray-100 min-h-screen">
+      {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatsCard 
           title="Total Reports" 
-          value={stats!.reports} 
+          value={stats!.totalReports} 
           trend="month"
+          delta={12.5}
         />
         <StatsCard 
           title="Resolution Rate" 
-          value={`${stats!.resolution}%`} 
+          value={`${stats!.resolutionRate.toFixed(1)}%`} 
           trend="week"
+          delta={-2.3}
         />
         <StatsCard 
           title="Avg. Response Time" 
-          value={`${stats!.avgResponseTime}d`} 
+          value={`${stats!.avgResponseTime.toFixed(1)}d`} 
           trend="month"
+          delta={-15}
         />
         <StatsCard 
           title="Active Users" 
-          value={stats!.users} 
+          value={stats!.activeUsers} 
           trend="week"
+          delta={5.2}
         />
       </div>
 
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <ChartCard 
-          title="Report Trends"
-          
-        >
+        {/* Report Trends Area Chart */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
+          <div className="flex items-center gap-3 mb-6">
+            <FiTrendingUp className="w-6 h-6 text-blue-400" />
+            <h3 className="text-xl font-semibold text-gray-100">Report Trends</h3>
+          </div>
           <ResponsiveContainer width="100%" height={350}>
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorReports" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="#374151" 
+                opacity={0.5}
+              />
               <XAxis 
                 dataKey="name" 
-                stroke="#64748B"
-                tickLine={false}
-                axisLine={false}
+                tick={{ fill: '#9CA3AF' }}
+                tickLine={{ stroke: '#374151' }}
+                axisLine={{ stroke: '#374151' }}
                 fontSize={12}
               />
               <YAxis 
-                stroke="#64748B"
-                tickLine={false}
-                axisLine={false}
+                tick={{ fill: '#9CA3AF' }}
+                tickLine={{ stroke: '#374151' }}
+                axisLine={{ stroke: '#374151' }}
                 fontSize={12}
-                tickFormatter={(value) => `${value}`}
               />
-              <Tooltip 
-                contentStyle={{
-                  background: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-              />
-              <Legend 
-                wrapperStyle={{ paddingTop: 20 }}
-                formatter={(value) => (
-                  <span className="text-sm text-muted-foreground">
-                    {value.charAt(0).toUpperCase() + value.slice(1)}
-                  </span>
-                )}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Area 
                 type="monotone" 
-                dataKey={selectedChart === 'reports' ? 'reports' : 'resolved'} 
-                stroke="#3B82F6" 
-                fillOpacity={1} 
+                dataKey="reports" 
+                stroke="#3b82f6"
                 fill="url(#colorReports)"
                 strokeWidth={2}
               />
-              <Line 
+              <Area 
                 type="monotone" 
-                dataKey="pending" 
-                stroke="#F59E0B" 
+                dataKey="resolved" 
+                stroke="#10b981"
+                fill="url(#colorResolved)"
                 strokeWidth={2}
-                dot={false}
               />
             </AreaChart>
           </ResponsiveContainer>
-        </ChartCard>
+        </div>
 
-        <ChartCard 
-          title="Category Distribution"
-         
-        >
+        {/* Category Distribution Bar Chart */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
+          <div className="flex items-center gap-3 mb-6">
+            <FiBarChart className="w-6 h-6 text-blue-400" />
+            <h3 className="text-xl font-semibold text-gray-100">Category Distribution</h3>
+          </div>
           <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <BarChart 
+              data={Object.entries(stats!.complaintsByCategory).map(([name, value]) => ({ name, value }))}
+              margin={{ top: 0, right: 20, left: 20, bottom: 0 }}
+            >
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="#374151" 
+                opacity={0.5}
+              />
               <XAxis 
                 dataKey="name" 
-                stroke="#64748B"
-                tickLine={false}
-                axisLine={false}
+                tick={{ fill: '#9CA3AF' }}
+                tickLine={{ stroke: '#374151' }}
+                axisLine={{ stroke: '#374151' }}
                 fontSize={12}
               />
               <YAxis 
-                stroke="#64748B"
-                tickLine={false}
-                axisLine={false}
+                tick={{ fill: '#9CA3AF' }}
+                tickLine={{ stroke: '#374151' }}
+                axisLine={{ stroke: '#374151' }}
                 fontSize={12}
               />
-              <Tooltip 
-                contentStyle={{
-                  background: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Bar 
-                dataKey="reports" 
-                fill="#3B82F6" 
+                dataKey="value" 
+                fill="#3b82f6"
                 radius={[4, 4, 0, 0]}
-                stackId="a"
-              />
-              <Bar 
-                dataKey="resolved" 
-                fill="#10B981" 
-                radius={[4, 4, 0, 0]}
-                stackId="a"
-              />
-              <Bar 
-                dataKey="pending" 
-                fill="#8B5CF6" 
-                radius={[4, 4, 0, 0]}
-                stackId="a"
               />
             </BarChart>
           </ResponsiveContainer>
-        </ChartCard>
+        </div>
       </div>
 
-      <ChartCard title="Recent Activity">
-        <RecentReportsTable 
-          reports={recentReports} 
-        />
-      </ChartCard>
+      {/* System Status Grid */}
+      <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
+        <div className="flex items-center gap-3 mb-6">
+          <FiActivity className="w-6 h-6 text-blue-400" />
+          <h3 className="text-xl font-semibold text-gray-100">System Insights</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Appointments Card */}
+          <div className="bg-gray-700 rounded-xl p-4 border border-gray-600">
+            <div className="flex items-center gap-2 mb-4">
+              <FiCalendar className="w-5 h-5 text-blue-400" />
+              <h4 className="font-semibold text-lg text-gray-100">Appointments</h4>
+            </div>
+            <div className="space-y-3">
+              {Object.entries(stats!.appointmentStats).map(([status, count]) => (
+                <div 
+                  key={status} 
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-600 hover:bg-gray-500 transition-colors"
+                >
+                  <span className="capitalize text-sm text-gray-300">{status}</span>
+                  <span className="font-medium text-blue-400">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Response Times Card */}
+          <div className="bg-gray-700 rounded-xl p-4 border border-gray-600">
+            <div className="flex items-center gap-2 mb-4">
+              <FiClock className="w-5 h-5 text-blue-400" />
+              <h4 className="font-semibold text-lg text-gray-100">Response Times</h4>
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-gray-600">
+                <div>
+                  <p className="text-sm text-gray-400">Average</p>
+                  <p className="text-2xl font-bold text-gray-100">{stats!.avgResponseTime.toFixed(1)}</p>
+                </div>
+                <span className="text-sm text-gray-400">days</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-gray-600">
+                  <p className="text-sm text-gray-400">Fastest</p>
+                  <p className="text-lg font-semibold text-gray-100">1.2d</p>
+                </div>
+                <div className="p-3 rounded-lg bg-gray-600">
+                  <p className="text-sm text-gray-400">Longest</p>
+                  <p className="text-lg font-semibold text-gray-100">9.8d</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Insights Card */}
+          <div className="bg-gray-700 rounded-xl p-4 border border-gray-600">
+            <div className="flex items-center gap-2 mb-4">
+              <FiZap className="w-5 h-5 text-blue-400" />
+              <h4 className="font-semibold text-lg text-gray-100">AI Insights</h4>
+            </div>
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-blue-900/50 to-blue-900/20">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-300">Report Prediction</span>
+                  <span className="font-semibold text-blue-400">↓ 12%</span>
+                </div>
+                <div className="h-2 rounded-full bg-blue-900/30">
+                  <div className="h-full rounded-full bg-blue-400 w-1/5 transition-all duration-300" />
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-green-900/50 to-green-900/20">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-300">Resolution Rate</span>
+                  <span className="font-semibold text-green-400">↑ 3.2%</span>
+                </div>
+                <div className="h-2 rounded-full bg-green-900/30">
+                  <div className="h-full rounded-full bg-green-400 w-1/12 transition-all duration-300" />
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-gray-600">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-300">Busiest Day</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-100">Friday</span>
+                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

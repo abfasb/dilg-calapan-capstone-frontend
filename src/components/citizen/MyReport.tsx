@@ -375,7 +375,7 @@ export default function MyReport() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Key Details</p>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    {Object.entries(report.data).slice(0, 4).map(([key, value]) => (
+                  {Object.entries(report.data || {}).slice(0, 4).map(([key, value]) => (
                       <div 
                         key={key} 
                         className="truncate p-2 bg-muted/30 rounded-md"

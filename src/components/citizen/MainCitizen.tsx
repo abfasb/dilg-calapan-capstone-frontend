@@ -871,41 +871,51 @@ if (isLoading) {
           </TabsContent>
             
           <TabsContent value="events">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
-              <Card key={event._id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="flex flex-row justify-between items-start">
-                  <CardTitle className="text-lg">{event.title}</CardTitle>
-                  <Badge 
-                    variant={event.status === 'published' ? 'default' : 'secondary'}
-                    className="ml-2"
-                  >
-                    {event.status}
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {format(new Date(event.date), 'PPP')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{event.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{event.location === 'TBA' ? 'Location TBA' : event.location}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {event.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events
+                .filter(event => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  
+                  const eventDate = new Date(event.date);
+                  eventDate.setHours(0, 0, 0, 0);
+
+                  return eventDate >= today;
+                })
+                .map((event) => (
+                  <Card key={event._id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="flex flex-row justify-between items-start">
+                      <CardTitle className="text-lg">{event.title}</CardTitle>
+                      <Badge 
+                        variant={event.status === 'published' ? 'default' : 'secondary'}
+                        className="ml-2"
+                      >
+                        {event.status}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>
+                          {format(new Date(event.date), 'PPP')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span>{event.time}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{event.location === 'TBA' ? 'Location TBA' : event.location}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {event.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </TabsContent>
         </Tabs>
 
         <Card className="border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/30">

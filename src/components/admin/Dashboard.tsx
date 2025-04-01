@@ -1,6 +1,13 @@
+// src/components/Dashboard.tsx
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "../ui/card";
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardContent, 
+  CardDescription 
+} from "../ui/card";
 import { Button } from "../ui/button";
 import { 
   Users,
@@ -9,14 +16,16 @@ import {
   CheckCircle2,
   Activity,
   AlertCircle,
-  MapPin,
-  PieChart
+  PieChart,
+  CalendarCheck,
+  HardHat,
+  FileBox,
+  ClipboardCheck
 } from 'lucide-react';
 import { Progress } from "../ui/progress";
 import { 
   BarChart, 
-  LineChart, 
-  PieChart as RePieChart, 
+  PieChart as RechartsPieChart, 
   ResponsiveContainer, 
   Cell, 
   XAxis, 
@@ -31,6 +40,9 @@ import {
 } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 import { ScrollArea } from "../ui/scroll-area";
+import { Badge } from "../ui/badge";
+import { cn } from '../../lib/utils';
+import { format } from 'date-fns';
 
 interface StatCardProps {
   title: string;
@@ -42,60 +54,43 @@ interface StatCardProps {
   chartData?: Array<{ month: string; count: number }>;
 }
 
-interface AlertType {
-  _id: string;
-  title: string;
-  location: string;
-  status: string;
-  description: string;
+interface DashboardStats {
+  totalReports: number;
+  resolvedCases: number;
+  registeredUsers: number;
+  avgResolutionTime: number;
+  activeUsers: number;
+  satisfaction: number;
+  userGrowth: Array<{ month: string; count: number }>;
+  appointmentStatus: Record<string, number>;
+  responseTypes: Record<string, number>;
+  categoryDistribution: Array<{ category: string; count: number }>;
+  recentActivities: Array<ActivityType>;
 }
 
 interface ActivityType {
   _id: string;
   title: string;
   description: string;
-  type: string;
+  type: 'complaint' | 'appointment' | 'response';
   timestamp: string;
+  status?: string;
 }
 
 const Dashboard = () => {
   const BASE_URL = import.meta.env.VITE_API_URL;
-  const [stats, setStats] = useState<any>(null);
-  const [trends, setTrends] = useState<any>(null);
-  const [incidents, setIncidents] = useState<any>(null);
-  const [activities, setActivities] = useState<ActivityType[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const urls = [
-          `${BASE_URL}/api/analytics/admin/stats`,
-          `${BASE_URL}/api/analytics/admin/trends`,
-          `${BASE_URL}/api/analytics/admin/incidents`,
-          `${BASE_URL}/api/analytics/admin/activities`
-        ].map(url => url.replace(/([^:]\/)\/+/g, "$1"));
-
-        const [
-          statsRes, 
-          trendsRes, 
-          incidentsRes, 
-          activitiesRes
-        ] = await Promise.all([
-          axios.get(urls[0]),
-          axios.get(urls[1]),
-          axios.get(urls[2]),
-          axios.get(urls[3]),
-        ]);
-
-        setStats(statsRes.data);
-        setTrends(trendsRes.data);
-        setIncidents(incidentsRes.data);
-        setActivities(activitiesRes.data);
+        const { data } = await axios.get(`${BASE_URL}/api/analytics/admin/dashboard-data`);
+        setStats(data);
       } catch (err) {
-        setError('Failed to fetch dashboard data');
-        console.error(err);
+        setError('Failed to fetch dashboard data. Please try again later.');
+        console.error('Dashboard fetch error:', err);
       } finally {
         setIsLoading(false);
       }
@@ -107,46 +102,61 @@ const Dashboard = () => {
   const chartColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
 
   if (isLoading) return (
-    <div className="p-8 space-y-8">
-      <Skeleton height={200} count={4} className="mb-4" />
-      <Skeleton height={400} />
+    <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {[...Array(4)].map((_, i) => (
+        <Skeleton key={i} height={150} className="rounded-xl" />
+      ))}
+      <div className="lg:col-span-2">
+        <Skeleton height={400} className="rounded-xl" />
+      </div>
+      <div className="lg:col-span-1">
+        <Skeleton height={400} className="rounded-xl" />
+      </div>
+      <div className="lg:col-span-3">
+        <Skeleton height={300} className="rounded-xl" />
+      </div>
     </div>
   );
 
   if (error) return (
-    <div className="p-8 text-center text-red-500">
-      {error} - Please try refreshing the page
+    <div className="h-full flex flex-col items-center justify-center p-8">
+      <div className="max-w-md text-center space-y-4">
+        <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+        <h2 className="text-xl font-semibold">Unable to load dashboard</h2>
+        <p className="text-muted-foreground">{error}</p>
+        <Button onClick={() => window.location.reload()}>
+          Refresh Dashboard
+        </Button>
+      </div>
     </div>
   );
 
   return (
-    <div className="p-6 space-y-8 bg-muted/40">
-      {/* Top Stats Grid */}
+    <div className="p-6 space-y-6 bg-muted/40">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           title="Total Reports" 
-          value={stats?.totalReports || 0} 
-          icon={<FileText className="h-4 w-4 text-muted-foreground" />}
+          value={stats?.totalReports.toLocaleString() || '0'} 
+          icon={<FileText className="h-5 w-5 text-muted-foreground" />}
           delta="+12.3%"
-          chartData={trends?.reports}
         />
         <StatCard 
-          title="Resolved Cases" 
-          value={stats?.resolvedCases || 0} 
-          icon={<CheckCircle2 className="h-4 w-4 text-muted-foreground" />}
-          progress={(stats?.resolvedCases / stats?.totalReports) * 100 || 0}
+          title="Resolved Document" 
+          value={stats?.resolvedCases.toLocaleString() || '0'} 
+          icon={<CheckCircle2 className="h-5 w-5 text-muted-foreground" />}
+          progress={((stats?.resolvedCases ?? 0) / (stats?.totalReports ?? 1)) * 100 || 0}
         />
         <StatCard 
           title="Registered Users" 
-          value={stats?.registeredUsers || 0} 
-          icon={<Users className="h-4 w-4 text-muted-foreground" />}
+          value={stats?.registeredUsers.toLocaleString() || '0'} 
+          icon={<Users className="h-5 w-5 text-muted-foreground" />}
           delta="+245"
           subtitle="new this week"
         />
         <StatCard 
           title="Avg. Resolution" 
           value={`${stats?.avgResolutionTime || 0}d`} 
-          icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+          icon={<Clock className="h-5 w-5 text-muted-foreground" />}
           delta="-0.6d"
           subtitle="from last quarter"
         />
@@ -154,30 +164,54 @@ const Dashboard = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 p-4">
+        {/* Report Trends */}
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Activity className="h-5 w-5" /> Report Trends
-            </CardTitle>
-            <CardDescription>Monthly report analysis</CardDescription>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="h-5 w-5" /> Report Trends
+                </CardTitle>
+                <CardDescription>Monthly report analysis</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm">
+                Last 12 months
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trends?.reports}>
+              <AreaChart data={stats?.userGrowth}>
                 <defs>
                   <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="month" 
+                  tickLine={false} 
+                  axisLine={{ stroke: '#e5e7eb' }}
+                />
+                <YAxis 
+                  tickLine={false} 
+                  axisLine={{ stroke: '#e5e7eb' }}
+                  width={80}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
                 <Area 
                   type="monotone" 
                   dataKey="count" 
                   stroke="#3b82f6" 
+                  strokeWidth={2}
                   fillOpacity={0.2}
                   fill="url(#colorUv)"
                 />
@@ -187,137 +221,281 @@ const Dashboard = () => {
         </Card>
 
         {/* Incident Breakdown */}
-        <Card className="p-4">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <PieChart className="h-5 w-5" /> Incident Breakdown
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <HardHat className="h-5 w-5" /> Issue Types
+                </CardTitle>
+                <CardDescription>Distribution by category</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm">
+                View details
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <RePieChart>
+              <RechartsPieChart>
                 <Pie
-                  data={incidents}
+                  data={stats?.categoryDistribution || []}
                   dataKey="count"
                   nameKey="category"
                   cx="50%"
                   cy="50%"
-                  outerRadius={120}
+                  outerRadius={100}
+                  innerRadius={60}
+                  paddingAngle={2}
                 >
-                  {incidents?.map((_: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
+                  {stats?.categoryDistribution?.map((_, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={chartColors[index % chartColors.length]} 
+                    />
                   ))}
                 </Pie>
-                <Tooltip />
-                <Legend layout="vertical" align="right" verticalAlign="middle" />
-              </RePieChart>
+                <Tooltip 
+                  contentStyle={{
+                    background: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Legend 
+                  layout="vertical"
+                  align="right"
+                  verticalAlign="middle"
+                  iconSize={10}
+                  iconType="circle"
+                  formatter={(value) => (
+                    <span className="text-muted-foreground text-sm">
+                      {value}
+                    </span>
+                  )}
+                />
+              </RechartsPieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-
         {/* User Engagement */}
-        <Card className="p-4">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5" /> User Engagement
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-2xl font-bold">{stats?.activeUsers}</p>
-                <p className="text-sm text-muted-foreground">Daily Active</p>
+              <div className="p-4 bg-blue-50/50 rounded-lg border">
+                <p className="text-2xl font-bold">{stats?.activeUsers.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground mt-1">Daily Active</p>
+                <Badge variant="secondary" className="mt-2">
+                  +14% from last month
+                </Badge>
               </div>
-              <div className="p-4 bg-green-50 rounded-lg">
+              <div className="p-4 bg-green-50/50 rounded-lg border">
                 <p className="text-2xl font-bold">{stats?.satisfaction}%</p>
-                <p className="text-sm text-muted-foreground">Satisfaction</p>
+                <p className="text-sm text-muted-foreground mt-1">Satisfaction</p>
+                <Badge variant="secondary" className="mt-2">
+                  +2.3% from Q3
+                </Badge>
               </div>
             </div>
-            <div className="mt-4 h-48">
+            <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats?.userGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    tickLine={false}
+                    axisLine={{ stroke: '#e5e7eb' }}
+                  />
+                  <YAxis 
+                    tickLine={false} 
+                    axisLine={{ stroke: '#e5e7eb' }}
+                    width={80}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill="#3b82f6" 
+                    radius={[4, 4, 0, 0]}
+                    barSize={24}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CalendarCheck className="h-5 w-5" /> Appointments
+                </CardTitle>
+                <CardDescription>Current appointment status</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Object.entries(stats?.appointmentStatus || {}).map(([status, count]) => (
+                <div key={status} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      status === 'confirmed' ? 'bg-green-500' :
+                      status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`} />
+                    <span className="text-sm capitalize">{status}</span>
+                  </div>
+                  <span className="font-medium">{count}</span>
+                </div>
+              ))}
+              {!stats?.appointmentStatus && (
+                <div className="text-center text-muted-foreground py-4">
+                  No appointment data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Response Types */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileBox className="h-5 w-5" /> Submissions
+                </CardTitle>
+                <CardDescription>Response type distribution</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Object.entries(stats?.responseTypes || {}).map(([type, count]) => (
+                <div key={type} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm capitalize">{type === 'file' ? 'Bulk Upload' : 'Form'}</span>
+                  </div>
+                  <span className="font-medium">{count}</span>
+                </div>
+              ))}
+              {!stats?.responseTypes && (
+                <div className="text-center text-muted-foreground py-4">
+                  No submission data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Recent Activities */}
-      <Card className="p-4">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Activity className="h-5 w-5" /> Recent Activities
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-64">
-            {activities?.map(activity => (
-              <div key={activity._id} className="flex items-center gap-4 p-4 hover:bg-muted/50">
-                <div className={`w-2 h-2 rounded-full ${activity.type === 'alert' ? 'bg-red-500' : 'bg-green-500'}`} />
-                <div className="flex-1">
-                  <p className="font-medium">{activity.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {activity.description} • {new Date(activity.timestamp).toLocaleDateString()}
-                  </p>
-                </div>
+      {/* Lower Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
+
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="h-5 w-5" /> Recent Activities
+              </CardTitle>
+              <Button variant="ghost" size="sm">
+                View all
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-72">
+              <div className="divide-y">
+                {stats?.recentActivities?.map(activity => (
+                  <div 
+                    key={activity._id} 
+                    className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      activity.type === 'complaint' ? 'bg-red-500' :
+                      activity.type === 'appointment' ? 'bg-blue-500' :
+                      'bg-green-500'
+                    )} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{activity.title}</p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {activity.description}
+                      </p>
+                    </div>
+                    <div className="text-sm text-muted-foreground whitespace-nowrap">
+                      {format(new Date(activity.timestamp), 'MMM dd, HH:mm')}
+                    </div>
+                  </div>
+                ))}
+                {!stats?.recentActivities?.length && (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No recent activities
+                  </div>
+                )}
               </div>
-            ))}
-          </ScrollArea>
-        </CardContent>
-      </Card>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
 
-const StatCard = ({ title, value, icon, delta, subtitle, progress, chartData }: StatCardProps) => (
-  <Card className="hover:shadow-lg transition-shadow relative">
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
+const StatCard = ({ title, value, icon, delta, subtitle, progress }: StatCardProps) => (
+  <Card className="relative overflow-hidden transition-shadow hover:shadow-md">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
       {icon}
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
-      {progress !== undefined ? (
-        <Progress value={progress} className="h-2 mt-2" />
-      ) : (
-        <div className="flex items-center gap-2 mt-2">
-          {delta && (
-            <span className={`text-xs ${delta.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
-              {delta}
-            </span>
+      <div className="text-3xl font-bold">{value}</div>
+      
+      {(progress !== undefined || delta) && (
+        <div className="mt-4 space-y-2">
+          {progress !== undefined ? (
+            <>
+              <Progress value={progress} className="h-2" />
+              <div className="text-sm text-muted-foreground">
+                {progress.toFixed(1)}% approved
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              {delta && (
+                <span className={cn(
+                  "text-sm font-medium",
+                  delta.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                )}>
+                  {delta}
+                </span>
+              )}
+              {subtitle && (
+                <span className="text-sm text-muted-foreground">
+                  {subtitle}
+                </span>
+              )}
+            </div>
           )}
-          {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
         </div>
       )}
     </CardContent>
-    {chartData && (
-      <div className="absolute bottom-0 left-0 right-0 h-16 opacity-25">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <Area 
-              type="monotone" 
-              dataKey="count" 
-              stroke="#3b82f6" 
-              fill="url(#gradient)" 
-              strokeWidth={0}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    )}
   </Card>
 );
 

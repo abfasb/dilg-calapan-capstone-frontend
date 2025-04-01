@@ -66,6 +66,14 @@ interface DashboardStats {
   responseTypes: Record<string, number>;
   categoryDistribution: Array<{ category: string; count: number }>;
   recentActivities: Array<ActivityType>;
+  deltas: {
+    reports: number;
+    resolved: number;
+    users: number;
+    resolutionTime: number;
+    satisfaction: number;
+    activeUsers: number;
+  };
 }
 
 interface ActivityType {
@@ -138,33 +146,32 @@ const Dashboard = () => {
           title="Total Reports" 
           value={stats?.totalReports.toLocaleString() || '0'} 
           icon={<FileText className="h-5 w-5 text-muted-foreground" />}
-          delta="+12.3%"
+          delta='11.8%'
         />
         <StatCard 
           title="Resolved Document" 
           value={stats?.resolvedCases.toLocaleString() || '0'} 
           icon={<CheckCircle2 className="h-5 w-5 text-muted-foreground" />}
           progress={((stats?.resolvedCases ?? 0) / (stats?.totalReports ?? 1)) * 100 || 0}
+          delta='4.7%'
         />
         <StatCard 
           title="Registered Users" 
           value={stats?.registeredUsers.toLocaleString() || '0'} 
           icon={<Users className="h-5 w-5 text-muted-foreground" />}
-          delta="+245"
+          delta='22.3%'
           subtitle="new this week"
         />
         <StatCard 
           title="Avg. Resolution" 
           value={`${stats?.avgResolutionTime || 0}d`} 
           icon={<Clock className="h-5 w-5 text-muted-foreground" />}
-          delta="-0.6d"
+          delta='9.7%'
           subtitle="from last quarter"
         />
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Report Trends */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -467,34 +474,6 @@ const StatCard = ({ title, value, icon, delta, subtitle, progress }: StatCardPro
     <CardContent>
       <div className="text-3xl font-bold">{value}</div>
       
-      {(progress !== undefined || delta) && (
-        <div className="mt-4 space-y-2">
-          {progress !== undefined ? (
-            <>
-              <Progress value={progress} className="h-2" />
-              <div className="text-sm text-muted-foreground">
-                {progress.toFixed(1)}% approved
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-2">
-              {delta && (
-                <span className={cn(
-                  "text-sm font-medium",
-                  delta.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                )}>
-                  {delta}
-                </span>
-              )}
-              {subtitle && (
-                <span className="text-sm text-muted-foreground">
-                  {subtitle}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
     </CardContent>
   </Card>
 );

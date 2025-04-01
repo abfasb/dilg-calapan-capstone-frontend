@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { sendStatusNotification } from '../../utils/notifications';
-import { CheckCircleIcon, ChevronLeft, ChevronRight, Download, ImageIcon, Loader2, MoreVertical, Sliders, FileText } from 'lucide-react';
+import { CheckCircleIcon, ChevronLeft, ChevronRight, Download, ImageIcon, Loader2, MoreVertical, Sliders, FileText, Clock} from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Skeleton } from '../ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 
 interface ReportForm {
   _id: string;
@@ -45,14 +45,25 @@ interface FormResponse {
       type: string;
     }>;
   };
+  history: Array<{
+    status: string;
+    updatedBy: string;
+    document: string;
+    timestamp: string;
+  }>;
 }
+
 
 export default function Reports() {
   const [forms, setForms] = useState<ReportForm[]>([]);
   const [selectedForm, setSelectedForm] = useState<ReportForm | null>(null);
   const [responses, setResponses] = useState<FormResponse[]>([]);
+  const [showActivityModal, setShowActivityModal] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null);
   const [filter, setFilter] = useState('all');
+  const [combinedHistory, setCombinedHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);  
+
   const [loading, setLoading] = useState({
     forms: true,
     responses: false,
@@ -74,6 +85,36 @@ export default function Reports() {
     };
     fetchForms();
   }, []);
+
+  const fetchCombinedHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/response/history/combined`);
+
+      const formattedHistory = data.flatMap((entry : any) =>
+        entry.__parentArray ? entry.__parentArray.map((historyItem : any, index : any, arr : any) => ({
+          documentName: entry.referenceNumber,
+          document: historyItem.document,
+          previousStatus: index > 0 ? arr[index - 1].status : "pending",
+          newStatus: historyItem.status,
+          updatedBy: historyItem.updatedBy,
+          timestamp: historyItem.timestamp,
+          type: entry.type,
+        })) : []
+      );
+      
+  
+      setCombinedHistory([...formattedHistory]);
+    } catch (error) {
+      toast.error('Failed to load history');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+      fetchCombinedHistory();
+  }, [selectedForm]);
 
   const handleFormClick = async (formId: string) => {
     setLoading(prev => ({ ...prev, responses: true }));
@@ -143,11 +184,27 @@ export default function Reports() {
 
   const updateStatus = async (responseId: string, status: FormResponse["status"]) => {
     const prevStatus = responses.find(r => r._id === responseId)?.status;
-    
+    const lguName = localStorage.getItem('name');
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/api/response/${responseId}`, { status });
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/response/${responseId}`, { 
+        status,
+        updatedBy: lguName || 'LGU Representative' 
+      });
+      
       setResponses(prev => prev.map(r => 
-        r._id === responseId ? { ...r, status } : r
+        r._id === responseId ? { 
+          ...r, 
+          status,
+          history: [
+            ...r.history,
+            {
+              status,
+              updatedBy: lguName || 'LGU Representative',
+              document: r.bulkFile?.fileName || r.referenceNumber,
+              timestamp: new Date().toISOString()
+            }
+          ]
+        } : r
       ));
 
       toast.success('Status updated successfully', {
@@ -195,12 +252,114 @@ export default function Reports() {
           <>
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-cyan-400">Report Forms</h1>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setShowActivityModal(true)}
+                  className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm px-4 py-2 rounded-lg bg-gray-700/50 hover:bg-gray-700/70 transition-colors"
+                > 
+                  <Clock className="w-5 h-5" />
+                  View Activity Timeline
+                </button>
+              </div>
               <div className="flex items-center gap-2">
                 {loading.forms ? (
                   <Skeleton className="h-10 w-24 bg-gray-800" />
                 ) : null}
               </div>
             </div>
+
+            <Dialog open={showActivityModal} onOpenChange={setShowActivityModal}>
+            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-400 scrollbar-track-gray-800">
+                <DialogHeader>
+                  <DialogTitle className="text-cyan-400">Recent Activity Timeline</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    View the latest changes and updates.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {historyLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="flex gap-4">
+                        <Skeleton className="h-6 w-6 rounded-full bg-gray-700" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-[200px] bg-gray-700" />
+                          <Skeleton className="h-3 w-[160px] bg-gray-700" />
+                          <Skeleton className="h-3 w-[140px] bg-gray-700" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="relative mt-4">
+                    <div className="absolute left-7 top-0 h-full w-0.5 bg-gray-700/50" aria-hidden="true" />
+
+                    <div className="space-y-8">
+                    {(combinedHistory?.length > 0 ? combinedHistory : []).map((entry, index) => (
+                        <div key={index} className="relative flex gap-6">
+                          <div className="relative">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-900 border-2 border-cyan-400/50">
+                              {entry.type === 'global' ? (
+                                <FileText className="h-6 w-6 text-cyan-400" />
+                              ) : (
+                                <Sliders className="h-6 w-6 text-purple-400" />
+                              )}
+                            </div>
+                            <div className="absolute left-1/2 -translate-x-1/2 -bottom-8 text-xs text-gray-400">
+                              {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+
+                          <div className="flex-1 pt-1.5">
+                            <div className="p-4 rounded-lg bg-gray-700/30 hover:bg-gray-700/50 transition-colors">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`text-sm font-medium ${
+                                  entry.newStatus === 'approved' ? 'text-green-400' :
+                                  entry.newStatus === 'rejected' ? 'text-red-400' : 'text-cyan-400'
+                                }`}>
+                                  {entry.documentName || entry.document}
+                                </span>
+                                <span className="text-gray-400 text-xs">•</span>
+                                <span className="text-xs text-purple-400">
+                                  {entry.type === 'global' ? 'Status Update' : 'Document Modified'}
+                                </span>
+                              </div>
+
+                              {entry.previousStatus && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="text-yellow-400">{entry.previousStatus}</span>
+                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  <span className={
+                                    entry.newStatus === 'approved' ? 'text-green-400' :
+                                    entry.newStatus === 'rejected' ? 'text-red-400' : 'text-yellow-400'
+                                  }>
+                                    {entry.newStatus}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
+                                <span>Updated by:</span>
+                                <span className="text-cyan-400">{entry.updatedBy}</span>
+                                <span className="mx-1">•</span>
+                                <span>
+                                  {new Date(entry.timestamp).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
 
             {loading.forms ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -214,6 +373,7 @@ export default function Reports() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
                 {forms.map(form => (
                   <div 
                     key={form._id}
@@ -418,6 +578,7 @@ export default function Reports() {
               </div>
             </div>
 
+
             <Dialog open={!!selectedResponse} onOpenChange={() => setSelectedResponse(null)}>
             <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
                 {loading.details ? (
@@ -534,6 +695,7 @@ export default function Reports() {
                 )}
               </DialogContent>
             </Dialog>
+
           </>
         )}
       </div>

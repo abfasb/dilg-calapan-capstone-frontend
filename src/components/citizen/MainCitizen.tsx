@@ -781,7 +781,6 @@ if (isLoading) {
                         <TableRow>
                           <TableHead>Report ID</TableHead>
                           <TableHead>Title</TableHead>
-                          <TableHead>Description</TableHead>
                           <TableHead>Fields</TableHead>
                           <TableHead>Date Created</TableHead>
                           <TableHead>Actions</TableHead>
@@ -795,9 +794,6 @@ if (isLoading) {
                          </TableCell>
                          <TableCell className="max-w-[200px] truncate">
                            {report.title}
-                         </TableCell>
-                         <TableCell className="max-w-[300px] truncate">
-                           {report.description}
                          </TableCell>
                          <TableCell>
                            <Badge variant="outline">

@@ -7,7 +7,6 @@ import {
   CardTitle, 
   CardFooter 
 } from '../ui/card';
-import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
 import { DropdownMenu } from '../ui/dropdown-menu';
@@ -19,6 +18,7 @@ import { Tooltip,TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/t
 import { Avatar } from '../ui/avatar';
 import { AvatarFallback } from '../ui/avatar';
 import { AvatarImage } from '../ui/avatar';
+import { Badge } from '../ui/badge';
 import { 
   FileText, 
   Clock, 
@@ -34,10 +34,12 @@ import {
   File,
   Image,
   FileSpreadsheet,
-  Receipt
+  Receipt,
+  MessageCircleWarning
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 
 export interface Report {
   _id: string;
@@ -57,6 +59,7 @@ export interface Report {
     name: string;
     avatar: string;
   };
+  comments?: string;
 }
 
 const statuses = {
@@ -65,14 +68,69 @@ const statuses = {
   rejected: { label: 'Revisions Needed', color: 'bg-rose-500', icon: XCircle },
 };
 
-const StatusIndicator = ({ status }: { status: Report['status'] }) => {
+
+const StatusIndicator = ({ status, report }: { status: Report['status'], report: Report }) => {
   const { color, label, icon: Icon } = statuses[status];
+  const [showCommentsDialog, setShowCommentsDialog] = useState(false);
+
   return (
-    <div className="flex items-center gap-2">
-      <div className={cn("w-3 h-3 rounded-full animate-pulse", color)} />
-      <Icon className="w-4 h-4 text-muted-foreground" />
-      <span className="font-medium text-sm">{label}</span>
-    </div>
+    <>
+      <div className="flex items-center gap-2">
+        <div className={cn("w-3 h-3 rounded-full animate-pulse", color)} />
+        <Icon className="w-4 h-4 text-muted-foreground" />
+        <span className="font-medium text-sm">{label}</span>
+        
+        {status === 'rejected' && report.comments && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs text-rose-600 hover:bg-rose-50"
+            onClick={() => setShowCommentsDialog(true)}
+          >
+            <MessageCircleWarning className="w-4 h-4 mr-1" />
+            View Comments
+          </Button>
+        )}
+      </div>
+
+      <Dialog open={showCommentsDialog} onOpenChange={setShowCommentsDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-rose-600">
+              <XCircle className="inline-block w-5 h-5 mr-2" />
+              Rejection Details
+            </DialogTitle>
+            <DialogDescription>
+              Review feedback for submission {report.referenceNumber}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Badge variant={status === 'pending' ? 'default' : status === 'approved' ? 'secondary' : 'destructive'} className="capitalize">
+                {status}
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                {new Date(report.updatedAt).toLocaleDateString()}
+              </span>
+            </div>
+
+            <div className="p-4 bg-rose-50 rounded-lg">
+              <h4 className="font-medium text-sm text-rose-800 mb-2">Reviewer Comments:</h4>
+              <p className="text-sm text-rose-700 whitespace-pre-wrap">
+                {report.comments || 'No comments provided'}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowCommentsDialog(false)} variant="secondary">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -341,7 +399,7 @@ export default function MyReport() {
 
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <StatusIndicator status={report.status} />
+                <StatusIndicator status={report.status} report={report} />
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">

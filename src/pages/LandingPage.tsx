@@ -33,7 +33,7 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-900 dark:bg-gray-900 text-gray-100 dark:text-gray-100 transition-colors duration-300">
+    <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <Navbar theme={theme} toggleTheme={toggleTheme} />
 
       <motion.div
@@ -42,35 +42,36 @@ const LandingPage: React.FC = () => {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="w-full mx-auto"
       >
+        {/* Main content sections */}
         <section id="hero" className="min-h-screen w-full">
           <HeroSection />
         </section>
 
-        <section id="features" className="py-20 bg-gray-800 dark:bg-gray-800 rounded-lg shadow-xl">
+        <section id="features" className="py-20 bg-gray-100 dark:bg-gray-800">
           <FeaturesSection />
         </section>
 
-        <section id="statistics" className="py-20 bg-gray-800 dark:bg-gray-800 rounded-lg shadow-xl">
+        <section id="statistics" className="py-20 bg-white dark:bg-gray-800">
           <StatisticsSection />
         </section>
 
-        <section id="testimonials" className="py-20">
+        <section id="testimonials" className="py-20 bg-gray-100 dark:bg-gray-800">
           <TestimonialSection />
         </section>
 
-        <section id="cta" className="py-20">
+        <section id="cta" className="py-20 bg-white dark:bg-gray-800">
           <CTASection />
         </section>
 
-        <section id="faq" className="py-20 bg-gray-800 dark:bg-gray-800 rounded-lg shadow-xl">
+        <section id="faq" className="py-20 bg-gray-100 dark:bg-gray-800">
           <FaqSection />
         </section>
 
-        <section id="partners" className="py-20">
+        <section id="partners" className="py-20 bg-white dark:bg-gray-800">
           <PartnersSection />
         </section>
 
-        <section id="contact" className="py-20">
+        <section id="contact" className="py-20 bg-gray-100 dark:bg-gray-800">
           <ContactSection />
         </section>
       </motion.div>

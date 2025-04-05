@@ -2,7 +2,19 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { sendStatusNotification } from '../../utils/notifications';
-import { CheckCircleIcon, ChevronLeft, ChevronRight, Download, ImageIcon, Loader2, MoreVertical, Sliders, FileText, Clock} from 'lucide-react';
+import { 
+  CheckCircleIcon, 
+  ChevronLeft, 
+  ChevronRight, 
+  Download, 
+  ImageIcon, 
+  Loader2, 
+  MoreVertical, 
+  Sliders, 
+  FileText, 
+  Clock, 
+  XCircle 
+} from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import {
   DropdownMenu,
@@ -11,7 +23,16 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Skeleton } from '../ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Textarea } from '../ui/textarea';
 
 interface ReportForm {
   _id: string;
@@ -45,14 +66,15 @@ interface FormResponse {
       type: string;
     }>;
   };
+  comments?: string;
   history: Array<{
     status: string;
     updatedBy: string;
     document: string;
     timestamp: string;
+    comments?: string;
   }>;
 }
-
 
 export default function Reports() {
   const [forms, setForms] = useState<ReportForm[]>([]);
@@ -62,7 +84,11 @@ export default function Reports() {
   const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null);
   const [filter, setFilter] = useState('all');
   const [combinedHistory, setCombinedHistory] = useState<any[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);  
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showRejectionDialog, setShowRejectionDialog] = useState(false);
+  const [rejectionComment, setRejectionComment] = useState('');
+  const [currentResponseId, setCurrentResponseId] = useState<string | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<FormResponse["status"] | null>(null);
 
   const [loading, setLoading] = useState({
     forms: true,
@@ -70,7 +96,6 @@ export default function Reports() {
     details: false,
   });
 
-  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -91,8 +116,8 @@ export default function Reports() {
     try {
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/response/history/combined`);
 
-      const formattedHistory = data.flatMap((entry : any) =>
-        entry.__parentArray ? entry.__parentArray.map((historyItem : any, index : any, arr : any) => ({
+      const formattedHistory = data.flatMap((entry: any) =>
+        entry.__parentArray ? entry.__parentArray.map((historyItem: any, index: any, arr: any) => ({
           documentName: entry.referenceNumber,
           document: historyItem.document,
           previousStatus: index > 0 ? arr[index - 1].status : "pending",
@@ -100,10 +125,10 @@ export default function Reports() {
           updatedBy: historyItem.updatedBy,
           timestamp: historyItem.timestamp,
           type: entry.type,
+          comments: historyItem.comments,
         })) : []
       );
       
-  
       setCombinedHistory([...formattedHistory]);
     } catch (error) {
       toast.error('Failed to load history');
@@ -113,7 +138,7 @@ export default function Reports() {
   };
   
   useEffect(() => {
-      fetchCombinedHistory();
+    fetchCombinedHistory();
   }, [selectedForm]);
 
   const handleFormClick = async (formId: string) => {
@@ -153,6 +178,77 @@ export default function Reports() {
     document.body.removeChild(link);
   };
 
+  const handleStatusChangeInit = (responseId: string, newStatus: FormResponse["status"]) => {
+    if (newStatus === 'rejected') {
+      setCurrentResponseId(responseId);
+      setPendingStatus(newStatus);
+      setShowRejectionDialog(true);
+    } else {
+      updateStatus(responseId, newStatus);
+    }
+  };
+
+  const handleRejectionSubmit = async () => {
+    if (!rejectionComment.trim()) {
+      toast.error('Please provide a rejection reason');
+      return;
+    }
+    
+    if (currentResponseId && pendingStatus) {
+      await updateStatus(currentResponseId, pendingStatus, rejectionComment);
+      setShowRejectionDialog(false);
+      setRejectionComment('');
+      setCurrentResponseId(null);
+      setPendingStatus(null);
+    }
+  };
+
+  const updateStatus = async (responseId: string, status: FormResponse["status"], comments?: string) => {
+    const prevStatus = responses.find(r => r._id === responseId)?.status;
+    const lguName = localStorage.getItem('name');
+
+    try {
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/response/${responseId}`, { 
+        status,
+        comments,
+        updatedBy: lguName || 'LGU Representative' 
+      });
+      
+      setResponses(prev => prev.map(r => 
+        r._id === responseId ? { 
+          ...r, 
+          status,
+          history: [
+            ...r.history,
+            {
+              status,
+              comments: status === 'rejected' ? comments : undefined,
+              updatedBy: lguName || 'LGU Representative',
+              document: r.bulkFile?.fileName || r.referenceNumber,
+              timestamp: new Date().toISOString()
+            }
+          ]
+        } : r
+      ));
+
+      toast.success(`Status updated${status === 'rejected' ? ' with comments' : ''}`, {
+        icon: <CheckCircleIcon className="w-5 h-5 text-green-400" />,
+        style: {
+          background: '#1a1d24',
+          color: '#fff',
+          border: '1px solid #2a2f38',
+          padding: '12px',
+        },
+      });
+
+    } catch (error) {
+      setResponses(prev => prev.map(r => 
+        r._id === responseId ? { ...r, status: prevStatus! } : r
+      ));
+      toast.error('Failed to update status');
+    }
+  };
+
   const renderResponseValue = (fieldId: string, value: any) => {
     const field = selectedResponse?.formId.fields.find(f => f.id === fieldId);
     
@@ -182,52 +278,6 @@ export default function Reports() {
     return value || 'N/A';
   };
 
-  const updateStatus = async (responseId: string, status: FormResponse["status"]) => {
-    const prevStatus = responses.find(r => r._id === responseId)?.status;
-    const lguName = localStorage.getItem('name');
-    try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/api/response/${responseId}`, { 
-        status,
-        updatedBy: lguName || 'LGU Representative' 
-      });
-      
-      setResponses(prev => prev.map(r => 
-        r._id === responseId ? { 
-          ...r, 
-          status,
-          history: [
-            ...r.history,
-            {
-              status,
-              updatedBy: lguName || 'LGU Representative',
-              document: r.bulkFile?.fileName || r.referenceNumber,
-              timestamp: new Date().toISOString()
-            }
-          ]
-        } : r
-      ));
-
-      toast.success('Status updated successfully', {
-        icon: <CheckCircleIcon className="w-5 h-5 text-green-400" />,
-        style: {
-          background: '#1a1d24',
-          color: '#fff',
-          border: '1px solid #2a2f38',
-          padding: '12px',
-        },
-      });
-
-      if (userId) {
-        await sendStatusNotification(userId, status);
-      }
-    } catch (error) {
-      setResponses(prev => prev.map(r => 
-        r._id === responseId ? { ...r, status: prevStatus! } : r
-      ));
-      toast.error('Failed to update status');
-    }
-  };
-
   const filteredResponses = responses.filter(response => 
     filter === 'all' ? true : response.status === filter
   );
@@ -239,6 +289,54 @@ export default function Reports() {
 
   return (
     <>
+      {/* Rejection Comment Dialog */}
+      <Dialog open={showRejectionDialog} onOpenChange={setShowRejectionDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-400 flex items-center gap-2">
+              <XCircle className="w-6 h-6" />
+              Rejection Reason
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Please provide detailed reasons why this submission is being rejected
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Textarea
+              value={rejectionComment}
+              onChange={(e) => setRejectionComment(e.target.value)}
+              className="bg-gray-900 border-gray-700 text-white placeholder-gray-500 h-32"
+              placeholder="Explain what needs to be corrected or improved..."
+            />
+            
+            <div className="text-sm text-gray-400">
+              This comment will be:
+              <ul className="list-disc pl-4 mt-2">
+                <li>Visible in the submission history</li>
+                <li>Sent to the applicant</li>
+                <li>Stored as part of the audit trail</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              onClick={() => setShowRejectionDialog(false)}
+              className="bg-gray-700 hover:bg-gray-600 text-white"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRejectionSubmit}
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-400"
+            >
+              Confirm Rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Toaster
         position="top-right"
         gutter={32}
@@ -247,6 +345,7 @@ export default function Reports() {
           className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
         }}
       />
+
       <div className="space-y-8 p-6 bg-gray-900 min-h-screen">
         {!selectedForm ? (
           <>
@@ -269,7 +368,7 @@ export default function Reports() {
             </div>
 
             <Dialog open={showActivityModal} onOpenChange={setShowActivityModal}>
-            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-400 scrollbar-track-gray-800">
+              <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-400 scrollbar-track-gray-800">
                 <DialogHeader>
                   <DialogTitle className="text-cyan-400">Recent Activity Timeline</DialogTitle>
                   <DialogDescription className="text-gray-400">
@@ -295,7 +394,7 @@ export default function Reports() {
                     <div className="absolute left-7 top-0 h-full w-0.5 bg-gray-700/50" aria-hidden="true" />
 
                     <div className="space-y-8">
-                    {(combinedHistory?.length > 0 ? combinedHistory : []).map((entry, index) => (
+                      {(combinedHistory?.length > 0 ? combinedHistory : []).map((entry, index) => (
                         <div key={index} className="relative flex gap-6">
                           <div className="relative">
                             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-900 border-2 border-cyan-400/50">
@@ -338,6 +437,13 @@ export default function Reports() {
                                 </div>
                               )}
 
+                              {entry.comments && (
+                                <div className="mt-3 p-3 bg-gray-800/50 rounded-md border-l-4 border-red-400">
+                                  <div className="text-sm font-medium text-red-400 mb-1">Rejection Reason:</div>
+                                  <div className="text-sm text-gray-300 whitespace-pre-wrap">{entry.comments}</div>
+                                </div>
+                              )}
+
                               <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
                                 <span>Updated by:</span>
                                 <span className="text-cyan-400">{entry.updatedBy}</span>
@@ -360,7 +466,6 @@ export default function Reports() {
               </DialogContent>
             </Dialog>
 
-
             {loading.forms ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(3)].map((_, i) => (
@@ -373,7 +478,6 @@ export default function Reports() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
                 {forms.map(form => (
                   <div 
                     key={form._id}
@@ -530,7 +634,7 @@ export default function Reports() {
                           <td className="px-6 py-4">
                             <select
                               value={response.status}
-                              onChange={(e) => updateStatus(response._id, e.target.value as FormResponse["status"])}
+                              onChange={(e) => handleStatusChangeInit(response._id, e.target.value as FormResponse["status"])}
                               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                                 response.status === 'approved' ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' :
                                 response.status === 'rejected' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' :
@@ -578,9 +682,8 @@ export default function Reports() {
               </div>
             </div>
 
-
             <Dialog open={!!selectedResponse} onOpenChange={() => setSelectedResponse(null)}>
-            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
                 {loading.details ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
@@ -595,48 +698,48 @@ export default function Reports() {
 
                     {selectedResponse.bulkFile ? (
                       <div className="space-y-4 overflow-hidden">
-                      <div className="bg-gray-700/30 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold mb-2">Uploaded Document</h3>
-                        <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-md">
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-6 h-6 text-cyan-400" />
-                            <div>
-                              <p className="font-medium">{selectedResponse.bulkFile.fileName}</p>
-                              <p className="text-sm text-gray-400">
-                                {selectedResponse.bulkFile.fileType}
-                              </p>
+                        <div className="bg-gray-700/30 p-4 rounded-lg">
+                          <h3 className="text-lg font-semibold mb-2">Uploaded Document</h3>
+                          <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-md">
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-6 h-6 text-cyan-400" />
+                              <div>
+                                <p className="font-medium">{selectedResponse.bulkFile.fileName}</p>
+                                <p className="text-sm text-gray-400">
+                                  {selectedResponse.bulkFile.fileType}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => window.open(selectedResponse.bulkFile?.fileUrl, '_blank')}
+                                className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 px-3 py-1 rounded-md bg-gray-800/50"
+                              >
+                                <ImageIcon className="w-5 h-5" />
+                                Preview
+                              </button>
+                              <button
+                                onClick={() => downloadFile(
+                                  selectedResponse.bulkFile?.fileUrl || '',
+                                  selectedResponse.bulkFile?.fileName || 'document'
+                                )}
+                                className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 px-3 py-1 rounded-md bg-gray-800/50"
+                              >
+                                <Download className="w-5 h-5" />
+                                Download
+                              </button>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => window.open(selectedResponse.bulkFile?.fileUrl, '_blank')}
-                              className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 px-3 py-1 rounded-md bg-gray-800/50"
-                            >
-                              <ImageIcon className="w-5 h-5" />
-                              Preview
-                            </button>
-                            <button
-                              onClick={() => downloadFile(
-                                selectedResponse.bulkFile?.fileUrl || '',
-                                selectedResponse.bulkFile?.fileName || 'document'
-                              )}
-                              className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 px-3 py-1 rounded-md bg-gray-800/50"
-                            >
-                              <Download className="w-5 h-5" />
-                              Download
-                            </button>
-                          </div>
+                        </div>
+                        <div className="bg-gray-700/30 p-4 rounded-lg">
+                          <h3 className="text-lg font-semibold mb-2">Document Preview</h3>
+                          <iframe 
+                            src={selectedResponse.bulkFile.fileUrl}
+                            className="w-full h-96 rounded-lg border border-gray-700"
+                            title="Document preview"
+                          />
                         </div>
                       </div>
-                      <div className="bg-gray-700/30 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold mb-2">Document Preview</h3>
-                        <iframe 
-                          src={selectedResponse.bulkFile.fileUrl}
-                          className="w-full h-96 rounded-lg border border-gray-700"
-                          title="Document preview"
-                        />
-                      </div>
-                    </div>
                     ) : (
                       <div className="space-y-6">
                         {selectedResponse.formId.fields.map(field => (
@@ -691,11 +794,44 @@ export default function Reports() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="mt-6 space-y-4">
+                      <h3 className="text-lg font-semibold text-cyan-400">Processing History</h3>
+                      {selectedResponse.history.map((historyItem, index) => (
+                        <div key={index} className="bg-gray-700/30 p-4 rounded-lg">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <span className={`text-sm font-medium ${
+                                historyItem.status === 'approved' ? 'text-green-400' :
+                                historyItem.status === 'rejected' ? 'text-red-400' : 'text-yellow-400'
+                              }`}>
+                                {historyItem.status.toUpperCase()}
+                              </span>
+                              <span className="text-gray-400 mx-2">•</span>
+                              <span className="text-xs text-gray-400">
+                                {new Date(historyItem.timestamp).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              By {historyItem.updatedBy}
+                            </span>
+                          </div>
+                          
+                          {historyItem.comments && (
+                            <div className="mt-2 p-3 bg-gray-800/50 rounded-md">
+                              <div className="text-sm text-red-400 font-medium">Reviewer Comments:</div>
+                              <div className="text-sm text-gray-300 mt-1 whitespace-pre-wrap">
+                                {historyItem.comments}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </>
                 )}
               </DialogContent>
             </Dialog>
-
           </>
         )}
       </div>

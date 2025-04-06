@@ -1,10 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { DndContext, DragOverlay, closestCorners, pointerWithin, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDropzone } from 'react-dropzone';
-import { Plus, GripVertical, Trash2, Text, List, CheckSquare, Image, Radio, Settings2, UploadCloud } from 'lucide-react';
+import { Plus, GripVertical, Trash2, Text, List, CheckSquare, Image, Radio, UploadCloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
@@ -19,7 +19,6 @@ import { ScrollArea } from '../../ui/scroll-area';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../../ui/tooltip';
 import { Badge } from '../../ui/badge';
 import { Separator } from '../../ui/separator';
-import { Skeleton } from '../../ui/skeleton';
 import { Progress } from '../../ui/progress';
 
 type FormField = {
@@ -86,8 +85,8 @@ const AddReports: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [activeTab, setActiveTab] = useState('build');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionType, setSubmissionType] = useState<'form' | 'file'>('form');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const [templateUploadProgress, setTemplateUploadProgress] = useState(0);
 
   const activeField = fields.find(field => field.id === activeFieldId) || null;
 
@@ -99,7 +98,7 @@ const AddReports: React.FC = () => {
     })
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps: getImageRootProps, getInputProps: getImageInputProps, isDragActive } = useDropzone({
     accept: { 'image/*': ['.png', '.jpg', '.jpeg'] },
     multiple: false,
     onDrop: async (acceptedFiles) => {
@@ -126,6 +125,20 @@ const AddReports: React.FC = () => {
         };
         reader.readAsDataURL(file);
       }
+    },
+  });
+
+  const { getRootProps: getTemplateRootProps, getInputProps: getTemplateInputProps } = useDropzone({
+    accept: { 
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+    },
+    multiple: false,
+    onDrop: (acceptedFiles) => {
+      setTemplateFile(acceptedFiles[0]);
     },
   });
 
@@ -209,23 +222,22 @@ const AddReports: React.FC = () => {
       const formData = new FormData();
       formData.append('title', formTitle);
       formData.append('description', formDescription);
-      formData.append('submissionType', submissionType);
       formData.append('fields', JSON.stringify(fields));
       
-      if (submissionType === 'file' && templateFile) {
+      if (templateFile) {
         formData.append('template', templateFile);
       }
-  
+
       const config = {
         headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
+        onUploadProgress: (progressEvent: any) => {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
           setTemplateUploadProgress(percentCompleted);
         }
       };
-  
+
       await axios.post("http://localhost:5000/form/create-report", formData, config);
       
       toast.success("Form submitted successfully!");
@@ -233,6 +245,7 @@ const AddReports: React.FC = () => {
       setFormTitle('Untitled Form');
       setFormDescription('');
       setTemplateFile(null);
+      setTemplateUploadProgress(0);
     } catch (error) {
       toast.error("Error submitting form. Please try again.");
     } finally {
@@ -387,12 +400,12 @@ const AddReports: React.FC = () => {
                                 )}
                                 {field.type === 'image' && (
                                   <div
-                                    {...getRootProps()}
+                                    {...getImageRootProps()}
                                     className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                                       isDragActive ? 'border-primary bg-primary/10' : 'border-muted-foreground/30'
                                     }`}
                                   >
-                                    <input {...getInputProps()} />
+                                    <input {...getImageInputProps()} />
                                     {field.image ? (
                                       <div className="relative group">
                                         <img
@@ -526,64 +539,47 @@ const AddReports: React.FC = () => {
             </Card>
           </div>
 
-          {/* Right Sidebar */}
-          <Card className="h-full overflow-hidden">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Template Settings</CardTitle>
-              </CardHeader>
-              <ScrollArea className="h-[calc(100%-57px)] p-4">
-                {submissionType === 'file' && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Upload Template File</Label>
-                      <div
-                        {...getTemplateRootProps()}
-                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/30 transition-colors"
-                      >
-                        <input {...getTemplateInputProps()} />
-                        {templateFile ? (
-                          <div className="space-y-2">
-                            <p className="text-sm">{templateFile.name}</p>
-                            {templateUploadProgress > 0 && (
-                              <Progress value={templateUploadProgress} className="h-2" />
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">
-                              Drag & drop or click to upload template
-                            </p>
-                            <p className="text-xs text-muted-foreground/60 mt-1">
-                              Supported formats: PDF, DOC, DOCX, XLS, XLSX
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <Separator />
-                    <div className="text-sm text-muted-foreground">
-                      <p>Citizens will download this template when submitting files.</p>
-                      <p className="mt-2">Ensure the template includes all required fields and instructions.</p>
-                    </div>
-                  </div>
-                )}
-                {submissionType === 'form' && (
-                  <div className="text-muted-foreground text-sm">
-                    Form-based submission settings. Add form fields on the left.
-                  </div>
-                )}
-              </ScrollArea>
-            </Card>
-
-
           <Card className="h-full overflow-hidden">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Field Settings</CardTitle>
+              <CardTitle className="text-lg">Form Settings</CardTitle>
             </CardHeader>
             <ScrollArea className="h-[calc(100%-57px)] p-4">
+              <div className="space-y-4 mb-8">
+                <div className="space-y-2">
+                  <Label>Upload Template (Optional)</Label>
+                  <div
+                    {...getTemplateRootProps()}
+                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/30 transition-colors"
+                  >
+                    <input {...getTemplateInputProps()} />
+                    {templateFile ? (
+                      <div className="space-y-2">
+                        <p className="text-sm">{templateFile.name}</p>
+                        {templateUploadProgress > 0 && (
+                          <Progress value={templateUploadProgress} className="h-2" />
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Drag & drop or click to upload template
+                        </p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">
+                          Supported formats: PDF, DOC, DOCX, XLS, XLSX
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <p>Citizens can use this template or fill the form below</p>
+                </div>
+              </div>
+
+              {/* Field Settings */}
               {activeField ? (
-                <div className="space-y-6">
+                <div className="space-y-6 border-t pt-6">
                   <div className="space-y-2">
                     <Label>Field Label</Label>
                     <Input
@@ -640,8 +636,8 @@ const AddReports: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  Select a field to edit properties
+                <div className="flex items-center justify-center h-32 text-muted-foreground">
+                  Select a field to configure properties
                 </div>
               )}
             </ScrollArea>

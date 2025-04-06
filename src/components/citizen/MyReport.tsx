@@ -35,14 +35,14 @@ import {
   Image,
   FileSpreadsheet,
   Receipt,
-  MessageCircleWarning
+  MessageCircleWarning,
+  Edit
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 
 export interface Report {
-  fields: any;
   _id: string;
   referenceNumber: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -56,6 +56,16 @@ export interface Report {
     status: string;
     createdAt: string;
   }>;
+  formId: { 
+    _id: string;
+    fields: Array<{
+      id: string;
+      label: string;
+      type: string;
+      required: boolean;
+    }>;
+  };
+  userId?: string;
   officer?: {
     name: string;
     avatar: string;
@@ -334,7 +344,6 @@ export default function MyReport() {
           </div>
         </div>
 
-        {/* Reports Grid */}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sortedReports.map((report) => (
             <Card 
@@ -356,6 +365,28 @@ export default function MyReport() {
                       <MoreVertical className="w-5 h-5 text-muted-foreground hover:text-foreground" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
+                    {(report.status === 'pending' || report.status === 'rejected') && (
+                      <DropdownMenuItem asChild>
+                      <Link 
+                        to={`/account/citizen/my-report/edit/${report._id}`}
+                        state={{ 
+                          reportData: report.data,
+                          formFields: report.formId?.fields || [], 
+                          userData: {
+                            firstName: firstName || "",
+                            lastName: lastName || "",
+                            position: position || "",
+                            barangay: barangay || "",
+                            phoneNumber: phoneNumber || ""
+                          }
+                        }}
+                        className="flex items-center"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit and Resubmit
+                      </Link>
+                    </DropdownMenuItem>
+                    )}
                       <DropdownMenuItem asChild>
                         <a
                           href={report.files[0]?.url}
@@ -377,7 +408,7 @@ export default function MyReport() {
                           to={`/account/citizen/submission/${report._id}`}
                           state={{ 
                             reportData: report.data,
-                             formFields: report.fields, 
+                            formFields: report.formId?.fields || [],
                             userData: {
                               firstName: firstName || "",
                               lastName: lastName || "",

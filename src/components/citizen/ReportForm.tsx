@@ -38,6 +38,12 @@ interface ReportData {
   title: string;
   description: string;
   fields: ReportField[];
+  template?: {
+    fileName: string;
+    fileUrl: string;
+    mimetype: string;
+  };
+  createdAt: string;
 }
 
 export default function ReportForm() {
@@ -359,6 +365,57 @@ export default function ReportForm() {
             </CardHeader>
 
             <CardContent className="pt-8">
+
+            {report?.template && (
+              <div className="mb-8 p-6 border rounded-xl bg-muted/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                  <h3 className="text-lg font-semibold">Document Template Overview</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Template File:</span>
+                    <a
+                      href={report.template.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-2"
+                    >
+                      {report.template.fileName}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                    </a>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Uploaded:</span>
+                    <span className="text-muted-foreground">
+                      {new Date(report.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
               <div className="flex gap-4 mb-8">
                 <Button
                   variant={submissionMode === 'form' ? 'default' : 'outline'}

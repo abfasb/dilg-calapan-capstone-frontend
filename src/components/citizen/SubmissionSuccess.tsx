@@ -234,7 +234,7 @@ export default function SubmissionSuccess(): JSX.Element {
               </h3>
               <div className="space-y-4 print:space-y-2">
                 {submission.formFields?.map((field) => {
-                  const value = submission.submissionData?.[field.id] || 'N/A';
+                  const value = submission.submissionData?.[field.id] || 'hidden';
 
                   const displayValue = Array.isArray(value) 
                     ? value.length > 0 

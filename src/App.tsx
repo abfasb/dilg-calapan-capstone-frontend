@@ -23,6 +23,7 @@ import StaffPage from './pages/lgus/StaffPage';
 import SettingsPage from './pages/lgus/SettingsPage';
 import AnnouncementPage from './pages/lgus/AnnouncementPage';
 import AppointmentPage from './pages/lgus/AppointmentPage';
+import EditReportPage from './pages/citizen/EditReportPage';
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
         <Route path='/account/citizen/submission/success/:userId' element={<SubmissionSuccessPage />} />
         <Route path='/account/citizen/submission/:reportId' element={<SubmissionSuccessPage />} />
         <Route path='/account/citizen/my-report/:userId' element={<MyReportPage />} />
+        <Route path='/account/citizen/my-report/edit/:id' element={<EditReportPage />} />
 
 
         <Route path='*' element={ <NotFoundPage />}/>

@@ -4,91 +4,110 @@ import { FiMail, FiMapPin, FiPhone } from 'react-icons/fi';
 
 const ContactSection: React.FC = () => {
   return (
-    <section id="contact" className="py-20 bg-white dark:bg-gray-900">
+    <section id="contact" className="py-20 bg-gradient-to-b from-gray-900 to-blue-900">
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20">
-        <div className="bg-gradient-to-r from-blue-400 to-cyan-400 dark:from-blue-600 dark:to-cyan-500 rounded-3xl p-12 shadow-xl">
+        <motion.div 
+          className="bg-gray-900/50 backdrop-blur-xl rounded-[40px] p-12 shadow-2xl border border-white/10"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
           <div className="grid lg:grid-cols-2 gap-12">
             <motion.div 
-              className="text-gray-900 dark:text-white space-y-8"
+              className="text-white space-y-8"
               initial={{ x: -50, opacity: 0 }}
               whileInView={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              <h2 className="text-4xl font-bold">Get in Touch</h2>
-              <p className="text-lg opacity-80 dark:opacity-90">
-                Have questions about implementing eGov Nexus in your LGU? Our team is ready to help.
+              <h2 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                Connect with Innovation
+              </h2>
+              <p className="text-xl opacity-80">
+                Revolutionize your LGU operations with our next-gen eGov solutions.
               </p>
               
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <FiMapPin className="text-2xl text-gray-700 dark:text-gray-300 flex-shrink-0" />
+              <div className="space-y-8">
+                <div className="flex items-start gap-6 group">
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/10 group-hover:bg-cyan-400/10 transition-colors">
+                    <FiMapPin className="text-2xl text-cyan-400" />
+                  </div>
                   <div>
-                    <p className="font-semibold">Calapan City Office</p>
-                    <p className="opacity-80 dark:opacity-90">
-                      1st Floor, Local Government Center New City Hall Complex, M. Roxas Drive Barangay, Calapan, 5200 Oriental Mindoro
+                    <p className="font-semibold text-lg mb-2">Calapan City Office</p>
+                    <p className="opacity-80 text-sm leading-relaxed">
+                      1st Floor, Local Government Center<br />
+                      New City Hall Complex, M. Roxas Drive<br />
+                      Calapan, 5200 Oriental Mindoro
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <FiMail className="text-2xl text-gray-700 dark:text-gray-300 flex-shrink-0" />
+
+                <div className="flex items-start gap-6 group">
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/10 group-hover:bg-cyan-400/10 transition-colors">
+                    <FiMail className="text-2xl text-cyan-400" />
+                  </div>
                   <div>
-                    <p className="font-semibold">Email Support</p>
-                    <p className="opacity-80 dark:opacity-90">dilgcalapancity@gmail.com</p>
+                    <p className="font-semibold text-lg mb-2">Digital Support</p>
+                    <p className="opacity-80 text-sm">dilgcalapancity@gmail.com</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <FiPhone className="text-2xl text-gray-700 dark:text-gray-300 flex-shrink-0" />
+
+                <div className="flex items-start gap-6 group">
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/10 group-hover:bg-cyan-400/10 transition-colors">
+                    <FiPhone className="text-2xl text-cyan-400" />
+                  </div>
                   <div>
-                    <p className="font-semibold">Phone Support</p>
-                    <p className="opacity-80 dark:opacity-90">+63 905 5812 027</p>
+                    <p className="font-semibold text-lg mb-2">24/7 Assistance</p>
+                    <p className="opacity-80 text-sm">+63 905 5812 027</p>
                   </div>
                 </div>
               </div>
             </motion.div>
 
             <motion.form 
-              className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-8 shadow-lg"
+              className="bg-gray-800/50 backdrop-blur-lg rounded-[32px] p-8 border border-white/10"
               initial={{ x: 50, opacity: 0 }}
               whileInView={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
             >
               <div className="space-y-6">
                 <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
+                  <label className="block text-sm font-medium text-cyan-400 mb-3">Full Name</label>
                   <input 
                     type="text" 
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-full p-4 bg-gray-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:outline-none text-white placeholder-gray-400 transition-all"
                     placeholder="Juan Dela Cruz"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-cyan-400 mb-3">Email</label>
                   <input 
                     type="email" 
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-full p-4 bg-gray-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:outline-none text-white placeholder-gray-400 transition-all"
                     placeholder="juanlgu@gmail.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">Message</label>
+                  <label className="block text-sm font-medium text-cyan-400 mb-3">Message</label>
                   <textarea 
-                    rows={4}
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="How can we help your LGU/Barangay?"
+                    rows={5}
+                    className="w-full p-4 bg-gray-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:outline-none text-white placeholder-gray-400 transition-all"
+                    placeholder="How can we transform your LGU operations?"
                   ></textarea>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
-                  className="w-full bg-cyan-500 text-white py-4 rounded-lg font-semibold hover:bg-cyan-600 transition-colors"
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-5 rounded-xl font-bold hover:shadow-xl hover:shadow-cyan-500/20 transition-all"
                 >
-                  Send Message
+                  Send Quantum Message
                 </motion.button>
               </div>
             </motion.form>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 };
 
 export default ContactSection;
-  

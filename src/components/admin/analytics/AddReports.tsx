@@ -86,6 +86,8 @@ const AddReports: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [activeTab, setActiveTab] = useState('build');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionType, setSubmissionType] = useState<'form' | 'file'>('form');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const activeField = fields.find(field => field.id === activeFieldId) || null;
 
@@ -204,15 +206,33 @@ const AddReports: React.FC = () => {
   const submitForm = async () => {
     setIsSubmitting(true);
     try {
-      await axios.post("http://localhost:5000/form/create-report", {
-        title: formTitle,
-        description: formDescription,
-        fields,
-      });
+      const formData = new FormData();
+      formData.append('title', formTitle);
+      formData.append('description', formDescription);
+      formData.append('submissionType', submissionType);
+      formData.append('fields', JSON.stringify(fields));
+      
+      if (submissionType === 'file' && templateFile) {
+        formData.append('template', templateFile);
+      }
+  
+      const config = {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setTemplateUploadProgress(percentCompleted);
+        }
+      };
+  
+      await axios.post("http://localhost:5000/form/create-report", formData, config);
+      
       toast.success("Form submitted successfully!");
       setFields([]);
       setFormTitle('Untitled Form');
       setFormDescription('');
+      setTemplateFile(null);
     } catch (error) {
       toast.error("Error submitting form. Please try again.");
     } finally {
@@ -507,6 +527,56 @@ const AddReports: React.FC = () => {
           </div>
 
           {/* Right Sidebar */}
+          <Card className="h-full overflow-hidden">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Template Settings</CardTitle>
+              </CardHeader>
+              <ScrollArea className="h-[calc(100%-57px)] p-4">
+                {submissionType === 'file' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Upload Template File</Label>
+                      <div
+                        {...getTemplateRootProps()}
+                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/30 transition-colors"
+                      >
+                        <input {...getTemplateInputProps()} />
+                        {templateFile ? (
+                          <div className="space-y-2">
+                            <p className="text-sm">{templateFile.name}</p>
+                            {templateUploadProgress > 0 && (
+                              <Progress value={templateUploadProgress} className="h-2" />
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                            <p className="text-sm text-muted-foreground">
+                              Drag & drop or click to upload template
+                            </p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">
+                              Supported formats: PDF, DOC, DOCX, XLS, XLSX
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="text-sm text-muted-foreground">
+                      <p>Citizens will download this template when submitting files.</p>
+                      <p className="mt-2">Ensure the template includes all required fields and instructions.</p>
+                    </div>
+                  </div>
+                )}
+                {submissionType === 'form' && (
+                  <div className="text-muted-foreground text-sm">
+                    Form-based submission settings. Add form fields on the left.
+                  </div>
+                )}
+              </ScrollArea>
+            </Card>
+
+
           <Card className="h-full overflow-hidden">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Field Settings</CardTitle>

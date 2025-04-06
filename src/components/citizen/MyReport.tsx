@@ -42,6 +42,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 
 export interface Report {
+  fields: any;
   _id: string;
   referenceNumber: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -376,7 +377,7 @@ export default function MyReport() {
                           to={`/account/citizen/submission/${report._id}`}
                           state={{ 
                             reportData: report.data,
-                            // formFields: report.fields, 
+                             formFields: report.fields, 
                             userData: {
                               firstName: firstName || "",
                               lastName: lastName || "",

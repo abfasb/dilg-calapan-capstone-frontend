@@ -223,7 +223,7 @@ export default function SubmissionSuccess(): JSX.Element {
                 { label: 'Submission Type', value: "Official Documents" },
                 { label: 'Payment Method', value: "N/A" },
                 { label: 'Status', value: "Completed" },
-                { label: 'Verification URL', value: `${import.meta.env.VITE_PUBLIC_URL}/verify/${submission.referenceNumber}` }
+                { label: 'Verification URL', value: `${import.meta.env.VITE_FRONTEND_URL}/verify/${submission.referenceNumber}` }
               ]}
             />
           </div>

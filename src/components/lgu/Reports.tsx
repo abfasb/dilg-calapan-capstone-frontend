@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { sendStatusNotification } from '../../utils/notifications';
@@ -13,7 +13,8 @@ import {
   Sliders, 
   FileText, 
   Clock, 
-  XCircle 
+  XCircle, 
+  PenLine
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import {
@@ -88,7 +89,12 @@ export default function Reports() {
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [rejectionComment, setRejectionComment] = useState('');
   const [currentResponseId, setCurrentResponseId] = useState<string | null>(null);
-  const [pendingStatus, setPendingStatus] = useState<FormResponse["status"] | null>(null);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
+    const [pendingStatus, setPendingStatus] = useState<FormResponse["status"] | null>(null);
 
   const [loading, setLoading] = useState({
     forms: true,
@@ -287,9 +293,117 @@ export default function Reports() {
     return acc;
   }, {} as Record<string, number>);
 
+  // Add to component functions
+const startDrawing = (e: { clientX: number; clientY: number }) => {
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  setIsDrawing(true);
+  setLastPoint({ x, y });
+};
+
+const draw = (e: { clientX: number; clientY: number }) => {
+  if (!isDrawing || !canvasRef.current) return;
+
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  if (ctx && lastPoint) {
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.moveTo(lastPoint.x, lastPoint.y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+  setLastPoint({ x, y });
+};
+
+const endDrawing = () => {
+  setIsDrawing(false);
+  setLastPoint(null);
+};
+
+const clearCanvas = () => {
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  ctx?.clearRect(0, 0, canvas.width, canvas.height);
+};
+
+const handleSaveSignature = async () => {
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+
+  const dataUrl = canvas.toDataURL();
+  try {
+    await axios.post(`${import.meta.env.VITE_API_URL}/api/signatures`, {
+      signatureData: dataUrl
+    });
+    toast.success('Signature saved successfully');
+    setShowSignatureModal(false);
+  } catch (error) {
+    toast.error('Error saving signature');
+  }
+};
+
   return (
     <>
-      {/* Rejection Comment Dialog */}
+      <Dialog open={showSignatureModal} onOpenChange={setShowSignatureModal}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-cyan-400">Create E-Signature</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Draw your signature below
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="relative">
+            <canvas
+              ref={canvasRef}
+              width={400}
+              height={200}
+              className="bg-white rounded-md border border-gray-600 touch-none"
+              onMouseDown={startDrawing}
+              onMouseUp={endDrawing}
+              onMouseMove={draw}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                startDrawing(e.touches[0]);
+              }}
+              onTouchEnd={endDrawing}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                draw(e.touches[0]);
+              }}
+            />
+            <button
+              onClick={clearCanvas}
+              className="absolute top-2 right-2 text-red-500 bg-gray-800 p-1 rounded-full"
+            >
+              <XCircle className="w-6 h-6" />
+            </button>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              onClick={handleSaveSignature}
+              className="bg-cyan-600 hover:bg-cyan-700"
+            >
+              Save Signature
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={showRejectionDialog} onOpenChange={setShowRejectionDialog}>
         <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
           <DialogHeader>
@@ -351,7 +465,7 @@ export default function Reports() {
           <>
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-cyan-400">Report Forms</h1>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 ml-auto">
                 <button 
                   onClick={() => setShowActivityModal(true)}
                   className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm px-4 py-2 rounded-lg bg-gray-700/50 hover:bg-gray-700/70 transition-colors"
@@ -359,6 +473,13 @@ export default function Reports() {
                   <Clock className="w-5 h-5" />
                   View Activity Timeline
                 </button>
+                <Button 
+                  onClick={() => setShowSignatureModal(true)}
+                  className="bg-cyan-600 hover:bg-cyan-700"
+                >
+                  <PenLine  className="w-4 h-4 mr-2" />
+                  Create E-Signature
+                </Button>
               </div>
               <div className="flex items-center gap-2">
                 {loading.forms ? (

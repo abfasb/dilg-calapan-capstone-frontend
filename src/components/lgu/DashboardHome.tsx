@@ -120,13 +120,13 @@ export const DashboardHome = () => {
         />
         <StatsCard 
           title="Resolution Rate" 
-          value={`${stats!.resolutionRate.toFixed(1)}%`} 
+          value={`3.8`} 
           trend="week"
           delta={-2.3}
         />
         <StatsCard 
           title="Avg. Response Time" 
-          value={`${stats!.avgResponseTime.toFixed(1)}d`} 
+          value={`4.8`} 
           trend="month"
           delta={-15}
         />
@@ -138,9 +138,7 @@ export const DashboardHome = () => {
         />
       </div>
 
-      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Report Trends Area Chart */}
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
           <div className="flex items-center gap-3 mb-6">
             <FiTrendingUp className="w-6 h-6 text-blue-400" />
@@ -257,7 +255,6 @@ export const DashboardHome = () => {
             </div>
           </div>
 
-          {/* Response Times Card */}
           <div className="bg-gray-700 rounded-xl p-4 border border-gray-600">
             <div className="flex items-center gap-2 mb-4">
               <FiClock className="w-5 h-5 text-blue-400" />
@@ -267,7 +264,7 @@ export const DashboardHome = () => {
               <div className="flex justify-between items-center p-3 rounded-lg bg-gray-600">
                 <div>
                   <p className="text-sm text-gray-400">Average</p>
-                  <p className="text-2xl font-bold text-gray-100">{stats!.avgResponseTime.toFixed(1)}</p>
+                  <p className="text-2xl font-bold text-gray-100">4.8</p>
                 </div>
                 <span className="text-sm text-gray-400">days</span>
               </div>
@@ -297,7 +294,7 @@ export const DashboardHome = () => {
                   <span className="font-semibold text-blue-400">↓ 12%</span>
                 </div>
                 <div className="h-2 rounded-full bg-blue-900/30">
-                  <div className="h-full rounded-full bg-blue-400 w-1/5 transition-all duration-300" />
+                  <div className="h-full rounded-full bg-blue-400 w-1 /5 transition-all duration-300" />
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-gradient-to-br from-green-900/50 to-green-900/20">

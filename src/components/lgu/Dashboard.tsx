@@ -30,12 +30,14 @@ export default function MainDashboard() {
         
         <main className="p-8 spacey-8">
           <Routes>
-            <Route path="/" element={<DashboardHome />} />
+            <Route path='/'>
+            <Route index element={<DashboardHome />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/staff" element={<Staff />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/appointments" element={<Appointment />} />
             <Route path="/settings" element={<Settings />} />
+            </Route>
           </Routes>
         </main>
       </div>

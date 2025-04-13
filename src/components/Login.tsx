@@ -76,7 +76,7 @@ const Login: React.FC = () => {
         className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
       }}
     />
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-cyan-900 via-purple-900 to-indigo-900 animate-gradient-x">
+    <div className="min-h-screen flex items-center justify-center p-4  bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 animate-gradient-x">
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

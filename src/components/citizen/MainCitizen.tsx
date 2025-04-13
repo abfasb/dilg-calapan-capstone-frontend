@@ -58,6 +58,8 @@ import { Clock, User, Plus } from "lucide-react";
 import { format } from 'date-fns';
 import { ScrollArea } from "../ui/scroll-area";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
+import { ReportList } from "./partials/ReportList";
+import ChatBot from "./partials/ChatBot";
 
 
 
@@ -764,106 +766,13 @@ if (isLoading) {
           </TabsContent>
 
           <TabsContent value="public-reports">
-                <Card className="dark:bg-gray-800 dark:border-gray-700">
-                  <CardHeader>
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div>
-                        <CardTitle>Official Public Reports</CardTitle>
-                        <CardDescription>
-                          View all government-issued reports and updates
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Table className="dark:bg-gray-800">
-                      <TableHeader className="dark:bg-gray-700">
-                        <TableRow>
-                          <TableHead>Report ID</TableHead>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Fields</TableHead>
-                          <TableHead>Date Created</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {currentReport.map((report : any) => (
-                         <TableRow key={report._id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                         <TableCell className="font-medium text-sm">
-                           <span className="font-mono">#{report._id.substring(0, 6)}</span>
-                         </TableCell>
-                         <TableCell className="max-w-[200px] truncate">
-                           {report.title}
-                         </TableCell>
-                         <TableCell>
-                           <Badge variant="outline">
-                             {report.fields.length} fields
-                           </Badge>
-                         </TableCell>
-                         <TableCell>
-                           {new Date(report.createdAt).toLocaleDateString('en-US', {
-                             year: 'numeric',
-                             month: 'short',
-                             day: 'numeric',
-                           })}
-                         </TableCell>
-                         <TableCell>
-                          {report.hasSubmitted ? (
-                            <Badge variant="outline" className="dark:bg-green-900/20 dark:text-green-400">
-                              Submitted
-                            </Badge>
-                          ) : (
-                            <Button 
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewDetails(report._id)} 
-                              className="dark:bg-gray-700 dark:hover:bg-gray-600"
-                            >
-                              View Details
-                            </Button>
-                          )}
-                        </TableCell>
-                       </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-          
-                    {/* Pagination */}
-                    <div className="mt-6">
-                      <Pagination>
-                        <PaginationContent>
-                          <PaginationItem>
-                            <PaginationPrevious
-                              className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
-                              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-                              size={6}
-                            />
-                          </PaginationItem>
-                          
-                          {Array.from({ length: totalPages }, (_, i) => (
-                            <PaginationItem key={i + 1}>
-                              <PaginationLink
-                                isActive={currentPage === i + 1}
-                                onClick={() => setCurrentPage(i + 1)}
-                                size={6}
-                              >
-                                {i + 1}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
-          
-                          <PaginationItem>                     
-                            <PaginationNext
-                              className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
-                              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-                              size={6}
-                            />
-                          </PaginationItem>
-                        </PaginationContent>
-                      </Pagination>
-                    </div>
-                  </CardContent>
-                </Card>
+          <ReportList
+            currentReport={currentReport as any}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+            handleViewDetails={handleViewDetails}
+          />
           </TabsContent>
             
           <TabsContent value="events">
@@ -925,21 +834,8 @@ if (isLoading) {
         </Card>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="hover:shadow-2xl transition-shadow p-8 rounded-3xl w-full max-w-lg flex flex-col justify-center items-center gap-8">
-            <CardHeader className="w-full text-center">
-              <CardTitle className="text-2xl flex items-center gap-4 font-bold">
-                <MessageSquare className="w-8 h-8 text-primary" />
-                Chat Support
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="w-full flex flex-col items-center">
-              <Button variant="default" className="w-full py-4 text-lg">
-                Start Conversation
-              </Button>
-            </CardContent>
-          </Card>
-
-
+          
+          <ChatBot />
 
           <div className="md:col-span-2">
             <Card className="hover:shadow-lg transition-shadow rounded-xl w-full border-0 shadow-sm">

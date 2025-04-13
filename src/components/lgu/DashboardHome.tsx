@@ -21,6 +21,8 @@ interface DashboardStats {
   totalReports: number;
   resolutionRate: number;
   avgResponseTime: number;
+  fastestResponseTime: number;
+  longestResponseTime: number;
   activeUsers: number;
   complaintsByCategory: Record<string, number>;
   appointmentStats: Record<string, number>;
@@ -189,7 +191,6 @@ export const DashboardHome = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Category Distribution Bar Chart */}
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
           <div className="flex items-center gap-3 mb-6">
             <FiBarChart className="w-6 h-6 text-blue-400" />
@@ -229,7 +230,6 @@ export const DashboardHome = () => {
         </div>
       </div>
 
-      {/* System Status Grid */}
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
         <div className="flex items-center gap-3 mb-6">
           <FiActivity className="w-6 h-6 text-blue-400" />
@@ -264,24 +264,29 @@ export const DashboardHome = () => {
               <div className="flex justify-between items-center p-3 rounded-lg bg-gray-600">
                 <div>
                   <p className="text-sm text-gray-400">Average</p>
-                  <p className="text-2xl font-bold text-gray-100">4.8</p>
+                  <p className="text-2xl font-bold text-gray-100">
+                    {stats?.avgResponseTime?.toFixed(1) || '0.0'}
+                  </p>
                 </div>
                 <span className="text-sm text-gray-400">days</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg bg-gray-600">
                   <p className="text-sm text-gray-400">Fastest</p>
-                  <p className="text-lg font-semibold text-gray-100">1.2d</p>
+                  <p className="text-lg font-semibold text-gray-100">
+                    {stats?.fastestResponseTime?.toFixed(1) || '0.0'}d
+                  </p>
                 </div>
                 <div className="p-3 rounded-lg bg-gray-600">
                   <p className="text-sm text-gray-400">Longest</p>
-                  <p className="text-lg font-semibold text-gray-100">9.8d</p>
+                  <p className="text-lg font-semibold text-gray-100">
+                    {stats?.longestResponseTime?.toFixed(1) || '0.0'}d
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* AI Insights Card */}
           <div className="bg-gray-700 rounded-xl p-4 border border-gray-600">
             <div className="flex items-center gap-2 mb-4">
               <FiZap className="w-5 h-5 text-blue-400" />

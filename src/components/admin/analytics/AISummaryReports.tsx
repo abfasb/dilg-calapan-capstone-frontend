@@ -12,7 +12,8 @@ import {
   User, 
   MapPin, 
   ClipboardList,
-  Search
+  Search,
+  Image as ImageIcon
 } from 'lucide-react'
 
 interface ReportForm {
@@ -48,6 +49,14 @@ interface Response {
     lastName: string
     barangay: string
   }
+  history?: Array<{ 
+    status: string
+    updatedBy: string
+    document: string
+    timestamp: string
+    comments: string
+    _id: string
+  }>
 }
 
 const AISummaryReports: React.FC = () => {
@@ -69,8 +78,19 @@ const AISummaryReports: React.FC = () => {
   const handleViewResponses = async (reportId: string) => {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/api/analytics/admin/reports/approved?formId=${reportId}`)
     const data = await response.json()
+    
+    // Transform files structure to match frontend interface
+    const transformedData = data.map((res: any) => ({
+      ...res,
+      files: res.files.map((file: any) => ({
+        fileName: file.filename,
+        fileUrl: file.url,
+        fileType: file.mimetype
+      }))
+    }))
+
     setSelectedReport(reports.find(r => r._id === reportId) || null)
-    setResponses(data)
+    setResponses(transformedData)
   }
 
   const filteredResponses = responses.filter(response =>
@@ -79,10 +99,15 @@ const AISummaryReports: React.FC = () => {
     response.user.lastName.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  // Get image fields from the form definition
+  const getImageFields = () => {
+    return selectedReport?.fields.filter(field => field.type === 'image') || []
+  }
+
   return (
     <div className="p-8 bg-muted/40 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Document Analytics</h1>
             <p className="text-muted-foreground mt-2">
@@ -120,7 +145,7 @@ const AISummaryReports: React.FC = () => {
         </div>
 
         <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-          <DialogContent className="max-w-6xl h-[80vh] flex flex-col">
+        <DialogContent className="max-w-6xl h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <ClipboardList className="w-5 h-5" />
@@ -207,7 +232,7 @@ const AISummaryReports: React.FC = () => {
         </Dialog>
 
         <Dialog open={!!selectedResponse} onOpenChange={() => setSelectedResponse(null)}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
@@ -215,55 +240,153 @@ const AISummaryReports: React.FC = () => {
               </DialogTitle>
             </DialogHeader>
             
-            {selectedResponse?.data ? (
+            {selectedResponse?.data && Object.keys(selectedResponse.data).length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
-                {Object.entries(selectedResponse.data).map(([key, value]) => (
-                  <div key={key} className="space-y-1 p-4 bg-muted/30 rounded-lg">
-                    <p className="text-sm font-medium text-muted-foreground">{key}</p>
-                    <p className="font-medium">{value || 'N/A'}</p>
-                  </div>
-                ))}
+                {Object.entries(selectedResponse.data).map(([key, value]) => {
+                  const field = selectedReport?.fields.find(f => f.id === key)
+                  const displayLabel = field?.label || key
+                  const isImageField = field?.type === 'image'
+
+                  const imageFile = selectedResponse.files.find(file => 
+                    file.fileUrl.includes(value as string)
+                  )
+                  
+                  return (
+                    <div key={key} className="space-y-1 p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {displayLabel}
+                      </p>
+                      {isImageField && imageFile ? (
+                        <div className="mt-2">
+                          <a 
+                            href={imageFile.fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="block relative group"
+                          >
+                            <img
+                              src={imageFile.fileUrl}
+                              alt={displayLabel}
+                              className="h-32 w-full object-cover rounded-lg border"
+                            />
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-white text-sm">View Full Image</span>
+                            </div>
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="font-medium">
+                          {value?.toString() || 'N/A'}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
+            ) : selectedResponse?.bulkFile ? (
+              <div className="space-y-6">
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="bg-background p-3 rounded-lg">
+                    <DownloadCloud className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{selectedResponse.bulkFile.fileName}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedResponse.bulkFile.fileType.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="border rounded-lg overflow-hidden">
+                <iframe 
+                  src={selectedResponse.bulkFile.fileUrl}
+                  className="w-full h-80"
+                  title={selectedResponse.bulkFile.fileName}
+                />
+              </div>
+              <Button 
+                asChild
+                variant="outline"
+                className="w-full gap-2"
+              >
+                <a 
+                  href={selectedResponse.bulkFile.fileUrl}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <DownloadCloud className="w-4 h-4" />
+                  Full Overview
+                </a>
+              </Button>
+            </div>
             ) : (
-              selectedResponse?.bulkFile && (
-                <div className="space-y-6">
-                  <div className="bg-muted/30 p-4 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-background p-3 rounded-lg">
-                        <DownloadCloud className="w-6 h-6 text-primary" />
+              <div className="text-center p-4 text-muted-foreground">
+                No form data or files available for this response.
+              </div>
+            )}
+
+            {(selectedResponse?.files && selectedResponse.files.length > 0) && (
+              <div className="mt-6">
+                <h3 className="font-medium mb-4">Attached Files:</h3>
+                <div className="space-y-2">
+                  {selectedResponse.files.map((file, index) => {
+                    const isAlreadyDisplayed = Object.values(selectedResponse.data || {})
+                      .some(value => file.fileUrl.includes(value as string))
+
+                    if (isAlreadyDisplayed) return null
+
+                    return (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {file.fileType.startsWith('image/') ? (
+                            <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                          ) : (
+                            <FileText className="w-5 h-5 text-muted-foreground" />
+                          )}
+                          <span className="font-medium">{file.fileName}</span>
+                        </div>
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                        >
+                          <a 
+                            href={file.fileUrl}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {file.fileType.startsWith('image/') ? 'View' : 'Download'}
+                          </a>
+                        </Button>
                       </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {selectedResponse?.history && (
+              <div className="mt-6">
+                <h3 className="font-medium mb-4">Document History:</h3>
+                <div className="space-y-3">
+                  {selectedResponse.history.map((entry, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                       <div>
-                        <h3 className="font-medium">{selectedResponse.bulkFile.fileName}</h3>
+                        <p className="text-sm font-medium">{entry.status}</p>
                         <p className="text-sm text-muted-foreground">
-                          {selectedResponse.bulkFile.fileType.toUpperCase()}
+                          {new Date(entry.timestamp).toLocaleDateString()}
                         </p>
                       </div>
+                      <p className="text-sm text-muted-foreground">
+                        {entry.updatedBy || 'System'}
+                      </p>
                     </div>
-                  </div>
-                  <div className="border rounded-lg overflow-hidden">
-                    <iframe 
-                      src={selectedResponse.bulkFile.fileUrl}
-                      className="w-full h-96"
-                      title={selectedResponse.bulkFile.fileName}
-                    />
-                  </div>
-                  <Button 
-                    asChild
-                    variant="outline"
-                    className="w-full gap-2"
-                  >
-                    <a 
-                      href={selectedResponse.bulkFile.fileUrl}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <DownloadCloud className="w-4 h-4" />
-                      Full Overview
-                    </a>
-                  </Button>
+                  ))}
                 </div>
-              )
+              </div>
             )}
           </DialogContent>
         </Dialog>

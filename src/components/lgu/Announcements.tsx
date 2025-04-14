@@ -369,7 +369,7 @@ const LGUEventManagement = () => {
                         </DialogTrigger>
                         <DialogContent className="bg-gray-900 border border-gray-700 rounded-2xl">
                           <DialogHeader>
-                            <DialogTitle className="text-2xl">Edit Event</DialogTitle>
+                            <DialogTitle className="text-2xl text-white">Edit Event</DialogTitle>
                           </DialogHeader>
                           <form onSubmit={handleEditSubmit} className="space-y-5">
                             <input 

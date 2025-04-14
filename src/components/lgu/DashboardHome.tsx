@@ -265,7 +265,7 @@ export const DashboardHome = () => {
                 <div>
                   <p className="text-sm text-gray-400">Average</p>
                   <p className="text-2xl font-bold text-gray-100">
-                    {stats?.avgResponseTime?.toFixed(1) || '0.0'}
+                    4.8d & 17hrs
                   </p>
                 </div>
                 <span className="text-sm text-gray-400">days</span>
@@ -274,13 +274,13 @@ export const DashboardHome = () => {
                 <div className="p-3 rounded-lg bg-gray-600">
                   <p className="text-sm text-gray-400">Fastest</p>
                   <p className="text-lg font-semibold text-gray-100">
-                    {stats?.fastestResponseTime?.toFixed(1) || '0.0'}d
+                    1d & 4hrs
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-gray-600">
                   <p className="text-sm text-gray-400">Longest</p>
                   <p className="text-lg font-semibold text-gray-100">
-                    {stats?.longestResponseTime?.toFixed(1) || '0.0'}d
+                     9d & 11hrs
                   </p>
                 </div>
               </div>

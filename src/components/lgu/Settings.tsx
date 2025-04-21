@@ -12,7 +12,7 @@ export default function Settings() {
       <h1 className="text-2xl font-bold text-cyan-400">System Settings</h1>
 
       <div className="bg-gray-800 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold mb-6">Account Settings</h2>
+        <h2 className="text-xl font-semibold mb-6 text-white">Account Settings</h2>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -65,7 +65,7 @@ export default function Settings() {
       </div>
 
       <div className="bg-gray-800 p-6 rounded-xl">
-        <h2 className="text-xl font-semibold mb-6">System Information</h2>
+        <h2 className="text-xl font-semibold mb-6 text-white">System Information</h2>
         <div className="grid grid-cols-2 gap-6 text-gray-300">
           <div>
             <p className="text-gray-400">Version</p>

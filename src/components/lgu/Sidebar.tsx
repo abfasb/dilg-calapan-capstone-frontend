@@ -10,6 +10,9 @@ const sidebarVariants = {
   closed: { width: '5rem' }
 };
 
+const Email = localStorage.getItem("adminEmail"); 
+const name = localStorage.getItem("name");
+
 export const Sidebar = ({ isOpen, onToggle, user }: { 
   isOpen: boolean; 
   onToggle: () => void;
@@ -35,7 +38,7 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
               <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
                 LGU Portal
               </h1>
-              <p className="text-xs text-gray-400 mt-1 truncate">{user.email}</p>
+              <p className="text-xs text-gray-400 mt-1 truncate">{Email}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -69,7 +72,7 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
           <div className="relative">
             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center">
               <span className="text-white font-medium text-sm">
-                {user.name.charAt(0).toUpperCase()}
+                {name.charAt(0).toUpperCase() || 'lgu'}
               </span>
             </div>
             <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-gray-900" />
@@ -82,8 +85,8 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
                 exit={{ opacity: 0 }}
                 className="flex-1 truncate"
               >
-                <p className="text-sm font-medium text-gray-200 truncate">{user.name}</p>
-                <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                <p className="text-sm font-medium text-gray-200 truncate">{name}</p>
+                <p className="text-xs text-gray-400 truncate">{Email}</p>
               </motion.div>
             )}
           </AnimatePresence>

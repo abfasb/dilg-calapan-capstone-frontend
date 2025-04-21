@@ -1,106 +1,102 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   FiHome, FiShield, FiUser, FiBarChart, FiMonitor, FiBell,
   FiChevronDown, FiChevronUp, FiSettings, FiDatabase,
   FiLock, FiUsers, FiFileText, FiActivity, FiAlertCircle 
 } from 'react-icons/fi';
+import { NavLink, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
-  activeSection: string;
-  setActiveSection: (section: string) => void;
+  adminId: string;
   isOpen: boolean;
   onToggle: (isOpen: boolean) => void;
 }
 
 interface MenuItem {
   text: string;
-  section?: string;
+  path?: string;
   icon: JSX.Element;
   subItems?: SubItem[];
 }
 
 interface SubItem {
   text: string;
-  section: string;
+  path: string;
   icon?: JSX.Element;
 }
 
 export const Sidebar = ({ 
-  activeSection, 
-  setActiveSection,
+  adminId,
   isOpen,
   onToggle 
 }: SidebarProps) => {
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const location = useLocation();
+  const [openDropdown, setOpenDropdown] = React.useState<string | null>(null);
 
   const menuItems: MenuItem[] = [
     { 
       text: "Dashboard", 
-      section: "dashboard", 
+      path: "dashboard", 
       icon: <FiHome className="w-5 h-5" />
     },
     { 
       text: "Access Control",
       icon: <FiShield className="w-5 h-5" />,
       subItems: [
-        { text: "RBAC Management", section: "rbac", icon: <FiLock /> },
-        { text: "Session Policies", section: "session", icon: <FiActivity /> },
-        { text: "Audit Logs", section: "audit", icon: <FiFileText /> }
+        { text: "RBAC Management", path: "access-control/rbac", icon: <FiLock /> },
+        { text: "Session Policies", path: "access-control/session-policies", icon: <FiActivity /> },
+        { text: "Audit Logs", path: "access-control/audit-logs", icon: <FiFileText /> }
       ]
     },
     { 
       text: "Citizen Management",
       icon: <FiUser className="w-5 h-5" />,
       subItems: [
-        { text: "Registration", section: "citizen-reg", icon: <FiUser /> },
-        { text: "Staff Onboarding", section: "staff-onboard", icon: <FiUsers /> },
-        { text: "Report Oversight", section: "report-oversight", icon: <FiAlertCircle /> },
-        { text: "Verification", section: "verification", icon: <FiShield /> }
+        { text: "Registration", path: "citizen-management/registration", icon: <FiUser /> },
+        { text: "Staff Onboarding", path: "citizen-management/staff-onboarding", icon: <FiUsers /> },
+        { text: "Report Oversight", path: "citizen-management/report-oversight", icon: <FiAlertCircle /> },
+        { text: "Verification", path: "citizen-management/verification", icon: <FiShield /> }
       ]
     },
     { 
       text: "Analytics",
       icon: <FiBarChart className="w-5 h-5" />,
       subItems: [
-        { text: "Create Reports", section: "add-reports", icon: <FiFileText /> },
-        { text: "Manage Reports", section: "custom-reports", icon: <FiSettings /> },
-        { text: "Resolution Analytics", section: "resolution", icon: <FiActivity /> },
-        { text: "AI Reports", section: "ai-reports", icon: <FiDatabase /> }
+        { text: "Create Reports", path: "analytics/add-reports", icon: <FiFileText /> },
+        { text: "Manage Reports", path: "analytics/custom-reports", icon: <FiSettings /> },
+        { text: "Resolution Analytics", path: "analytics/resolution", icon: <FiActivity /> },
+        { text: "AI Reports", path: "analytics/ai-reports", icon: <FiDatabase /> }
       ]
     },
     { 
       text: "System Health",
       icon: <FiMonitor className="w-5 h-5" />,
       subItems: [
-        { text: "Workflows", section: "workflow", icon: <FiActivity /> },
-        { text: "Performance", section: "performance", icon: <FiBarChart /> },
-        { text: "Backups", section: "backups", icon: <FiDatabase /> }
+        { text: "Workflows", path: "system-health/workflows", icon: <FiActivity /> },
+        { text: "Performance", path: "system-health/performance", icon: <FiBarChart /> },
+        { text: "Backups", path: "system-health/backups", icon: <FiDatabase /> }
       ]
     },
     { 
       text: "Communications",
       icon: <FiBell className="w-5 h-5" />,
       subItems: [
-        { text: "Announcements", section: "sys-announce", icon: <FiBell /> },
-        { text: "Public Notices", section: "notices", icon: <FiAlertCircle /> },
-        { text: "Alert History", section: "alert-history", icon: <FiFileText /> }
+        { text: "Announcements", path: "communications/announcements", icon: <FiBell /> },
+        { text: "Public Notices", path: "communications/public-notices", icon: <FiAlertCircle /> },
+        { text: "Alert History", path: "communications/alert-history", icon: <FiFileText /> }
       ]
     },
   ];
 
+  const isSubItemActive = (item: MenuItem) => {
+    return item.subItems?.some(sub => 
+      location.pathname.includes(sub.path)
+    ) || false;
+  };
+
   const toggleDropdown = (text: string) => {
     setOpenDropdown(openDropdown === text ? null : text);
   };
-
-  const isSubItemActive = (item: MenuItem) => {
-    return item.subItems?.some(sub => sub.section === activeSection) || false;
-  };
-
-  const handleSubItemClick = (section: string, e: React.MouseEvent<HTMLButtonElement>) => {
-    setActiveSection(section);
-    e.currentTarget.blur(); 
-  };
-  
 
   return (
     <div className={`w-64 h-full bg-gray-900 text-white flex flex-col fixed border-r border-gray-700 transition-all duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -125,48 +121,70 @@ export const Sidebar = ({
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {menuItems.map((item) => (
           <div key={item.text} className="space-y-1">
-            <button
-              onClick={() => item.subItems ? toggleDropdown(item.text) : setActiveSection(item.section!)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all
-                ${item.subItems && openDropdown === item.text ? 'bg-gray-800/30' : ''}
-                ${(activeSection === item.section || isSubItemActive(item)) 
-                  ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400' 
-                  : 'hover:bg-gray-800/20 text-gray-300'}`}
-            >
-              <div className="flex items-center gap-3">
-                <span className={`${(activeSection === item.section || isSubItemActive(item)) ? 'text-blue-400' : 'text-gray-400'}`}>
-                  {item.icon}
-                </span>
-                <span className="text-sm font-medium">{item.text}</span>
-              </div>
-              {item.subItems && (
-                openDropdown === item.text ? 
-                <FiChevronUp className="w-4 h-4 text-gray-400" /> : 
-                <FiChevronDown className="w-4 h-4 text-gray-400" />
-              )}
-            </button>
+            {item.subItems ? (
+              <div>
+                <button
+                  onClick={() => toggleDropdown(item.text)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all
+                    ${openDropdown === item.text ? 'bg-gray-800/30' : ''}
+                    ${isSubItemActive(item) 
+                      ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400' 
+                      : 'hover:bg-gray-800/20 text-gray-300'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`${isSubItemActive(item) ? 'text-blue-400' : 'text-gray-400'}`}>
+                      {item.icon}
+                    </span>
+                    <span className="text-sm font-medium">{item.text}</span>
+                  </div>
+                  {item.subItems && (
+                    openDropdown === item.text ? 
+                    <FiChevronUp className="w-4 h-4 text-gray-400" /> : 
+                    <FiChevronDown className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
 
-            {item.subItems && openDropdown === item.text && (
-              <div className="ml-8 space-y-1">
-                {item.subItems.map((subItem) => (
-                 <button
-                  key={subItem.section}
-                  onClick={() => handleSubItemClick(subItem.section)}
-               
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg 
-                      ${activeSection === subItem.section 
-                        ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400 transition-none' 
-                        : 'hover:bg-gray-800/20 text-gray-300'}`}                    
-                  >
-                    {subItem.icon && (
-                      <span className={`w-4 h-4 ${activeSection === subItem.section ? 'text-blue-400' : 'text-gray-400'}`}>
-                        {subItem.icon}
-                      </span>
-                    )}
-                    <span className="text-xs font-medium">{subItem.text}</span>
-                  </button>
-                ))}
+                {item.subItems && openDropdown === item.text && (
+                  <div className="ml-8 space-y-1">
+                    {item.subItems.map((subItem) => (
+                      <NavLink
+                        key={subItem.path}
+                        to={`/account/admin/${adminId}/${subItem.path}`}
+                        className={({ isActive }) => 
+                          `w-full flex items-center gap-2 px-3 py-2 rounded-lg 
+                          ${isActive 
+                            ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400' 
+                            : 'hover:bg-gray-800/20 text-gray-300'}`
+                        }
+                      >
+                        {subItem.icon && (
+                          <span className="w-4 h-4">
+                            {subItem.icon}
+                          </span>
+                        )}
+                        <span className="text-xs font-medium">{subItem.text}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
               </div>
+            ) : (
+              <NavLink
+                to={`/account/admin/${adminId}/${item.path}`}
+                className={({ isActive }) => 
+                  `w-full flex items-center px-3 py-2.5 rounded-lg transition-all
+                  ${isActive 
+                    ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400' 
+                    : 'hover:bg-gray-800/20 text-gray-300'}`
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`${location.pathname.includes(item.path!) ? 'text-blue-400' : 'text-gray-400'}`}>
+                    {item.icon}
+                  </span>
+                  <span className="text-sm font-medium">{item.text}</span>
+                </div>
+              </NavLink>
             )}
           </div>
         ))}

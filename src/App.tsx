@@ -24,6 +24,7 @@ import SettingsPage from './pages/lgus/SettingsPage';
 import AnnouncementPage from './pages/lgus/AnnouncementPage';
 import AppointmentPage from './pages/lgus/AppointmentPage';
 import EditReportPage from './pages/citizen/EditReportPage';
+import { AdminRoutes } from './routes/AdminRoutes';
 
 function App() {
   return (
@@ -58,7 +59,9 @@ function App() {
 
 
         { /* Admin*/ }
-        <Route path='/account/admin/:id' element={<AdminPanelPage />} />
+        <Route path='/account/admin/:id/*' element={<AdminPanelPage />} >
+            <Route path='*' element={<AdminRoutes />} />
+         </Route>
 
         { /* Citizen*/ }
         <Route path='/account/citizen/:id' element={<CitizenPage />}/>

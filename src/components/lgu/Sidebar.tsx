@@ -72,7 +72,7 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
           <div className="relative">
             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center">
               <span className="text-white font-medium text-sm">
-                {name.charAt(0).toUpperCase() || 'lgu'}
+                {name.charAt(0).toUpperCase() }
               </span>
             </div>
             <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-gray-900" />

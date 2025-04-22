@@ -68,6 +68,12 @@ interface FormResponse {
     }>;
   };
   comments?: string;
+  signature?: {
+    fileName: string;
+    fileUrl: string;
+    mimetype: string;
+    signedAt: Date;
+  };
   history: Array<{
     status: string;
     updatedBy: string;
@@ -184,15 +190,6 @@ export default function Reports() {
     document.body.removeChild(link);
   };
 
-  const handleStatusChangeInit = (responseId: string, newStatus: FormResponse["status"]) => {
-    if (newStatus === 'rejected') {
-      setCurrentResponseId(responseId);
-      setPendingStatus(newStatus);
-      setShowRejectionDialog(true);
-    } else {
-      updateStatus(responseId, newStatus);
-    }
-  };
 
   const handleRejectionSubmit = async () => {
     if (!rejectionComment.trim()) {
@@ -337,23 +334,65 @@ const clearCanvas = () => {
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
-  ctx?.clearRect(0, 0, canvas.width, canvas.height);
+  if (ctx) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+};
+
+
+const handleStatusChangeInit = (responseId: string, newStatus: FormResponse["status"]) => {
+  if (newStatus === 'rejected') {
+    setCurrentResponseId(responseId);
+    setPendingStatus(newStatus);
+    setShowRejectionDialog(true);
+  } else if (newStatus === 'approved') {
+    setCurrentResponseId(responseId);
+    setPendingStatus(newStatus);
+    setShowSignatureModal(true);
+  } else {
+    updateStatus(responseId, newStatus);
+  }
 };
 
 const handleSaveSignature = async () => {
   const canvas = canvasRef.current;
   if (!canvas) return;
 
-  const dataUrl = canvas.toDataURL();
-  try {
-    await axios.post(`${import.meta.env.VITE_API_URL}/api/signatures`, {
-      signatureData: dataUrl
-    });
-    toast.success('Signature saved successfully');
-    setShowSignatureModal(false);
-  } catch (error) {
-    toast.error('Error saving signature');
-  }
+  canvas.toBlob(async (blob) => {
+    if (!blob) {
+      toast.error('Error creating signature');
+      return;
+    }
+
+    const signatureFile = new File([blob], 'signature.png', { type: 'image/png' });
+    const formData = new FormData();
+    const lguName = localStorage.getItem('name') || 'LGU Representative';
+    
+    formData.append('status', 'approved');
+    formData.append('updatedBy', lguName);
+    formData.append('signature', signatureFile);
+
+    if (currentResponseId) {
+      try {
+        const { data } = await axios.put(
+          `${import.meta.env.VITE_API_URL}/api/response/${currentResponseId}`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+
+        setResponses(prev => prev.map(r => 
+          r._id === currentResponseId ? data : r
+        ));
+
+        toast.success('Approved with signature successfully!');
+        setShowSignatureModal(false);
+        clearCanvas();
+      } catch (error) {
+        toast.error('Failed to submit approval with signature');
+      }
+    }
+  }, 'image/png');
 };
 
   return (
@@ -896,6 +935,25 @@ const handleSaveSignature = async () => {
                             </div>
                           </div>
                         )}
+
+                      {selectedResponse?.signature && (
+                        <div className="mt-6 pt-4 border-t border-gray-700/50">
+                          <h3 className="text-lg font-semibold text-cyan-400 mb-4">Approval Signature</h3>
+                          <div className="flex items-center gap-4">
+                            <img
+                              src={selectedResponse.signature.fileUrl}
+                              alt="Approval Signature"
+                              className="w-48 h-auto border-2 border-cyan-400/30 rounded-lg"
+                            />
+                            <div className="text-sm text-gray-400">
+                              <p>Signed by: {selectedResponse.history
+                                .find(h => h.status === 'approved')?.updatedBy}</p>
+                              <p>Date: {new Date(selectedResponse.signature.signedAt)
+                                .toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       </div>
                     )}
 

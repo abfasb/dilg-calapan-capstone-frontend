@@ -236,7 +236,6 @@ export const DashboardHome = () => {
           <h3 className="text-xl font-semibold text-gray-100">System Insights</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Appointments Card */}
           <div className="bg-gray-700 rounded-xl p-4 border border-gray-600">
             <div className="flex items-center gap-2 mb-4">
               <FiCalendar className="w-5 h-5 text-blue-400" />
@@ -265,7 +264,7 @@ export const DashboardHome = () => {
                 <div>
                   <p className="text-sm text-gray-400">Average</p>
                   <p className="text-2xl font-bold text-gray-100">
-                    4.8d & 17hrs
+                    4d & 17hrs
                   </p>
                 </div>
                 <span className="text-sm text-gray-400">days</span>

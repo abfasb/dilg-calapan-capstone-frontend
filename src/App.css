@@ -81,3 +81,8 @@
 .leaflet-control-geosearch .results > *.active {
   background: #374151;
 }
+
+.signature-image {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}

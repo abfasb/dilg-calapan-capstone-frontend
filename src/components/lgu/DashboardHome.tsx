@@ -264,7 +264,7 @@ export const DashboardHome = () => {
                 <div>
                   <p className="text-sm text-gray-400">Average</p>
                   <p className="text-2xl font-bold text-gray-100">
-                    4d & 17hrs
+                    4d   & 17hrs
                   </p>
                 </div>
                 <span className="text-sm text-gray-400">days</span>

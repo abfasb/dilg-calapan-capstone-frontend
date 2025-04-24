@@ -5,6 +5,14 @@ import { useParams, Navigate } from "react-router-dom";
 import { TopNav } from "../components/lgu/TopNav";
 
 export default function DashboardLayout() {
+
+  const role = localStorage.getItem('role');
+  
+  if (role !== 'lgu') {
+    return <Navigate to="/" replace />;
+  }
+
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { id } = useParams();
   const [user, setUser] = useState(() => {

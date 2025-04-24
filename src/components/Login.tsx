@@ -39,6 +39,7 @@ const Login: React.FC = () => {
       localStorage.setItem("lastName", response.user.lastName);
       localStorage.setItem("position", response.user.position);
       localStorage.setItem("barangay", response.user.barangay);
+      localStorage.setItem("role", response.user.role);
       localStorage.setItem("phoneNumber", response.user.phoneNumber);
       
       toast.success('Login Successful!', {

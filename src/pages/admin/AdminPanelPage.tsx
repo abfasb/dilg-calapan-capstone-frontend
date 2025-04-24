@@ -2,8 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate, Outlet, useParams, useLocation } from "react-router-dom";
 import { Sidebar } from "../../components/admin/Sidebar";
 import { Navbar } from "../../components/admin/NavBar";
-
+import { Navigate } from "react-router-dom";
 export default function AdminPanelPage() {
+
+  const role = localStorage.getItem('role');
+  
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();

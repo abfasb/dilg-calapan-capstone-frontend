@@ -25,6 +25,7 @@ import AnnouncementPage from './pages/lgus/AnnouncementPage';
 import AppointmentPage from './pages/lgus/AppointmentPage';
 import EditReportPage from './pages/citizen/EditReportPage';
 import { AdminRoutes } from './routes/AdminRoutes';
+import ProtectedRoute from './routes/ProtectedRoutes';
 
 function App() {
   return (
@@ -48,28 +49,33 @@ function App() {
          <Route path='/account/forgot-password/' element={ <SubForgotPasswordPage />}/>
 
          { /* LGU*/ }
-         <Route path="/account/lgu/:id" element={<DashboardLayout />}>
+         <Route element={<ProtectedRoute allowedRoles={['lgu']} />}>
+          <Route path="/account/lgu/:id" element={<DashboardLayout />}>
             <Route index element={<DashboardHomePage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="announcements" element={<AnnouncementPage />} />
-            <Route path='appointments' element={<AppointmentPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+            <Route path="appointments" element={<AppointmentPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Route>
 
-
         { /* Admin*/ }
-        <Route path='/account/admin/:id/*' element={<AdminPanelPage />} >
-            <Route path='*' element={<AdminRoutes />} />
-         </Route>
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/account/admin/:id/*" element={<AdminPanelPage />}>
+            <Route path="*" element={<AdminRoutes />} />
+          </Route>
+        </Route>
 
         { /* Citizen*/ }
-        <Route path='/account/citizen/:id' element={<CitizenPage />}/>
-        <Route path="/report/:id" element={<ReportFormPage />} />
-        <Route path='/account/citizen/submission/success/:userId' element={<SubmissionSuccessPage />} />
-        <Route path='/account/citizen/submission/:reportId' element={<SubmissionSuccessPage />} />
-        <Route path='/account/citizen/my-report/:userId' element={<MyReportPage />} />
-        <Route path='/account/citizen/my-report/edit/:id' element={<EditReportPage />} />
+        <Route element={<ProtectedRoute allowedRoles={['lgu']} />}>
+          <Route path='/account/citizen/:id' element={<CitizenPage />}/>
+          <Route path="/report/:id" element={<ReportFormPage />} />
+          <Route path='/account/citizen/submission/success/:userId' element={<SubmissionSuccessPage />} />
+          <Route path='/account/citizen/submission/:reportId' element={<SubmissionSuccessPage />} />
+          <Route path='/account/citizen/my-report/:userId' element={<MyReportPage />} />
+          <Route path='/account/citizen/my-report/edit/:id' element={<EditReportPage />} />
+        </ Route>
 
 
         <Route path='*' element={ <NotFoundPage />}/>

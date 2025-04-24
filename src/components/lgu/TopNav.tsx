@@ -1,99 +1,222 @@
-// Enhanced TopNav.tsx
-import { FiBell, FiSearch } from "react-icons/fi";
+import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FiBell, FiSearch, FiX, FiSettings, FiUser, FiLogOut } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuGroup, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '../ui/dropdown-menu';
 import { Badge } from '../ui/badge';
-import { cn } from "../../lib/utils";
-import { useNavigate } from "react-router-dom";
+import { Button } from '../ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/tooltip';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useDebounce } from 'use-debounce';
+import { cn } from '../../lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 
-export const TopNav = ({ user }: { user: { name: string; email: string } }) => {
-  const Email = localStorage.getItem("adminEmail"); 
-  const name = localStorage.getItem("name");
+type UserProfile = {
+  name?: string | null;
+  email?: string | null;
+  avatar?: string | null;
+};
 
+export const TopNav = () => {
   const navigate = useNavigate();
-  const handleLogout = () => {
-    localStorage.removeItem("name");
-    localStorage.removeItem("adminEmail");
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("barangay");
-    localStorage.removeItem("firstName");
-    localStorage.removeItem("lastName");
-    localStorage.removeItem("phoneNumber");
-    localStorage.removeItem("position");
-    localStorage.removeItem("user");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile>({});
+  const [notifications] = useState(3);
+
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    setUserProfile({
+      name: localStorage.getItem("name") || 'Anonymous',
+      email: localStorage.getItem("adminEmail") || 'No email',
+      avatar: localStorage.getItem("avatar") || undefined
+    });
+  }, []);
+
+  const handleSearch = useCallback((value: string) => {
+    console.log('Searching for:', value);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    localStorage.clear();
     navigate('/account/login');
+    setIsLogoutDialogOpen(false);
+  }, [navigate]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    handleSearch(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    handleSearch('');
   };
 
   return (
-    <div className="flex justify-between items-center px-6 h-16 border-b border-gray-800 bg-gray-900/80 backdrop-blur-lg z-40">
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        className="flex items-center bg-gray-800/50 rounded-xl px-4 py-2 w-96 gap-3 border border-gray-700 hover:border-cyan-400/30 transition-all"
-      >
-        <FiSearch className="text-gray-500" />
-        <input
-          type="text"
-          placeholder="Search across portal..."
-          className="flex-1 bg-transparent outline-none text-gray-300 placeholder-gray-500 text-sm focus:ring-0"
-        />
-        <kbd className="hidden lg:inline-flex items-center px-2 py-1 text-xs font-sans text-gray-400 border border-gray-700 rounded">
-          ⌘ K
-        </kbd>
-      </motion.div>
-
-      <div className="flex items-center gap-6">
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="text-gray-400 hover:text-cyan-400 relative p-2 rounded-lg hover:bg-gray-800/50"
+    <TooltipProvider >
+    <nav className="sticky top-0 flex justify-between items-center px-6 h-16 border-b border-gray-800 bg-gray-900/95 backdrop-blur-lg z-50">
+      <div className="relative flex-1 max-w-2xl mr-4">
+        <motion.div
+          initial={{ opacity: 0.9 }}
+          whileHover={{ opacity: 1 }}
+          className="relative group"
         >
-          <FiBell size={20} />
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 animate-pulse bg-red-500 hover:bg-red-400"
-          >
-            3
-          </Badge>
-        </motion.button>
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search across portal..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="w-full pl-10 pr-8 py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-sm text-gray-200 placeholder-gray-500 
+                     focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all"
+            aria-label="Global search"
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+              aria-label="Clear search"
+            >
+              <FiX className="w-4 h-4" />
+            </button>
+          )}
+        </motion.div>
+      </div>
 
+      {/* Navigation Controls */}
+      <div className="flex items-center gap-4">
+        {/* Notifications */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-cyan-400 relative rounded-lg hover:bg-gray-800/50"
+              aria-label="Notifications"
+            >
+              <FiBell className="w-5 h-5" />
+              {notifications > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 animate-pulse bg-red-500/90 hover:bg-red-400/90 px-1.5 py-0.5"
+                >
+                  {notifications}
+                </Badge>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-gray-800 border-gray-700 text-gray-200">
+            Notifications ({notifications})
+          </TooltipContent>
+        </Tooltip>
+
+        {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="flex items-center gap-3 cursor-pointer p-1.5 rounded-lg hover:bg-gray-800/50"
+            <Button
+              variant="ghost"
+              className="rounded-full p-1 hover:bg-gray-800/50 focus:ring-2 focus:ring-cyan-500/30"
+              aria-label="User menu"
             >
-              <div className="relative">
-                <div className="h-9 w-9 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center">
-                  <span className="text-white font-medium text-sm">
-                    {name?.charAt(0).toUpperCase()}
-                  </span>
+              <div className="flex items-center gap-2.5">
+                <Avatar className="w-9 h-9 border-2 border-cyan-500/20">
+                  <AvatarImage src={userProfile.avatar || undefined} />
+                  <AvatarFallback className="bg-gradient-to-r from-cyan-500 to-blue-500 font-medium text-white">
+                    {userProfile.name?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden lg:block text-left">
+                  <p className="text-sm font-medium text-gray-200 truncate max-w-[160px]">
+                    {userProfile.name}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate max-w-[160px]">
+                    {userProfile.email}
+                  </p>
                 </div>
-                <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-gray-900" />
               </div>
-              <div className="text-left hidden lg:block">
-                <p className="text-sm font-medium text-gray-200">{name}</p>
-                <p className="text-xs text-gray-400 truncate max-w-[160px]">{Email}</p>
-              </div>
-            </motion.div>
+            </Button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent 
             align="end"
-            className="w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-2"
+            className="w-64 bg-gray-800 border border-gray-700 rounded-xl shadow-xl overflow-hidden"
           >
-            <DropdownMenuItem className="flex items-center gap-2 p-2 text-gray-300 hover:bg-gray-700/50 rounded-lg">
-              <span>👤</span> Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex items-center gap-2 p-2 text-gray-300 hover:bg-gray-700/50 rounded-lg">
-              <span>⚙️</span> Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 p-2 text-red-400 hover:bg-red-500/10 rounded-lg">
-              <span>🚪</span> Logout
+            <DropdownMenuLabel className="px-4 py-3 bg-gray-700/20">
+              <div className="flex items-center gap-3">
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={userProfile.avatar || undefined} />
+                  <AvatarFallback className="bg-gradient-to-r from-cyan-500 to-blue-500">
+                    {userProfile.name?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium text-gray-100">{userProfile.name}</p>
+                  <p className="text-xs text-gray-400 truncate">{userProfile.email}</p>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+
+            <DropdownMenuGroup className="p-1.5">
+              <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-gray-700/50 focus:bg-gray-700/50 cursor-pointer">
+                <FiUser className="w-4 h-4 text-cyan-400" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-gray-700/50 focus:bg-gray-700/50 cursor-pointer">
+                <FiSettings className="w-4 h-4 text-cyan-400" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator className="bg-gray-700/50" />
+
+            <DropdownMenuItem
+              onClick={() => setIsLogoutDialogOpen(true)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 cursor-pointer"
+            >
+              <FiLogOut className="w-4 h-4" />
+              <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
+
+      <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <DialogContent className="bg-gray-800 border-gray-700 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-gray-200">Confirm Logout</DialogTitle>
+            <DialogDescription className="text-gray-400 mt-2">
+              Are you sure you want to sign out? Any unsaved changes might be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button 
+              variant="secondary"
+              onClick={() => setIsLogoutDialogOpen(false)}
+              className="bg-gray-700/50 hover:bg-gray-700 text-gray-200"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleLogout}
+              className="bg-red-500/90 hover:bg-red-400/90"
+            >
+              Logout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </nav>
+    </TooltipProvider>
   );
 };

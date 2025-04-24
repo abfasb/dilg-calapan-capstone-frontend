@@ -60,6 +60,8 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { ReportList } from "./partials/ReportList";
 import ChatBot from "./partials/ChatBot";
+import { Navigate } from "react-router-dom";
+import UnAuthorizedPage from "../../pages/authentication/UnAuthorizedPage";
 
 
 
@@ -105,6 +107,13 @@ interface Event {
 }
 
 export default function MainCitizen() {
+
+  const role = localStorage.getItem('role');
+    
+    if (role !== 'citizen') {
+      return <UnAuthorizedPage/>;
+    }
+
   const [anonymousMode, setAnonymousMode] = useState(false);
   const navigate = useNavigate();
 

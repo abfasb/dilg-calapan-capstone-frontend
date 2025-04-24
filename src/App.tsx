@@ -61,7 +61,7 @@ function App() {
         </Route>
 
         { /* Admin*/ }
-        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
           <Route path="/account/admin/:id/*" element={<AdminPanelPage />}>
             <Route path="*" element={<AdminRoutes />} />
           </Route>

@@ -212,7 +212,6 @@ const StaffOnboarding: React.FC = () => {
                   }`} />
                 </div>
               </TableHead>
-              <TableHead>Barangay</TableHead>
               <TableHead>Position</TableHead>
               <TableHead className="text-center">Submissions</TableHead>
               <TableHead className="text-center">Approval Rate</TableHead>
@@ -229,7 +228,6 @@ const StaffOnboarding: React.FC = () => {
                 onClick={() => setSelectedLGU(lgu)}
               >
                 <TableCell className="font-medium">{`${lgu.firstName} ${lgu.lastName}`}</TableCell>
-                <TableCell>{lgu.barangay}</TableCell>
                 <TableCell>{lgu.position}</TableCell>
                 <TableCell className="text-center">{lgu.documents.length}</TableCell>
                 <TableCell className="text-center">
@@ -277,9 +275,6 @@ const StaffOnboarding: React.FC = () => {
                   <BarChart className="h-6 w-6" />
                   {selectedLGU.firstName} {selectedLGU.lastName}'s Submissions
                 </DialogTitle>
-                <DialogDescription>
-                  Detailed view of all submissions from {selectedLGU.barangay}
-                </DialogDescription>
               </DialogHeader>
 
               <div className="grid grid-cols-3 gap-4 mb-6">

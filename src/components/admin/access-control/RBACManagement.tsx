@@ -14,6 +14,7 @@ interface User {
   role: string;
   createdAt: string;
   phoneNumber?: string;
+  position: string;
 }
 
 interface PendingLgu {
@@ -24,6 +25,7 @@ interface PendingLgu {
   phoneNumber: string;
   status: string;
   createdAt: string;
+  position: string;
 }
 
 const AdminLguManagement: React.FC = () => {
@@ -63,25 +65,49 @@ const AdminLguManagement: React.FC = () => {
   const handleApproveReject = async (id: string, status: 'approved' | 'rejected') => {
     setProcessingId(id);
     try {
-      const response = await fetch(`http://localhost:5000/lgu/pendingLgus/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
+        const response = await fetch(`http://localhost:5000/lgu/pendingLgus/${id}`, {
+            method: "PUT",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ status }),
+        });
 
-      if (response.ok) {
-        setPendingLgus(prev => prev.filter(lgu => lgu._id !== id));
-        toast.success(`LGU ${status} successfully`);
-        if (status === 'approved') {
-          await fetchUsers(); 
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to update status');
         }
-      }
-    } catch (error) {
-      toast.error(`Failed to ${status} LGU`);
+
+        setPendingLgus(prev => prev.filter(lgu => lgu._id !== id));
+        
+        if (status === 'approved') {
+            const approvedLgu = pendingLgus.find(lgu => lgu._id === id);
+            if (approvedLgu) {
+                setUsers(prev => [...prev, {
+                    _id: id,
+                    name: `${approvedLgu.firstName} ${approvedLgu.lastName}`,
+                    email: approvedLgu.email,
+                    role: 'lgu',
+                    createdAt: new Date().toISOString(),
+                    phoneNumber: approvedLgu.phoneNumber,
+                    position: approvedLgu.position || 'N/A',
+                }]);
+            }
+        }
+        
+        toast.success(`LGU ${status} successfully`);
+        
+    } catch (error : any) {
+        console.error('Approval error:', error);
+        toast.error(error.message || `Failed to ${status} LGU`);
+        fetchPendingLgus();
+        fetchUsers();
     } finally {
-      setProcessingId(null);
+        setProcessingId(null);
     }
-  };
+};
 
   const lguUsers = users.filter(user => user.role.includes("lgu"));
 
@@ -143,6 +169,7 @@ const AdminLguManagement: React.FC = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead>Position</TableHead>
                   <TableHead>Role</TableHead>
                 </TableRow>
               </TableHeader>
@@ -152,6 +179,7 @@ const AdminLguManagement: React.FC = () => {
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.phoneNumber || 'N/A'}</TableCell>
+                    <TableCell>{user.position || 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{user.role}</Badge>
                     </TableCell>
@@ -170,6 +198,7 @@ const AdminLguManagement: React.FC = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead>Position</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Applied At</TableHead>
                   <TableHead>Actions</TableHead>
@@ -181,6 +210,7 @@ const AdminLguManagement: React.FC = () => {
                     <TableCell>{lgu.firstName} {lgu.lastName}</TableCell>
                     <TableCell>{lgu.email}</TableCell>
                     <TableCell>{lgu.phoneNumber}</TableCell>
+                    <TableCell>{lgu.position}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{lgu.status}</Badge>
                     </TableCell>

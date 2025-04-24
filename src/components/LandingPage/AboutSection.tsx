@@ -7,7 +7,6 @@ const AboutSection: React.FC = () => {
       className="py-16 px-5 md:px-10 bg-gradient-to-b from-gray-50 to-white relative"
     >
       <div className="container mx-auto flex flex-col md:flex-row items-center md:space-x-10">
-        {/* Left Content */}
         <div className="md:w-1/2 text-center md:text-left">
           <h2 className="text-4xl md:text-5xl font-extrabold text-blue-800 mb-6 leading-tight">
             About the Department of the Interior and Local Government

@@ -7,7 +7,7 @@ export default function AdminPanelPage() {
 
   const role = localStorage.getItem('role');
   
-  if (role !== 'admin') {
+  if (role !== 'Admin') {
     return <Navigate to="/" replace />;
   }
 
@@ -22,7 +22,6 @@ export default function AdminPanelPage() {
       navigate("/account/login"); 
     }
     
-    // Redirect to dashboard if no subroute specified
     if (location.pathname === `/account/admin/${id}`) {
       navigate(`/account/admin/${id}/dashboard`, { replace: true });
     }

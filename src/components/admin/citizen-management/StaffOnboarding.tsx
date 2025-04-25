@@ -82,18 +82,53 @@ const StaffOnboarding: React.FC = () => {
   useEffect(() => {
     const fetchLGUs = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/form/users/haha`)
-        const data = await response.json()
-        const lguUsers = await Promise.all(data.map(async (user: LGUUser) => {
-          const docsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/form/documents/haha`);
-          const documents = await docsResponse.json()
-          const docsWithHistory = await Promise.all(documents.map(async (doc: FormDocument) => {
-            const historyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/form/statushistories/haha`)
-            const statusHistories = await historyResponse.json()
-            return { ...doc, statusHistories }
-          }))
-          return { ...user, documents: docsWithHistory }
+        const usersResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/form/users/haha`)
+        const users = await usersResponse.json()
+        console.log('Fetched users:', users)
+  
+        const lguUsers = await Promise.all(users.map(async (user: LGUUser) => {
+          try {
+            const docsResponse = await fetch(
+              `${import.meta.env.VITE_API_URL}/api/form/documents/haha?userId=${user._id}`
+            )
+            const documents = await docsResponse.json()
+            console.log(`Documents for user ${user._id}:`, documents)
+  
+            const docsWithHistory = await Promise.all(documents.map(async (doc: FormDocument) => {
+              try {
+                console.log(doc._id)
+                const historyResponse = await fetch(
+               `${import.meta.env.VITE_API_URL}/api/form/statushistories/haha?formId=${doc._id}`
+                )
+                const statusHistories = await historyResponse.json()
+                console.log(`History for document ${doc._id}:`, statusHistories)
+                
+                return { 
+                  ...doc, 
+                  statusHistories: statusHistories.sort(
+                    (a: StatusHistory, b: StatusHistory) => 
+                      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                  ) 
+                }
+              } catch (error) {
+                console.error(`Error fetching history for doc ${doc._id}:`, error)
+                return { ...doc, statusHistories: [] }
+              }
+            }))
+  
+            return { 
+              ...user, 
+              documents: docsWithHistory.sort(
+                (a: FormDocument, b: FormDocument) => 
+                  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              )
+            }
+          } catch (error) {
+            console.error(`Error processing user ${user._id}:`, error)
+            return { ...user, documents: [] }
+          }
         }))
+  
         setLgus(lguUsers)
       } catch (error) {
         console.error('Error fetching data:', error)
@@ -104,7 +139,7 @@ const StaffOnboarding: React.FC = () => {
     fetchLGUs()
   }, [])
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, count: number) => {
     const statusMap = {
       approved: { icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-800' },
       pending: { icon: AlertCircle, color: 'bg-amber-100 text-amber-800' },
@@ -118,9 +153,16 @@ const StaffOnboarding: React.FC = () => {
     return (
       <Badge className={`${color} gap-1 hover:${color}`}>
         {Icon && <Icon className="h-4 w-4" />}
-        {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
+        {count} {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
       </Badge>
     )
+  }
+
+  const getStatusCounts = (documents: FormDocument[]) => {
+    return documents.reduce((acc, doc) => {
+      acc[doc.status] = (acc[doc.status] || 0) + 1
+      return acc
+    }, { approved: 0, pending: 0, rejected: 0 })
   }
 
   const handleSort = (key: keyof LGUUser) => {
@@ -140,17 +182,23 @@ const StaffOnboarding: React.FC = () => {
     return 0
   })
 
-  const paginatedData = sortedData
-    .filter(lgu => 
+  const filteredData = sortedData.filter(lgu => {
+    const matchesSearch = 
       lgu.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lgu.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lgu.barangay.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    
+    if (!statusFilter) return matchesSearch
+    return matchesSearch && lgu.documents.some(doc => doc.status === statusFilter)
+  })
+
+  const paginatedData = filteredData
     .slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
-  const getApprovalRate = (lgu: LGUUser) => {
-    const approved = lgu.documents.filter(d => d.status === 'approved').length
-    return Math.round((approved / lgu.documents.length) * 100) || 0
+  const getApprovalRate = (documents: FormDocument[]) => {
+    const approved = documents.filter(d => d.status === 'approved').length
+    const total = documents.length
+    return total > 0 ? Math.round((approved / total) * 100) : 0
   }
 
   if (loading) return <div>Loading...</div>
@@ -221,49 +269,55 @@ const StaffOnboarding: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.map((lgu) => (
-              <TableRow 
-                key={lgu._id} 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => setSelectedLGU(lgu)}
-              >
-                <TableCell className="font-medium">{`${lgu.firstName} ${lgu.lastName}`}</TableCell>
-                <TableCell>{lgu.position}</TableCell>
-                <TableCell className="text-center">{lgu.documents.length}</TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <Progress value={getApprovalRate(lgu)} className="h-2 w-20" />
-                    <span>{getApprovalRate(lgu)}%</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {lgu.documents.length > 0 
-                    ? new Date(lgu.documents[0].createdAt).toLocaleDateString()
-                    : 'N/A'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    {getStatusBadge('approved')}
-                    {getStatusBadge('pending')}
-                    {getStatusBadge('rejected')}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical size={16} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                      <DropdownMenuItem>View History</DropdownMenuItem>
-                      <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {paginatedData.map((lgu) => {
+              const statusCounts = getStatusCounts(lgu.documents)
+              const approvalRate = getApprovalRate(lgu.documents)
+              
+              return (
+                <TableRow 
+                  key={lgu._id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => setSelectedLGU(lgu)}
+                >
+                  <TableCell className="font-medium">{`${lgu.firstName} ${lgu.lastName}`}</TableCell>
+                  <TableCell>{lgu.position}</TableCell>
+                  <TableCell className="text-center">{lgu.documents.length}</TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Progress value={approvalRate} className="h-2 w-20" />
+                      <span>{approvalRate}%</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {lgu.documents.length > 0 
+                      ? new Date(lgu.documents[0].createdAt).toLocaleDateString()
+                      : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2 flex-wrap">
+                      {statusCounts.approved > 0 && getStatusBadge('approved', statusCounts.approved)}
+                      {statusCounts.pending > 0 && getStatusBadge('pending', statusCounts.pending)}
+                      {statusCounts.rejected > 0 && getStatusBadge('rejected', statusCounts.rejected)}
+                      {lgu.documents.length === 0 && getStatusBadge('unknown', 0)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem>Send Reminder</DropdownMenuItem>
+                        <DropdownMenuItem>View History</DropdownMenuItem>
+                        <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
 
@@ -275,6 +329,9 @@ const StaffOnboarding: React.FC = () => {
                   <BarChart className="h-6 w-6" />
                   {selectedLGU.firstName} {selectedLGU.lastName}'s Submissions
                 </DialogTitle>
+                <DialogDescription>
+                  Barangay: {selectedLGU.barangay} • Position: {selectedLGU.position}
+                </DialogDescription>
               </DialogHeader>
 
               <div className="grid grid-cols-3 gap-4 mb-6">
@@ -310,6 +367,24 @@ const StaffOnboarding: React.FC = () => {
                   <p className="mt-2">{selectedLGU.phoneNumber}</p>
                   <p className="text-sm text-muted-foreground">{selectedLGU.email}</p>
                 </div>
+
+                <div className="p-4 rounded-lg bg-muted">
+                  <h3 className="flex items-center gap-2 font-medium">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Approval Rate
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Percentage of approved submissions
+                      </TooltipContent>
+                    </Tooltip>
+                  </h3>
+                  <p className="text-2xl font-bold mt-2">
+                    {getApprovalRate(selectedLGU.documents)}%
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-6">
@@ -317,12 +392,12 @@ const StaffOnboarding: React.FC = () => {
                   <div key={document._id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <h3 className="font-medium">{document.documentName}</h3>
+                        <h3 className="font-medium">{document.documentName || 'Unnamed Document'}</h3>
                         <p className="text-sm text-muted-foreground">
                           Reference: {document.referenceNumber}
                         </p>
                       </div>
-                      {getStatusBadge(document.status)}
+                      {getStatusBadge(document.status, 1)}
                     </div>
 
                     <div className="space-y-4">
@@ -368,8 +443,13 @@ const StaffOnboarding: React.FC = () => {
 
         <div className="flex justify-between items-center p-4">
           <div className="text-sm text-muted-foreground">
-            Showing {paginatedData.length} of {lgus.length} LGUs
+            Showing {paginatedData.length} of {filteredData.length} LGUs
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredData.length / pageSize)}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
     </div>

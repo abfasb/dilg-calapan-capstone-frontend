@@ -208,13 +208,19 @@ export default function Reports() {
 
   const updateStatus = async (responseId: string, status: FormResponse["status"], comments?: string) => {
     const prevStatus = responses.find(r => r._id === responseId)?.status;
-    const lguName = localStorage.getItem('name');
+    const lguNamee = localStorage.getItem('name');
+    const userId = localStorage.getItem('userId')
 
+    console.log(userId);
     try {
       await axios.put(`${import.meta.env.VITE_API_URL}/api/response/${responseId}`, { 
         status,
         comments,
-        updatedBy: lguName || 'LGU Representative' 
+        updatedBy: lguNamee || 'LGU Representative',
+        lgu: { 
+          id: userId,
+          name: lguNamee || 'LGU Representative'
+        }
       });
       
       setResponses(prev => prev.map(r => 
@@ -226,7 +232,9 @@ export default function Reports() {
             {
               status,
               comments: status === 'rejected' ? comments : undefined,
-              updatedBy: lguName || 'LGU Representative',
+              updatedBy: lguNamee || 'LGU Representative',
+               lguId: userId,
+              lguName: lguNamee || 'LGU Representative',
               document: r.bulkFile?.fileName || r.referenceNumber,
               timestamp: new Date().toISOString()
             }

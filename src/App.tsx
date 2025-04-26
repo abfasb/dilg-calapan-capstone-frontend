@@ -68,7 +68,7 @@ function App() {
         </Route>
 
         { /* Citizen*/ }
-        <Route element={<ProtectedRoute allowedRoles={['lgu']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['citizen']} />}>
           <Route path='/account/citizen/:id' element={<CitizenPage />}/>
           <Route path="/report/:id" element={<ReportFormPage />} />
           <Route path='/account/citizen/submission/success/:userId' element={<SubmissionSuccessPage />} />

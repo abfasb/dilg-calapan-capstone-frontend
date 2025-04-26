@@ -62,6 +62,7 @@ interface LGUUser {
   _id: string
   email: string
   role: string
+  fullName: string
   lastName: string
   firstName: string
   barangay: string
@@ -83,61 +84,66 @@ const StaffOnboarding: React.FC = () => {
   const [lgus, setLgus] = useState<LGUUser[]>([])
   const [loading, setLoading] = useState(true)
 
+  const calculateApprovalRate = (documents: FormDocument[]) => {
+    const total = documents.length;
+    if (total === 0) return 0;
+    const approved = documents.filter(doc => doc.status === 'approved').length;
+    return Math.round((approved / total) * 100);
+  };
+
   useEffect(() => {
     const fetchLGUs = async () => {
       try {
-        const usersResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/form/users/haha`)
-        const users = await usersResponse.json()
-        console.log(users);
+        const usersRes = await fetch(`${import.meta.env.VITE_API_URL}/api/form/users/haha`);
+        const users: LGUUser[] = await usersRes.json();
   
-        const lguUsers = await Promise.all(users.map(async (user: LGUUser) => {
+        const lguUsers = await Promise.all(users.map(async (user) => {
           try {
-            const docsResponse = await fetch(
-              `${import.meta.env.VITE_API_URL}/api/form/lgu-documents?lguName=${encodeURIComponent(user.firstName + ' ' + user.lastName)}`
-            )
-            const documents = await docsResponse.json()
-            console.log(documents);
+            const fullName = `${user.firstName} ${user.lastName}`;
+            const docsRes = await fetch(
+              `${import.meta.env.VITE_API_URL}/api/form/lgudocuments?lguName=${encodeURIComponent(fullName)}`
+            );
+            const documents: FormDocument[] = await docsRes.json();
   
-            const docsWithHistory = await Promise.all(documents.map(async (doc: FormDocument) => {
+            const docsWithHistory = await Promise.all(documents.map(async (doc) => {
               try {
-                const historyResponse = await fetch(
+                const historyRes = await fetch(
                   `${import.meta.env.VITE_API_URL}/api/form/statushistories/haha?formId=${doc._id}`
-                )
-                const statusHistories = await historyResponse.json()
+                );
+                const statusHistories: StatusHistory[] = await historyRes.json();
                 
-                return { 
-                  ...doc, 
-                  statusHistories: statusHistories.sort(
-                    (a: StatusHistory, b: StatusHistory) => 
-                      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-                  ) 
-                }
+                return {
+                  ...doc,
+                  statusHistories: statusHistories.sort((a, b) => 
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                  )
+                };
               } catch (error) {
-                return { ...doc, statusHistories: [] }
+                return { ...doc, statusHistories: [] };
               }
-            }))
+            }));
   
-            return { 
-              ...user, 
-              documents: docsWithHistory.sort(
-                (a: FormDocument, b: FormDocument) => 
-                  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-              )
-            }
+            return {
+              ...user,
+              documents: docsWithHistory.sort((a, b) => 
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              ),
+              approvalRate: calculateApprovalRate(docsWithHistory)
+            };
           } catch (error) {
-            return { ...user, documents: [] }
+            return { ...user, documents: [], approvalRate: 0 };
           }
-        }))
+        }));
   
-        setLgus(lguUsers)
+        setLgus(lguUsers);
       } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error('Error fetching data:', error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchLGUs()
-  }, [])
+    };
+    fetchLGUs();
+  }, []);
 
   const getStatusBadge = (status: string, count: number) => {
     const statusMap = {
@@ -297,52 +303,39 @@ const StaffOnboarding: React.FC = () => {
                       : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2 flex-wrap">
-                      {statusCounts.approved > 0 && (
-                        <Badge
-                          className="bg-emerald-100 text-emerald-800 gap-1 hover:bg-emerald-100 cursor-pointer"
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Total Processed: {lgu.documents.length}</span>
+                        <span className="text-sm text-muted-foreground">
+                          ({calculateApprovalRate(lgu.documents)}% approval)
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="h-8 px-3 text-xs"
                           onClick={(e) => {
                             e.stopPropagation()
                             setSelectedLGU(lgu)
                             setSelectedStatus('approved')
                           }}
                         >
-                          <CheckCircle2 className="h-4 w-4" />
-                          {statusCounts.approved} Approved
-                        </Badge>
-                      )}
-                      {statusCounts.rejected > 0 && (
-                        <Badge
-                          className="bg-red-100 text-red-800 gap-1 hover:bg-red-100 cursor-pointer"
+                          Approved ({statusCounts.approved})
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="h-8 px-3 text-xs"
                           onClick={(e) => {
                             e.stopPropagation()
                             setSelectedLGU(lgu)
                             setSelectedStatus('rejected')
                           }}
                         >
-                          <XCircle className="h-4 w-4" />
-                          {statusCounts.rejected} Rejected
-                        </Badge>
-                      )}
-                      {statusCounts.pending > 0 && (
-                        <Badge
-                          className="bg-amber-100 text-amber-800 gap-1 hover:bg-amber-100 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedLGU(lgu)
-                            setSelectedStatus('pending')
-                          }}
-                        >
-                          <AlertCircle className="h-4 w-4" />
-                          {statusCounts.pending} Pending
-                        </Badge>
-                      )}
-                      {lgu.documents.length === 0 && (
-                        <Badge className="bg-gray-100 text-gray-800 gap-1">
-                          <Clock className="h-4 w-4" />
-                          0 Unknown
-                        </Badge>
-                      )}
+                          Rejected ({statusCounts.rejected})
+                        </Button>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

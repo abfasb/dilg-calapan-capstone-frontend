@@ -54,13 +54,10 @@ const StaffOnboarding = () => {
         setLguUsers(usersData);
   
         const docsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/form/lgudocuments`);
-        if (!docsResponse.ok) {
-          const errorData = await docsResponse.json();
-          throw new Error(errorData.message || 'Failed to fetch documents');
-        }
+        if (!docsResponse.ok) throw new Error('Failed to fetch documents');
         const docsData = await docsResponse.json();
-        setDocuments(docsData.documents || []);
-  
+        setDocuments(docsData.documents || []); 
+
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);

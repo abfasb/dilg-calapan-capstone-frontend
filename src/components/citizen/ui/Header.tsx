@@ -9,72 +9,77 @@ import { Separator } from "../../ui/separator";
 import { useTheme } from "../../../contexts/theme-provider";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 
-  import { 
-    Bell,
-    Sun,
-    Moon,
-    User,
-    Settings,
-    LogOut,
-    Search,
-    AlertCircle,
-    FileText,
-    HelpCircle,
-    Mail,
-    Shield
-  } from "lucide-react";
-  
-  export function Header() {
+import { 
+  Bell,
+  Sun,
+  Moon,
+  User,
+  Settings,
+  LogOut,
+  Search,
+  AlertCircle,
+  FileText,
+  HelpCircle,
+  Mail,
+  Shield,
+  Calendar
+} from "lucide-react";
 
-    const navigate = useNavigate();
-    const { id } = useParams<{ id: string }>();
-    const location = useLocation();
-    const [user, setUser] = useState<{ name: string; email: string; token?: string } | null>(null);
-  
-    useEffect(() => {
-      const queryParams = new URLSearchParams(location.search);
-      const googleName = queryParams.get("name");
-      const googleEmail = queryParams.get("email");
-      const googleToken = queryParams.get("token");
-  
-      const manualName = localStorage.getItem("name");
-      const manualEmail = localStorage.getItem("adminEmail");
-  
-      if (googleName && googleEmail && googleToken) {
-        setUser({ name: googleName, email: googleEmail, token: googleToken });
-        localStorage.setItem("name", googleName);
-        localStorage.setItem("adminEmail", googleEmail);
-        localStorage.setItem("token", googleToken);
-      } else if (manualName && manualEmail) {
-        setUser({ name: manualName, email: manualEmail });
-      }
-    }, [location]);
-    const [unreadNotifications] = useState(3); 
-    const { theme, toggleTheme } = useTheme();  
+export function Header() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const [user, setUser] = useState<{ name: string; email: string; token?: string } | null>(null);
+  const userId = localStorage.getItem("userId");
 
-    const handleLogout = () => {
-      localStorage.removeItem("name");
-      localStorage.removeItem("adminEmail");
-      localStorage.removeItem("token");
-      localStorage.removeItem("userId");
-      localStorage.removeItem("barangay");
-      localStorage.removeItem("firstName");
-      localStorage.removeItem("lastName");
-      localStorage.removeItem("phoneNumber");
-      localStorage.removeItem("position");
-      localStorage.removeItem("user");
-      setUser(null); 
-      navigate('/account/login');
-    };
-    const userId = localStorage.getItem("userId");
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const googleName = queryParams.get("name");
+    const googleEmail = queryParams.get("email");
+    const googleToken = queryParams.get("token");
 
-    const navigateToReports = () => {
-      navigate(`/account/citizen/my-report/${userId}}`)
+    const manualName = localStorage.getItem("name");
+    const manualEmail = localStorage.getItem("adminEmail");
+
+    if (googleName && googleEmail && googleToken) {
+      setUser({ name: googleName, email: googleEmail, token: googleToken });
+      localStorage.setItem("name", googleName);
+      localStorage.setItem("adminEmail", googleEmail);
+      localStorage.setItem("token", googleToken);
+    } else if (manualName && manualEmail) {
+      setUser({ name: manualName, email: manualEmail });
     }
-    
-    return (
-        <TooltipProvider>
-    <header className="bg-background border-b sticky top-0 z-50 dark:border-gray-800">
+  }, [location]);
+
+  const [unreadNotifications] = useState(3); 
+  const { theme, toggleTheme } = useTheme();  
+
+  const handleLogout = () => {
+    localStorage.removeItem("name");
+    localStorage.removeItem("adminEmail");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("barangay");
+    localStorage.removeItem("firstName");
+    localStorage.removeItem("lastName");
+    localStorage.removeItem("phoneNumber");
+    localStorage.removeItem("position");
+    localStorage.removeItem("user");
+    setUser(null); 
+    navigate('/account/login');
+  };
+
+  const navigateToReports = () => {
+    navigate(`/account/citizen/my-report/${userId}`);
+  }
+
+  const navigateToAppointments = () => {
+    navigate(`/account/citizen/appointments/${userId}`);
+  }
+
+  return (
+    <TooltipProvider>
+      <header className="bg-background border-b sticky top-0 z-50 dark:border-gray-800">
         <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
@@ -92,7 +97,17 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
                 </TooltipTrigger>
                 <TooltipContent>View submitted reports</TooltipContent>
               </Tooltip>
-              
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={navigateToAppointments} className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span className="hidden xl:inline">Appointments</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View and manage appointments</TooltipContent>
+              </Tooltip>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2">
@@ -104,7 +119,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
               </Tooltip>
             </div>
           </div>
-  
+
           {/* Center Search */}
           <div className="flex-1 max-w-2xl mx-4 hidden md:block">
             <div className="relative">
@@ -115,7 +130,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
               />
             </div>
           </div>
-  
+
           {/* Right Section */}
           <div className="flex items-center gap-2">
             <DropdownMenu>
@@ -167,19 +182,20 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            
             <Button 
-                variant="ghost" 
-                size="sm" 
-                className="rounded-full aspect-square p-2"
-                onClick={toggleTheme}
-                >
-                {theme === "dark" ? (
-                    <Sun className="h-5 w-5" />
-                ) : (
-                    <Moon className="h-5 w-5" />
-                )}
-                </Button>
-  
+              variant="ghost" 
+              size="sm" 
+              className="rounded-full aspect-square p-2"
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2">
                 <Avatar className="h-9 w-9">
@@ -229,7 +245,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
             </DropdownMenu>
           </div>
         </div>
-  
+
         <div className="md:hidden p-4 border-t">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -240,7 +256,6 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
           </div>
         </div>
       </header>
-      </TooltipProvider>
-
-    );
-  }
+    </TooltipProvider>
+  );
+}

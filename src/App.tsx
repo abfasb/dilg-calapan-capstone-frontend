@@ -26,6 +26,7 @@ import AppointmentPage from './pages/lgus/AppointmentPage';
 import EditReportPage from './pages/citizen/EditReportPage';
 import { AdminRoutes } from './routes/AdminRoutes';
 import ProtectedRoute from './routes/ProtectedRoutes';
+import AppointmentPages from './pages/citizen/AppointmentPages';
 
 function App() {
   return (
@@ -75,6 +76,7 @@ function App() {
           <Route path='/account/citizen/submission/:reportId' element={<SubmissionSuccessPage />} />
           <Route path='/account/citizen/my-report/:userId' element={<MyReportPage />} />
           <Route path='/account/citizen/my-report/edit/:id' element={<EditReportPage />} />
+          <Route path='/account/citizen/appointments/:id' element={<AppointmentPages />} />
         </ Route>
 
 

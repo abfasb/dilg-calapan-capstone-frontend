@@ -306,7 +306,7 @@ const AISummaryReports: React.FC = () => {
                   <div className="border rounded-lg overflow-hidden">
                     <iframe 
                       src={selectedResponse.bulkFile.fileUrl}
-                      className="w-full h-80"
+                      className="w-full h-[600px]"
                       title={selectedResponse.bulkFile.fileName}
                     />
                   </div>

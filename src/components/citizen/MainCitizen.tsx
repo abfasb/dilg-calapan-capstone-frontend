@@ -653,7 +653,6 @@ if (isLoading) {
               </Table>
 
 
-              {/* Pagination */}
               {currentReports.length > 0 && (
                 <div className="mt-6">
                   <Pagination>
@@ -766,13 +765,12 @@ if (isLoading) {
         </Card>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          
-          <ChatBot />
-
+          <div className="h-full">
+            <ChatBot />
+          </div>
           <div className="md:col-span-2">
             {id && <AppointmentsCard userId={id} />}
           </div>
-
         </div>
       </main>
     </div>

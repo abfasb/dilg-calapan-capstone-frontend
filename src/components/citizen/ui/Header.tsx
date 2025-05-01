@@ -79,7 +79,7 @@ export function Header() {
 
   return (
     <TooltipProvider>
-      <header className="bg-background border-b sticky top-0 z-50 dark:border-gray-800">
+      <header className="bg-background border-b sticky m-0 p-0 top-0 z-50 dark:border-gray-800">
         <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">

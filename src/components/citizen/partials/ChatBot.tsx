@@ -14,6 +14,7 @@ import { CheckCircle2, Loader2, MessageSquare, Send, User, Bot, X } from 'lucide
 import { cn } from '../../../lib/utils'
 import { Badge } from '../../ui/badge'
 import ReactMarkdown from 'react-markdown'
+import io from 'socket.io-client'
 import remarkGfm from 'remark-gfm'
 import { useLocalStorage } from 'usehooks-ts'
 
@@ -44,8 +45,11 @@ export default function ChatBot() {
   const [currentAgent, setCurrentAgent] = useState<'ai' | 'human'>('ai')
   const [isHumanRequested, setIsHumanRequested] = useState(false)
   const [error, setError] = useState('')
+  const [humanChatHistory, setHumanChatHistory] = useLocalStorage<Message[]>('human-chat-history', [])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const socketRef = useRef<any>(null)
+  const userId = useRef<string>(Math.random().toString(36).substr(2, 9))
 
   const API_URL = 'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta'
   const API_KEY = import.meta.env.VITE_API_HUGGING_FACE
@@ -53,6 +57,78 @@ export default function ChatBot() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+ // Update the useEffect for socket connection
+useEffect(() => {
+  const newSocket = io('http://localhost:5000', {
+    transports: ['websocket'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+  });
+
+  // Add connection status handlers
+  newSocket.on('connect', () => {
+    console.log('Connected to chat server');
+    setError('');
+    // Register user immediately upon connection
+    newSocket.emit('register_user', userId.current);
+  });
+
+  newSocket.on('disconnect', () => {
+    console.log('Disconnected from chat server');
+    setError('Connection lost. Reconnecting...');
+  });
+
+  newSocket.on('connect_error', (err : any) => {
+    console.error('Connection Error:', err);
+    setError('Failed to connect to chat server');
+  });
+
+  newSocket.on('receive_message', (msg: any) => {
+    console.log('Received message from admin:', msg);
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      content: msg.message,
+      sender: 'human',
+      timestamp: new Date(msg.timestamp),
+      status: 'read'
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
+    setHumanChatHistory(prev => [...prev, newMessage]);
+  });
+
+  socketRef.current = newSocket;
+
+  return () => {
+    newSocket.disconnect();
+  };
+}, []);
+
+const handleConnectToHuman = () => {
+  if (!socketRef.current?.connected) {
+    setError('Connection error. Please try again later.');
+    return;
+  }
+
+  console.log('Requesting human agent for user:', userId.current);
+  socketRef.current.emit('request_human', userId.current);
+  
+  const systemMessage: Message = {
+    id: Date.now().toString(),
+    content: 'Connecting you to a human support agent...',
+    sender: 'system',
+    timestamp: new Date(),
+    status: 'read'
+  };
+  
+  setMessages(prev => [...prev, systemMessage]);
+  setCurrentAgent('human');
+  setIsHumanRequested(true);
+
+  socketRef.current.emit('register_user', userId.current);
+};
 
   useEffect(() => {
     scrollToBottom()
@@ -125,23 +201,6 @@ export default function ChatBot() {
     }
   }
 
-  const handleHumanResponse = () => {
-    setIsTyping(true)
-    
-    setTimeout(() => {
-      const humanResponse: Message = {
-        id: Date.now().toString(),
-        content: 'Hi there! This is a human support agent. How can I assist you today?',
-        sender: 'human',
-        timestamp: new Date(),
-        status: 'read'
-      }
-
-      setMessages(prev => [...prev, humanResponse])
-      setIsTyping(false)
-    }, 2000)
-  }
-
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSending) return
 
@@ -154,6 +213,13 @@ export default function ChatBot() {
     }
 
     setMessages(prev => [...prev, userMessage])
+    
+    // If current agent is human, also add the message to human chat history
+    if (currentAgent === 'human') {
+      setHumanChatHistory(prev => [...prev, userMessage])
+    }
+    
+    const currentMessageText = newMessage
     setNewMessage('')
     setIsSending(true)
 
@@ -165,35 +231,39 @@ export default function ChatBot() {
             : msg
         )
       )
+      
+      if (currentAgent === 'human') {
+        setHumanChatHistory(prev => 
+          prev.map(msg => 
+            msg.id === userMessage.id 
+              ? { ...msg, status: 'delivered' } 
+              : msg
+          )
+        )
+      }
     }, 500)
 
     try {
-      if (currentAgent === 'ai') {
-        await handleAIResponse(newMessage)
+      if (currentAgent === 'human') {
+        console.log('Sending message to human agent:', currentMessageText)
+        
+        socketRef.current?.emit('send_message', {
+          userId: userId.current,
+          message: currentMessageText,
+          sender: 'user',
+          timestamp: new Date()
+        })
       } else {
-        handleHumanResponse()
+        await handleAIResponse(currentMessageText)
       }
     } catch (err) {
+      console.error('Error sending message:', err)
       setError('Failed to send message. Please try again.')
     } finally {
       setIsSending(false)
     }
   }
 
-  const handleConnectToHuman = () => {
-    const systemMessage: Message = {
-      id: Date.now().toString(),
-      content: 'Connecting you to a human support agent...',
-      sender: 'system',
-      timestamp: new Date(),
-      status: 'read'
-    }
-    
-    setMessages(prev => [...prev, systemMessage])
-    setCurrentAgent('human')
-    setIsHumanRequested(true)
-    handleHumanResponse()
-  }
 
   const handleReturnToAI = () => {
     const systemMessage: Message = {
@@ -207,10 +277,14 @@ export default function ChatBot() {
     setMessages(prev => [...prev, systemMessage])
     setCurrentAgent('ai')
     setIsHumanRequested(false)
+    
+    // We don't clear the messages when returning to AI
+    // This way the entire conversation history is preserved
   }
 
   const clearChatHistory = () => {
     setMessages(initialMessages)
+    setHumanChatHistory([])
   }
 
   const closeChat = () => {

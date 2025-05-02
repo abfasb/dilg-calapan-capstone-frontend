@@ -70,9 +70,11 @@ const StaffOnboarding = () => {
 
   const getFilteredDocuments = () => {
     if (!selectedUser) return documents;
-    return documents.filter(doc => 
-      statusFilter === 'all' ? true : doc.status === statusFilter
-    )
+    
+    return documents.filter(doc => {
+      const userInvolved = doc.history?.some(h => h.updatedBy === selectedUser._id);
+      return userInvolved && (statusFilter === 'all' || doc.status === statusFilter);
+    });
   }
 
   const calculateApprovalRate = (userId: string) => {
@@ -268,6 +270,28 @@ const StaffOnboarding = () => {
             </Table>
           </CardContent>
         </Card>
+
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-muted-foreground">
+            Page {currentPage} of {Math.ceil(getFilteredDocuments().length / 10)}
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              disabled={currentPage * 10 >= getFilteredDocuments().length}
+              onClick={() => setCurrentPage(p => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -298,7 +298,6 @@ export default function Reports() {
     return acc;
   }, {} as Record<string, number>);
 
-  // Add to component functions
 const startDrawing = (e: { clientX: number; clientY: number }) => {
   const canvas = canvasRef.current;
   if (!canvas) return;

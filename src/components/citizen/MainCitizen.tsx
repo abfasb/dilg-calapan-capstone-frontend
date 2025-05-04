@@ -63,6 +63,7 @@ import ChatBot from "./partials/ChatBot";
 import { Navigate } from "react-router-dom";
 import UnAuthorizedPage from "../../pages/authentication/UnAuthorizedPage";
 import { AppointmentsCard } from "./ui/AppointmentCard";
+import CaseTracking from "./partials/CaseTracking";
 
 
 
@@ -154,7 +155,7 @@ export default function MainCitizen() {
   }, [])
 
   const reportsPerPage = 8;
- 
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formDataa, setFormDataa] = useState({
@@ -207,9 +208,6 @@ export default function MainCitizen() {
   );
 
 
-  const name =localStorage.getItem("name");
-  const email = localStorage.getItem("adminEmail");
-
   useEffect(() => { 
     console.log("Checking authentication...");
     console.log("ID:", id);
@@ -252,7 +250,7 @@ export default function MainCitizen() {
     location: '',
     anonymous: false,
   });
-  
+
   const handleSubmitComplaint = async () => {
     try {
       if (!formData.title || !formData.description || !formData.category || !formData.location) {
@@ -260,12 +258,9 @@ export default function MainCitizen() {
         return;
       }
   
-      const formPayload = new FormData();
-      formPayload.append('title', formData.title);
-      formPayload.append('description', formData.description);
-      formPayload.append('category', formData.category);
-      formPayload.append('location', formData.location);
-      formPayload.append('anonymous', formData.anonymous.toString());
+      const firstName = localStorage.getItem('firstName') || 'Anonymous';
+      const lastName = localStorage.getItem('lastName') || '';
+      const fullName = `${firstName} ${lastName}`.trim();
   
       const response = await fetch(`${import.meta.env.VITE_API_URL}/complaints`, {
         method: 'POST',
@@ -273,26 +268,25 @@ export default function MainCitizen() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ 
-          title: formData.title,
-          description: formData.description,
-          category: formData.category,
-          location: formData.location,
-          anonymous: formData.anonymous,
-        }),
+        body: JSON.stringify({ ...formData, name: formData.anonymous ? 'Anonymous' : fullName }),
       });
   
-      if (!response.ok) throw new Error('Submission failed');
-        toast.success('Complaint Submitted Successfully!', {
-                icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
-                style: {
-                  background: '#1a1d24',
-                  color: '#fff',
-                  border: '1px solid #2a2f38',
-                  padding: '16px',
-                },
-                duration: 4000,
-              });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Submission failed');
+      }
+  
+      toast.success('Complaint Submitted Successfully!', {
+        icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
+        style: {
+          background: '#1a1d24',
+          color: '#fff',
+          border: '1px solid #2a2f38',
+          padding: '16px',
+        },
+        duration: 4000,
+      });
+  
       setFormData({
         title: '',
         description: '',
@@ -300,11 +294,12 @@ export default function MainCitizen() {
         location: '',
         anonymous: false,
       });
-    } catch (error) {
-      toast.error('Failed to submit complaint. Please try again.');
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      toast.error(error.message || 'Failed to submit complaint. Please try again.');
     }
   };
-
+  
   
 if (isLoading) {
     return (
@@ -423,62 +418,62 @@ if (isLoading) {
                   <TabsContent value="reporting">
                     <div className="grid md:grid-cols-2 gap-6">
                     <Card>
-              <CardHeader>
-                <CardTitle>New Complaint Report</CardTitle>
-                <CardDescription>
-                  Submit your concern to DILG Calapan City Office
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Input 
-                  placeholder="Complaint Title" 
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                />
-                
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                >
-                  <option value="">Select Complaint Category</option>
-                  <option value="Road Issues">Road Issues</option>
-                  <option value="Sanitation">Sanitation</option>
-                  <option value="Public Safety">Public Safety</option>
-                  <option value="Local Ordinances">Local Ordinances</option>
-                  <option value="Other">Other</option>
-                </select>
+                      <CardHeader>
+                        <CardTitle>New Complaint Report</CardTitle>
+                        <CardDescription>
+                          Submit your concern to DILG Calapan City Office
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <Input 
+                          placeholder="Complaint Title" 
+                          value={formData.title}
+                          onChange={(e) => setFormData({...formData, title: e.target.value})}
+                        />
+                        
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={formData.category}
+                          onChange={(e) => setFormData({...formData, category: e.target.value})}
+                        >
+                          <option value="">Select Complaint Category</option>
+                          <option value="Road Issues">Road Issues</option>
+                          <option value="Sanitation">Sanitation</option>
+                          <option value="Public Safety">Public Safety</option>
+                          <option value="Local Ordinances">Local Ordinances</option>
+                          <option value="Other">Other</option>
+                        </select>
 
-                <Input 
-                  placeholder="Location in Calapan City" 
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                />
+                        <Input 
+                          placeholder="Location in Calapan City" 
+                          value={formData.location}
+                          onChange={(e) => setFormData({...formData, location: e.target.value})}
+                        />
 
-                <Textarea
-                  placeholder="Detailed description of your complaint..."
-                  className="min-h-[150px]"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                />
+                        <Textarea
+                          placeholder="Detailed description of your complaint..."
+                          className="min-h-[150px]"
+                          value={formData.description}
+                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        />
 
-                <div className="flex items-center justify-between p-2 border rounded-lg">
-                  <span className="text-sm">Submit Anonymously</span>
-                  <Switch 
-                    checked={formData.anonymous}
-                    onCheckedChange={(checked) => setFormData({...formData, anonymous: checked})}
-                  />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full" 
-                  onClick={handleSubmitComplaint}
-                >
-                  Submit Complaint
-                </Button>
-              </CardFooter>
-            </Card>
+                        <div className="flex items-center justify-between p-2 border rounded-lg">
+                          <span className="text-sm">Submit Anonymously</span>
+                          <Switch 
+                            checked={formData.anonymous}
+                            onCheckedChange={(checked) => setFormData({...formData, anonymous: checked})}
+                          />
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button 
+                          className="w-full" 
+                          onClick={handleSubmitComplaint}
+                        >
+                          Submit Complaint
+                        </Button>
+                      </CardFooter>
+                    </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>New Incident Report</CardTitle>
@@ -513,184 +508,9 @@ if (isLoading) {
             </div>
           </TabsContent>
 
-          <TabsContent value="tracking">
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
-            <CardHeader>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <CardTitle>Case Tracking</CardTitle>
-                  <CardDescription>
-                    Monitor the status of your submitted reports and cases
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2 w-full md:w-auto">
-                  <Input 
-                    placeholder="Search cases..." 
-                    className="w-full md:w-64"
-                  />
-                  <Button variant="outline">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Filter by Date
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2 mb-4 flex-wrap">
-                <Badge 
-                  variant={selectedStatus.length === 0 ? 'default' : 'secondary'} 
-                  className="cursor-pointer"
-                  onClick={() => setSelectedStatus([])}
-                >
-                  All ({reports.length})
-                </Badge>
-                {['pending', 'in_progress', 'resolved'].map((status) => (
-                  <Badge
-                    key={status}
-                    variant={selectedStatus.includes(status) ? 'default' : 'secondary'}
-                    className="cursor-pointer capitalize"
-                    onClick={() => setSelectedStatus(prev => 
-                      prev.includes(status) 
-                        ? prev.filter(s => s !== status) 
-                        : [...prev, status]
-                    )}
-                  >
-                    {status.replace('_', ' ')} ({
-                      reports.filter(r => r.status === status).length
-                    })
-                  </Badge>
-                ))}
-              </div>
-
-              <Table>
-                <TableHeader className="dark:bg-gray-700">
-                  <TableRow>
-                    <TableHead className="w-[120px]">Case ID</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Update</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentReports.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        <div className="flex flex-col items-center gap-2 py-8">
-                          <Shield className="w-12 h-12 text-muted-foreground" />
-                          <p className="text-muted-foreground">
-                            No cases found. Submit a new report to track its status.
-                          </p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    currentReports.map((report) => (
-                      <TableRow
-                        key={report._id}
-                        className="group hover:bg-gray-100/50 dark:hover:bg-gray-700/50"
-                      >
-                        <TableCell className="font-medium">
-                          #{report._id?.substring(0, 6) || "N/A"}
-                        </TableCell>
-
-                        <TableCell className="max-w-[200px] truncate">
-                          {report.title || "Untitled"}
-                        </TableCell>
-
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {report.category?.toLowerCase() || "Unknown"}
-                          </Badge>
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                report.status === "pending"
-                                  ? "bg-yellow-500"
-                                  : report.status === "in_progress"
-                                  ? "bg-blue-500"
-                                  : report.status === "resolved"
-                                  ? "bg-green-500"
-                                  : "bg-gray-400"
-                              }`}
-                            />
-                            <span className="capitalize">
-                              {report.status?.replace("_", " ") || "Unknown"}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          {report.updatedAt
-                            ? new Date(report.updatedAt).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "N/A"}
-                        </TableCell>
-
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetails(report._id)}
-                            className="transition-opacity"
-                          >
-                            View Details
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-
-
-              {currentReports.length > 0 && (
-                <div className="mt-6">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
-                          onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-                          size={6}
-                        />
-                      </PaginationItem>
-                      
-                      {Array.from({ length: totalPages }, (_, i) => (
-                        <PaginationItem key={i + 1}>
-                          <PaginationLink
-                            isActive={currentPage === i + 1}
-                            onClick={() => setCurrentPage(i + 1)}
-                            size={6}
-                          >
-                            {i + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-
-                      <PaginationItem>                     
-                        <PaginationNext
-                          className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
-                          onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-                          size={6}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <TabsContent value="tracking">
+              <CaseTracking userId={localStorage.getItem('userId') || ''} />
+             </TabsContent>
 
           <TabsContent value="community">
              <h1>hello this is for the community</h1>

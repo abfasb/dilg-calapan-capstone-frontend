@@ -27,6 +27,7 @@ import EditReportPage from './pages/citizen/EditReportPage';
 import { AdminRoutes } from './routes/AdminRoutes';
 import ProtectedRoute from './routes/ProtectedRoutes';
 import AppointmentPages from './pages/citizen/AppointmentPages';
+import ProfilePage from './pages/citizen/ProfilePage';
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
         { /* Citizen*/ }
         <Route element={<ProtectedRoute allowedRoles={['citizen']} />}>
           <Route path='/account/citizen/:id' element={<CitizenPage />}/>
+          <Route path='/account/citizen/profile/:id' element={<ProfilePage />}/>
           <Route path="/report/:id" element={<ReportFormPage />} />
           <Route path='/account/citizen/submission/success/:userId' element={<SubmissionSuccessPage />} />
           <Route path='/account/citizen/submission/:reportId' element={<SubmissionSuccessPage />} />

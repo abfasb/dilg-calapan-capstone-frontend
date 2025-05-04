@@ -77,6 +77,10 @@ export function Header() {
     navigate(`/account/citizen/appointments/${userId}`);
   }
 
+  const navigateToProfile = () => {
+    navigate(`/account/citizen/profile/${userId}`);
+   }
+
   return (
     <TooltipProvider>
       <header className="bg-background border-b sticky m-0 p-0 top-0 z-50 dark:border-gray-800">
@@ -217,7 +221,7 @@ export function Header() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={navigateToProfile}>
                   <User className="mr-2 h-4 w-4" />
                   My Profile
                 </DropdownMenuItem>

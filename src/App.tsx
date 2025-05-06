@@ -28,6 +28,7 @@ import { AdminRoutes } from './routes/AdminRoutes';
 import ProtectedRoute from './routes/ProtectedRoutes';
 import AppointmentPages from './pages/citizen/AppointmentPages';
 import ProfilePage from './pages/citizen/ProfilePage';
+import ComplaintPage from './pages/citizen/ComplaintPage';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
           <Route path='/account/citizen/my-report/:userId' element={<MyReportPage />} />
           <Route path='/account/citizen/my-report/edit/:id' element={<EditReportPage />} />
           <Route path='/account/citizen/appointments/:id' element={<AppointmentPages />} />
+          <Route path='/account/citizen/complaint/:id' element={<ComplaintPage />} />
         </ Route>
 
 

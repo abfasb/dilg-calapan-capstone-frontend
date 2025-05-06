@@ -77,10 +77,10 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
           </div>
           <div className="flex flex-col">
             <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              DILG eGov
+              DILG Calapan
             </span>
             <span className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"} mt-0.5`}>
-              Calapan City
+              eGov
             </span>
           </div>
         </div>

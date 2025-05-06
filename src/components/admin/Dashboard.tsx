@@ -438,7 +438,7 @@ const Dashboard = () => {
             </div>
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { title: "Total Reports", value: "845", change: "+12.3%", status: "increase" },
+                { title: "Total Reports", value: "7", change: "+12.3%", status: "increase" },
                 { title: "Avg. Resolution", value: "4.2d", change: "-2.1d", status: "increase" },
                 { title: "Response Rate", value: "92%", change: "+5.4%", status: "increase" },
                 { title: "User Satisfaction", value: "4.8/5", change: "+0.2", status: "increase" }

@@ -22,7 +22,9 @@ import {
   HelpCircle,
   Mail,
   Shield,
-  Calendar
+  Calendar,
+  MessageSquare,
+  Inbox
 } from "lucide-react";
 
 export function Header() {
@@ -79,7 +81,11 @@ export function Header() {
 
   const navigateToProfile = () => {
     navigate(`/account/citizen/profile/${userId}`);
-   }
+  }
+
+  const navigateToComplaintHistory = () => {
+    navigate(`/account/citizen/complaint/${userId}`);
+  }
 
   return (
     <TooltipProvider>
@@ -100,6 +106,16 @@ export function Header() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>View submitted reports</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={navigateToComplaintHistory} className="gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    <span className="hidden xl:inline"> My Complaint</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View admin responses to your reports</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -225,6 +241,19 @@ export function Header() {
                   <User className="mr-2 h-4 w-4" />
                   My Profile
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={navigateToReports}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  My Reports
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={navigateToComplaintHistory}>
+                  <Inbox className="mr-2 h-4 w-4" />
+                  My Complaint
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={navigateToAppointments}>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Appointments
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
@@ -257,6 +286,29 @@ export function Header() {
               placeholder="Search portal..."
               className="pl-10 pr-4"
             />
+          </div>
+          
+          {/* Mobile Navigation */}
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            <Button variant="ghost" size="sm" onClick={navigateToReports} className="flex flex-col items-center gap-1 h-auto py-2">
+              <FileText className="h-4 w-4" />
+              <span className="text-xs">Reports</span>
+            </Button>
+            
+            <Button variant="ghost" size="sm" onClick={navigateToComplaintHistory} className="flex flex-col items-center gap-1 h-auto py-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="text-xs">My Complaint</span>
+            </Button>
+            
+            <Button variant="ghost" size="sm" onClick={navigateToAppointments} className="flex flex-col items-center gap-1 h-auto py-2">
+              <Calendar className="h-4 w-4" />
+              <span className="text-xs">Appointments</span>
+            </Button>
+            
+            <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2">
+              <HelpCircle className="h-4 w-4" />
+              <span className="text-xs">Support</span>
+            </Button>
           </div>
         </div>
       </header>

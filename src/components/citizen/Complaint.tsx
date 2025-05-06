@@ -31,6 +31,12 @@ const Complaint = () => {
     navigate(`/complaints/${id}`);
   };
 
+  const handleTwoViewDetails = () => {
+    navigate(`/complaints/complaint-citizen/admin/details`);
+  }
+
+
+
   const getStatusColor = (status : any) => {
     switch(status) {
       case 'Pending': return 'bg-yellow-200 text-yellow-800';

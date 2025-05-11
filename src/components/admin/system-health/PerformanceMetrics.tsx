@@ -339,7 +339,7 @@ const PerformanceMetrics = () => {
                   <Progress 
                     value={Math.floor(Math.random() * 40) + 60}
                     className="h-2 bg-gray-200"
-                    indicatorColor="#10aa50"
+                    style={{ backgroundColor: '#10aa50' }}
                   />
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>448GB</span>

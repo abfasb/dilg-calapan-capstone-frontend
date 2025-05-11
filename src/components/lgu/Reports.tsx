@@ -363,6 +363,7 @@ const handleStatusChangeInit = (responseId: string, newStatus: FormResponse["sta
 };
 
 const handleSaveSignature = async () => {
+
   const canvas = canvasRef.current;
   if (!canvas) return;
 
@@ -375,10 +376,13 @@ const handleSaveSignature = async () => {
     const signatureFile = new File([blob], 'signature.png', { type: 'image/png' });
     const formData = new FormData();
     const lguName = localStorage.getItem('name') || 'LGU Representative';
-    
+    const userId = localStorage.getItem('userId');
+
     formData.append('status', 'approved');
     formData.append('updatedBy', lguName);
     formData.append('signature', signatureFile);
+     formData.append('lgu[name]', lguName);
+    formData.append('lgu[id]', userId || '');
 
     if (currentResponseId) {
       try {

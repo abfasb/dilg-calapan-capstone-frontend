@@ -58,8 +58,27 @@ const ChatSupport = () => {
 
     newSocket.on('user_message', (msg: ChatMessage) => {
       console.log('Received user message:', msg);
-      if (selectedUser === msg.userId) {
-        setChatHistory(prev => [...prev, msg]);
+      setChatHistory(prev => [...prev, msg]);
+    });
+
+    newSocket.on('user_disconnected', (userId: string) => {
+      console.log('User disconnected:', userId);
+      setActiveRequests(prev => prev.filter(id => id !== userId));
+      if (selectedUser === userId) {
+        // Optionally show a notification that the user has disconnected
+      }
+    });
+
+    // Handle reconnection
+    newSocket.on('disconnect', () => {
+      console.log('Disconnected from server');
+    });
+
+    newSocket.on('reconnect', () => {
+      console.log('Reconnected to server');
+      newSocket.emit('admin_connect');
+      if (selectedUser) {
+        newSocket.emit('admin_join', selectedUser);
       }
     });
 

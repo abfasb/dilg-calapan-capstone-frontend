@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -32,7 +32,9 @@ import {
   CheckCircle2, 
   Clock, 
   MapPin, 
-  Tag 
+  Tag,
+  Search,
+  X
 } from "lucide-react";
 import {
   Select,
@@ -47,6 +49,7 @@ import {
   HoverCardTrigger,
 } from "../ui/hover-card";
 import { Separator } from "../ui/separator";
+import { Input } from "../ui/input";
 
 interface ComplaintType {
   _id: string;
@@ -69,6 +72,7 @@ const Complaint = () => {
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -89,15 +93,27 @@ const Complaint = () => {
     fetchComplaints();
   }, []);
 
-  useEffect(() => {
-    if (statusFilter === "all") {
-      setFilteredComplaints(complaints);
-    } else {
-      setFilteredComplaints(
-        complaints.filter(complaint => complaint.status === statusFilter)
+  const filteredAndSearchedComplaints = useMemo(() => {
+    let result = complaints;
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      result = result.filter(complaint => complaint.status === statusFilter);
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const lowercaseQuery = searchQuery.toLowerCase();
+      result = result.filter(complaint => 
+        complaint.title.toLowerCase().includes(lowercaseQuery) ||
+        complaint.description.toLowerCase().includes(lowercaseQuery) ||
+        complaint.category.toLowerCase().includes(lowercaseQuery) ||
+        complaint.location.toLowerCase().includes(lowercaseQuery)
       );
     }
-  }, [statusFilter, complaints]);
+
+    return result;
+  }, [complaints, statusFilter, searchQuery]);
 
   const handleViewDetails = async (id: string) => {
     try {
@@ -118,11 +134,11 @@ const Complaint = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pending':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+        return 'bg-amber-100 text-amber-800 hover:bg-amber-200';
       case 'In Review':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+        return 'bg-sky-100 text-sky-800 hover:bg-sky-200';
       case 'Resolved':
-        return 'bg-green-100 text-green-800 hover:bg-green-200';
+        return 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
       default:
         return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
@@ -131,11 +147,11 @@ const Complaint = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Pending':
-        return <Clock className="h-4 w-4 mr-1" />;
+        return <Clock className="h-4 w-4 mr-1 text-amber-600" />;
       case 'In Review':
-        return <AlertCircle className="h-4 w-4 mr-1" />;
+        return <AlertCircle className="h-4 w-4 mr-1 text-sky-600" />;
       case 'Resolved':
-        return <CheckCircle2 className="h-4 w-4 mr-1" />;
+        return <CheckCircle2 className="h-4 w-4 mr-1 text-emerald-600" />;
       default:
         return null;
     }
@@ -213,19 +229,31 @@ const Complaint = () => {
         <h1 className="text-3xl font-bold text-gray-800">My Complaints</h1>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center">
-            <Filter className="mr-2 h-4 w-4 text-gray-500" />
-            <p className="font-medium text-gray-700">Filter by status:</p>
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="relative col-span-2">
+            <Input 
+              type="text" 
+              placeholder="Search complaints..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 py-2 border-gray-300 focus:ring-2 focus:ring-primary-500"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            {searchQuery && (
+              <X 
+                onClick={() => setSearchQuery('')} 
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600" 
+              />
+            )}
           </div>
           
           <Select
             value={statusFilter}
             onValueChange={setStatusFilter}
           >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Status" />
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Filter Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
@@ -238,37 +266,44 @@ const Complaint = () => {
         
         <Separator className="mb-6" />
 
-        {filteredComplaints.length === 0 ? (
-          <div className="text-center py-12">
-            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg text-gray-500">No complaints found with the selected filter.</p>
-            {statusFilter !== "all" && (
+        {filteredAndSearchedComplaints.length === 0 ? (
+          <div className="text-center py-12 bg-gray-100 rounded-lg">
+            <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-xl text-gray-500 mb-4">No complaints found</p>
+            <p className="text-gray-600 mb-6">Try adjusting your search or filter</p>
+            {(statusFilter !== "all" || searchQuery) && (
               <Button 
-                variant="link" 
-                onClick={() => setStatusFilter("all")}
-                className="mt-2"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setSearchQuery("");
+                }}
+                variant="outline"
+                className="hover:bg-gray-200"
               >
-                Show all complaints
+                Reset Filters
               </Button>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredComplaints.map((complaint) => (
+          <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredAndSearchedComplaints.map((complaint) => (
               <Card 
                 key={complaint._id} 
-                className={`mb-4 border-l-4 ${
-                  complaint.status === 'Resolved' ? 'border-l-green-500' :
-                  complaint.status === 'In Review' ? 'border-l-blue-500' :
-                  'border-l-yellow-500'
-                } hover:shadow-md transition-shadow duration-200`}
+                className={`
+                  border-l-4 shadow-sm hover:shadow-md transition-all duration-300 
+                  ${
+                    complaint.status === 'Resolved' ? 'border-l-emerald-500 hover:border-l-emerald-600' :
+                    complaint.status === 'In Review' ? 'border-l-sky-500 hover:border-l-sky-600' :
+                    'border-l-amber-500 hover:border-l-amber-600'
+                  }
+                `}
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl">{complaint.title}</CardTitle>
+                    <div className="flex-grow pr-4">
+                      <CardTitle className="text-xl truncate">{complaint.title}</CardTitle>
                       <CardDescription className="mt-1">
-                        {complaint.anonymous ? 'Anonymous' : `${formatDate(complaint.createdAt)}`}  
+                        {complaint.anonymous ? 'Anonymous' : formatDate(complaint.createdAt)}  
                       </CardDescription>
                     </div>
                     <HoverCard>
@@ -280,7 +315,7 @@ const Complaint = () => {
                       <HoverCardContent className="w-64">
                         <div className="space-y-2">
                           <h4 className="font-medium">Status Information</h4>
-                          <p className="text-sm">
+                          <p className="text-sm text-gray-600">
                             {complaint.status === 'Pending' && "Your complaint is being reviewed by our team."}
                             {complaint.status === 'In Review' && "Our team is actively working on your complaint."}
                             {complaint.status === 'Resolved' && "Your complaint has been addressed and resolved."}
@@ -291,15 +326,13 @@ const Complaint = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="line-clamp-3 text-gray-700">{complaint.description}</p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-sm text-gray-500">
+                  <p className="line-clamp-3 text-gray-700 mb-3">{complaint.description}</p>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
                     <div className="flex items-center">
-                      <Tag className="h-4 w-4 mr-1" />
+                      <Tag className="h-4 w-4 mr-1 text-gray-400" />
                       {complaint.category}
-                    </div>
-                    <div className="mx-2">•</div>
-                    <div className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
+                      <span className="mx-2">•</span>
+                      <MapPin className="h-4 w-4 mr-1 text-gray-400" />
                       {complaint.location}
                     </div>
                   </div>
@@ -320,25 +353,27 @@ const Complaint = () => {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
           {selectedComplaint && (
             <>
               <DialogHeader className="border-b pb-4">
                 <div className="flex justify-between items-center">
-                  <DialogTitle className="text-2xl">{selectedComplaint.title}</DialogTitle>
-                  <Badge className={getStatusColor(selectedComplaint.status)}>
+                  <DialogTitle className="text-2xl font-bold">{selectedComplaint.title}</DialogTitle>
+                  <Badge 
+                    className={`${getStatusColor(selectedComplaint.status)} px-3 py-1`}
+                  >
                     {getStatusIcon(selectedComplaint.status)} {selectedComplaint.status}
                   </Badge>
                 </div>
-                <DialogDescription className="mt-2 text-base">
+                <DialogDescription className="mt-2 text-base text-gray-600">
                   {selectedComplaint.anonymous ? 'Anonymous' : `Submitted by: ${selectedComplaint.name}`} • {formatDate(selectedComplaint.createdAt)}
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-6 my-4">
                 <div>
-                  <h3 className="font-medium text-gray-700 mb-2">Description</h3>
-                  <div className="bg-gray-50 p-4 rounded-md">
+                  <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
+                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <p className="text-gray-700 whitespace-pre-wrap">
                       {selectedComplaint.description}
                     </p>
@@ -346,27 +381,30 @@ const Complaint = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="flex items-center mb-2">
+                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                    <div className="flex items-centermb-2">
                       <Tag className="h-4 w-4 mr-2 text-gray-600" />
                       <h3 className="font-medium text-gray-700">Category</h3>
                     </div>
-                    <p className="text-gray-700">{selectedComplaint.category}</p>
+                    <p className="text-gray-800 font-semibold">{selectedComplaint.category}</p>
                   </div>
                   
-                  <div className="bg-gray-50 p-4 rounded-md">
+                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <div className="flex items-center mb-2">
                       <MapPin className="h-4 w-4 mr-2 text-gray-600" />
                       <h3 className="font-medium text-gray-700">Location</h3>
                     </div>
-                    <p className="text-gray-700">{selectedComplaint.location}</p>
+                    <p className="text-gray-800 font-semibold">{selectedComplaint.location}</p>
                   </div>
                 </div>
 
                 {selectedComplaint.adminNote && (
-                  <div className="bg-blue-50 p-4 rounded-md border-l-4 border-blue-500">
-                    <h3 className="font-medium text-blue-800 mb-2">Admin Note</h3>
-                    <p className="text-blue-700 whitespace-pre-wrap">
+                  <div className="bg-sky-50 p-4 rounded-md border-l-4 border-sky-500">
+                    <h3 className="font-semibold text-sky-800 mb-2 flex items-center">
+                      <AlertCircle className="h-5 w-5 mr-2 text-sky-600" />
+                      Admin Note
+                    </h3>
+                    <p className="text-sky-700 whitespace-pre-wrap bg-white p-3 rounded-md shadow-sm">
                       {selectedComplaint.adminNote}
                     </p>
                   </div>
@@ -374,7 +412,13 @@ const Complaint = () => {
               </div>
               
               <DialogFooter>
-                <Button onClick={() => setDialogOpen(false)}>Close</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setDialogOpen(false)}
+                  className="w-full sm:w-auto"
+                >
+                  Close
+                </Button>
               </DialogFooter>
             </>
           )}

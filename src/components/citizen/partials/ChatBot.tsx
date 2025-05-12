@@ -67,11 +67,9 @@ useEffect(() => {
     reconnectionDelay: 1000,
   });
 
-  // Add connection status handlers
   newSocket.on('connect', () => {
     console.log('Connected to chat server');
     setError('');
-    // Register user immediately upon connection
     newSocket.emit('register_user', userId.current);
   });
 

@@ -437,94 +437,115 @@ export const AuditLogs = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Log Details Dialog */}
-      <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedLog && getStatusIcon(selectedLog.status)}
-              Audit Log Details
-            </DialogTitle>
-            <DialogDescription>
-              Complete information about this activity
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedLog && (
-            <div className="space-y-4">
-              <div className="bg-slate-50 p-4 rounded-md space-y-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 bg-blue-100 text-blue-600">
-                    <AvatarFallback>{getInitials(selectedLog.email)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{selectedLog.name || selectedLog.email}</p>
-                    <p className="text-sm text-slate-500">{selectedLog.email}</p>
+          <Dialog 
+            open={!!selectedLog} 
+            onOpenChange={(open) => {
+              if (!open) {
+                setTimeout(() => {
+                  setSelectedLog(null);
+                }, 100);
+              }
+            }}
+          >
+            <DialogContent 
+              className="sm:max-w-xl" 
+              onPointerDownOutside={(e) => {
+                e.preventDefault();
+                setSelectedLog(null);
+              }}
+              onEscapeKeyDown={() => {
+                setSelectedLog(null);
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {selectedLog && getStatusIcon(selectedLog.status)}
+                  Audit Log Details
+                </DialogTitle>
+                <DialogDescription>
+                  Complete information about this activity
+                </DialogDescription>
+              </DialogHeader>
+              
+              {selectedLog && (
+                <div className="space-y-4">
+                  <div className="bg-slate-50 p-4 rounded-md space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 bg-blue-100 text-blue-600">
+                        <AvatarFallback>{getInitials(selectedLog.email)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-grow min-w-0">
+                        <p className="font-medium truncate">
+                          {selectedLog.name || selectedLog.email.split('@')[0]}
+                        </p>
+                        <p className="text-sm text-slate-500 truncate">
+                          {selectedLog.email}
+                        </p>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`ml-2 ${getBadgeVariant(selectedLog.role)}`}
+                      >
+                        {selectedLog.role}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge 
-                    variant="outline" 
-                    className={`ml-auto ${getBadgeVariant(selectedLog.role)}`}
-                  >
-                    {selectedLog.role}
-                  </Badge>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-slate-500">Timestamp</p>
-                  <p className="font-medium flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-slate-400" />
-                    {format(parseISO(selectedLog.timestamp), 'MMM dd, yyyy HH:mm:ss')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">IP Address</p>
-                  <p className="font-medium flex items-center gap-1">
-                    <Wifi className="h-3.5 w-3.5 text-slate-400" />
-                    {selectedLog.ipAddress}
-                  </p>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-sm text-slate-500">Action</p>
-                <p className="font-medium">{selectedLog.action}</p>
-              </div>
-              
-              <div>
-                <p className="text-sm text-slate-500">User Agent</p>
-                <p className="text-sm font-mono bg-slate-50 p-2 rounded truncate">
-                  {selectedLog.userAgent}
-                </p>
-              </div>
-              
-              {selectedLog.details && (
-                <div>
-                  <p className="text-sm text-slate-500">Additional Details</p>
-                  <pre className="text-xs font-mono bg-slate-50 p-3 rounded-md overflow-auto max-h-40">
-                    {JSON.stringify(selectedLog.details, null, 2)}
-                  </pre>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-500">Timestamp</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                        {format(parseISO(selectedLog.timestamp), 'MMM dd, yyyy HH:mm:ss')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">IP Address</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <Wifi className="h-3.5 w-3.5 text-slate-400" />
+                        {selectedLog.ipAddress}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-slate-500">Action</p>
+                    <p className="font-medium">{selectedLog.action}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-slate-500">User Agent</p>
+                    <p className="text-sm font-mono bg-slate-50 p-2 rounded max-h-24 overflow-auto break-all">
+                      {selectedLog.userAgent}
+                    </p>
+                  </div>
+                  
+                  {selectedLog.details && (
+                    <div>
+                      <p className="text-sm text-slate-500">Additional Details</p>
+                      <pre className="text-xs font-mono bg-slate-50 p-3 rounded-md overflow-auto max-h-40">
+                        {JSON.stringify(selectedLog.details, null, 2)}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedLog(null)}>
-              Close
-            </Button>
-            <Button 
-              variant="destructive"
-              className="gap-2"
-              onClick={() => setSelectedLog(null)}
-            >
-              <Flag className="h-4 w-4" />
-              Flag Incident
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSelectedLog(null)}>
+                  Close
+                </Button>
+                <Button 
+                  variant="destructive"
+                  className="gap-2"
+                  onClick={() => setSelectedLog(null)}
+                >
+                  <Flag className="h-4 w-4" />
+                  Flag Incident
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
     </div>
   );
 };

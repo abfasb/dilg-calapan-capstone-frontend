@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { FiChevronDown, FiBell, FiSearch, FiUser, FiSettings, FiLogOut, FiShield, FiFileText, FiMenu } from "react-icons/fi";
+import { 
+  FiChevronDown, FiBell, FiSearch, FiUser, 
+  FiSettings, FiLogOut, FiShield, FiFileText, 
+  FiMenu, FiMaximize2, FiMinimize2 
+} from "react-icons/fi";
 import { FaUserCircle } from "react-icons/fa";
+import { Maximize, Minimize } from "lucide-react";
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -8,6 +13,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const adminEmail = localStorage.getItem('adminEmail');
@@ -15,10 +21,32 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("adminEmail");
-  
     window.location.href = "/account/login";
   };
-  
+
+  const toggleFullscreen = () => {
+    const doc = document as any;
+    const docEl = document.documentElement as any;
+
+    if (!isFullscreen) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+    } else {
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      }
+    }
+    setIsFullscreen(!isFullscreen);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -26,7 +54,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
         setIsDropdownOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -34,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
   return (
     <nav className="w-full bg-gray-900 text-white shadow-lg px-6 py-3 flex justify-between items-center border-b border-gray-700">
       <div className="flex items-center space-x-4">
-         <button
+        <button
           onClick={onMenuToggle}
           className="p-2 rounded-lg hover:bg-gray-800 transition-all duration-200"
         >
@@ -49,13 +76,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
           placeholder="Search across platforms..."
           className="w-full bg-transparent outline-none placeholder-gray-400 text-sm"
         />
-
       </div>
 
       <div className="flex items-center space-x-6">
         <button className="relative p-2 hover:bg-gray-800 rounded-full">
           <FiBell className="h-6 w-6 text-gray-300" />
           <span className="absolute top-0 right-0 bg-red-500 text-xs px-1.5 py-0.5 rounded-full">3</span>
+        </button>
+
+        <button
+          onClick={toggleFullscreen}
+          className="p-2 rounded-full hover:bg-gray-800 transition-all duration-200"
+        >
+          {isFullscreen ? (
+            <Minimize className="h-6 w-6 text-gray-300" />
+          ) : (
+            <Maximize className="h-6 w-6 text-gray-300" />
+          )}
         </button>
 
         <div className="relative" ref={dropdownRef}>
@@ -72,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute z-100 right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
+            <div className="absolute z-50 right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
               <div className="px-4 py-3 border-b border-gray-700">
                 <p className="text-sm font-medium">Juan Dela Cruz</p>
                 <p className="text-xs text-gray-400 mt-1">Super Administrator</p>

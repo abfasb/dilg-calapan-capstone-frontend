@@ -1,256 +1,344 @@
-'use client';
-
-import { useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { 
-  AlertCircle,
-  Bolt,
-  Power,
-  CalendarDays,
-  ChevronDown,
-  MoreVertical,
-  CheckCircle2,
-  Trash2,
-  BellPlus
-} from 'lucide-react';
-import { Button } from '../../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Badge } from '../../ui/badge';
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardContent, 
+  CardFooter 
+} from '../../ui/card';
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '../../ui/dropdown-menu';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, 
+  TableHeader, 
+  TableRow, 
+  TableHead, 
+  TableBody, 
+  TableCell 
 } from '../../ui/table';
-import { Input } from '../../ui/input';
-import { ScrollArea } from '../../ui/scroll-area';
-import { Separator } from '../../ui/separator';
-import { cn } from '../../../lib/utils';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from '../../ui/tooltip';
+import { Badge } from '../../ui/badge';
+import { Button } from '../../ui/button';
+import { 
+  ArrowUpIcon, 
+  ArrowDownIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  FilterIcon,
+  RefreshCwIcon,
+  DownloadIcon
+} from 'lucide-react';
+import { Skeleton } from '../../ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
 
-type Alert = {
-  id: string;
-  type: 'weather' | 'safety' | 'utility' | 'health';
-  title: string;
-  description: string;
-  date: string;
-  status: 'active' | 'resolved';
-  severity: 'low' | 'medium' | 'high';
-  affectedAreas: string[];
+// Utility function moved outside the component
+const getActivityStatus = (count: number) => {
+  if (count === 0) return 'Inactive';
+  if (count <= 5) return 'Low Activity';
+  if (count <= 15) return 'Moderate';
+  return 'Highly Active';
 };
 
-const mockAlerts: Alert[] = [
-  {
-    id: 'ALT-2025-0456',
-    type: 'weather',
-    title: 'Typhoon Hagupit (Ruby) - Signal No. 3',
-    description: 'Emergency evacuation order for coastal areas. All rescue teams on high alert.',
-    date: '2025-04-20T14:30:00Z',
-    status: 'active',
-    severity: 'high',
-    affectedAreas: ['Barangay 1', 'Barangay 2', 'Barangay 3']
-  },
-  {
-    id: 'ALT-2025-0321',
-    type: 'utility',
-    title: 'Scheduled Power Interruption',
-    description: 'Maintenance work in Zone 5. Expected 8-hour outage.',
-    date: '2025-04-18T08:00:00Z',
-    status: 'resolved',
-    severity: 'medium',
-    affectedAreas: ['Zone 5']
-  },
-  {
-    id: 'ALT-2025-0287',
-    type: 'safety',
-    title: 'Mandatory Evacuation Order',
-    description: 'Immediate evacuation for areas near Mayon Volcano 6km danger zone',
-    date: '2025-04-15T06:45:00Z',
-    status: 'resolved',
-    severity: 'high',
-    affectedAreas: ['Legazpi City', 'Daraga', 'Camalig']
-  },
-];
+// Type definitions
+type BarangayData = {
+  barangay: string;
+  submissionCount: number;
+  lastActivity: string;
+  status: string;
+  trend?: 'up' | 'down' | 'stable';
+};
 
-const AlertHistory = () => {
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+type SortField = keyof Pick<BarangayData, 'barangay' | 'submissionCount' | 'lastActivity'>;
+type SortOrder = 'asc' | 'desc';
 
-  const filteredAlerts = mockAlerts.filter(alert => {
-    const matchesStatus = filterStatus === 'all' || alert.status === filterStatus;
-    const matchesSearch = alert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      alert.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
-
-  const getIcon = (type: Alert['type']) => {
-    switch (type) {
-      case 'weather': return <Power className="h-5 w-5" />;
-      case 'safety': return <AlertCircle className="h-5 w-5" />;
-      case 'utility': return <Power className="h-5 w-5" />;
-      case 'health': return <Bolt className="h-5 w-5" />;
-      default: return <AlertCircle className="h-5 w-5" />;
-    }
-  };
-
-  const getSeverityColor = (severity: Alert['severity']) => {
-    switch (severity) {
-      case 'high': return 'text-red-600';
-      case 'medium': return 'text-amber-600';
-      case 'low': return 'text-emerald-600';
+const ActivityStatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const getStatusStyles = (status: string) => {
+    switch (status) {
+      case 'Inactive':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'Low Activity':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'Moderate':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Highly Active':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="border-b">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <BellPlus className="h-6 w-6 text-primary" />
-            Emergency Alert System
-          </CardTitle>
-          <Button variant="default" className="gap-2">
-            <BellPlus className="h-4 w-4" />
-            Create New Alert
-          </Button>
-        </div>
-        
-        <div className="flex items-center gap-4 pt-4">
-          <Input
-            placeholder="Search alerts..."
-            className="max-w-sm"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                {filterStatus === 'all' ? 'All Alerts' : `${filterStatus} Alerts`}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setFilterStatus('all')}>
-                All Alerts
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterStatus('active')}>
-                Active Alerts
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterStatus('resolved')}>
-                Resolved Alerts
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardHeader>
+    <Badge 
+      variant="outline" 
+      className={`${getStatusStyles(status)} font-medium py-1 px-2 rounded-full`}
+    >
+      {status}
+    </Badge>
+  );
+};
 
-      <ScrollArea className="flex-1">
-        <Table>
-          <TableHeader className="bg-muted">
-            <TableRow>
-              <TableHead className="w-[100px]">Alert ID</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Affected Areas</TableHead>
-              <TableHead>Severity</TableHead>
-              <TableHead>Date Issued</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredAlerts.map((alert) => (
-              <TableRow key={alert.id}>
-                <TableCell className="font-medium">{alert.id}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {getIcon(alert.type)}
-                    <span className="capitalize">{alert.type}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="max-w-[400px]">
-                    <p className="font-medium">{alert.title}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {alert.description}
-                    </p>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1 max-w-[200px]">
-                    {alert.affectedAreas.map((area) => (
-                      <Badge 
-                        key={area}
-                        variant="outline"
-                        className="text-xs px-2 py-1"
-                      >
-                        {area}
-                      </Badge>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className={cn(
-                    "font-medium capitalize",
-                    getSeverityColor(alert.severity)
-                  )}>
-                    {alert.severity}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {new Date(alert.date).toLocaleDateString('en-PH', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={alert.status === 'active' ? 'destructive' : 'default'}
-                    className="capitalize"
-                  >
-                    {alert.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Mark as Resolved
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2">
-                        <CalendarDays className="h-4 w-4" />
-                        Extend Deadline
-                      </DropdownMenuItem>
-                      <Separator />
-                      <DropdownMenuItem className="text-red-600 gap-2">
-                        <Trash2 className="h-4 w-4" />
-                        Delete Alert
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </ScrollArea>
+const AlertHistory: React.FC = () => {
+  const [data, setData] = useState<{
+    summary?: {
+      totalBarangays: number;
+      totalSubmissions: number;
+      mostActive?: BarangayData;
+      leastActive?: BarangayData;
+    };
+    details?: BarangayData[];
+  }>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ field: SortField; order: SortOrder }>({
+    field: 'submissionCount',
+    order: 'desc'
+  });
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+
+  // Fetch data
+  useEffect(() => {
+    const fetchBarangayActivity = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/analytics/barangay-activity`);
+        if (!res.ok) throw new Error('Failed to fetch activity data');
+        const result = await res.json();
+        setData(result);
+      } catch (err: any) {
+        setError(err.message || 'Unknown error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBarangayActivity();
+  }, []);
+
+  // Sorting and Filtering Logic
+  const processedData = useMemo(() => {
+    if (!data.details) return [];
+
+    // Filter by status if selected
+    let filteredData = filterStatus 
+      ? data.details.filter(entry => 
+          getActivityStatus(entry.submissionCount) === filterStatus
+        )
+      : data.details;
+
+    // Sort the data
+    return filteredData.sort((a, b) => {
+      const multiplier = sortConfig.order === 'asc' ? 1 : -1;
+      
+      switch (sortConfig.field) {
+        case 'barangay':
+          return a.barangay.localeCompare(b.barangay) * multiplier;
+        case 'submissionCount':
+          return (a.submissionCount - b.submissionCount) * multiplier;
+        case 'lastActivity':
+          return (new Date(a.lastActivity).getTime() - new Date(b.lastActivity).getTime()) * multiplier;
+        default:
+          return 0;
+      }
+    });
+  }, [data.details, sortConfig, filterStatus]);
+
+  const handleSort = (field: SortField) => {
+    setSortConfig(prev => ({
+      field,
+      order: prev.field === field && prev.order === 'desc' ? 'asc' : 'desc'
+    }));
+  };
+
+  // Export functionality (mock implementation)
+  const handleExport = () => {
+    // Implement export logic (CSV, Excel, etc.)
+    console.log('Exporting data...');
+  };
+
+  // Refresh data
+  const handleRefresh = () => {
+    setIsLoading(true);
+    // Implement refresh logic
+    // This could be a re-fetch of the data
+  };
+
+  if (error) return (
+    <Card className="w-full border-red-500">
+      <CardHeader>
+        <CardTitle className="text-red-600">Error Loading Data</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-red-500">{error}</p>
+      </CardContent>
     </Card>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <TooltipProvider>
+          {[
+            {
+              label: 'Total Barangays',
+              value: data.summary?.totalBarangays,
+              icon: <ChevronUpIcon className="text-blue-500" />,
+              tooltip: 'Number of barangays in the system'
+            },
+            {
+              label: 'Total Submissions',
+              value: data.summary?.totalSubmissions,
+              icon: <ChevronUpIcon className="text-green-500" />,
+              tooltip: 'Total number of submissions across all barangays'
+            },
+            {
+              label: 'Most Active Barangay',
+              value: data.summary?.mostActive?.barangay,
+              icon: <ArrowUpIcon className="text-purple-500" />,
+              tooltip: `Highest number of submissions: ${data.summary?.mostActive?.submissionCount || 0}`
+            },
+            {
+              label: 'Least Active Barangay',
+              value: data.summary?.leastActive?.barangay,
+              icon: <ArrowDownIcon className="text-orange-500" />,
+              tooltip: `Lowest number of submissions: ${data.summary?.leastActive?.submissionCount || 0}`
+            }
+          ].map((item, index) => (
+            <Tooltip key={index}>
+              <TooltipTrigger asChild>
+                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-gray-600">{item.label}</div>
+                      <div className="text-2xl font-bold">
+                        {isLoading ? <Skeleton className="h-8 w-20" /> : item.value || 'N/A'}
+                      </div>
+                    </div>
+                    {item.icon}
+                  </div>
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent>{item.tooltip}</TooltipContent>
+            </Tooltip>
+          ))}
+        </TooltipProvider>
+      </div>
+
+      {/* Activity Table */}
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle>Barangay Activity Details</CardTitle>
+          <div className="flex items-center space-x-2">
+            {/* Filter Dropdown */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <FilterIcon className="mr-2 h-4 w-4" /> Filter
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Filter Barangay Status</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {['Inactive', 'Low Activity', 'Moderate', 'Highly Active'].map(status => (
+                    <Button
+                      key={status}
+                      variant={filterStatus === status ? 'default' : 'outline'}
+                      onClick={() => setFilterStatus(prev => prev === status ? null : status)}
+                    >
+                      {status}
+                    </Button>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Refresh and Export Buttons */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCwIcon className="mr-2 h-4 w-4" /> Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExport}
+            >
+              <DownloadIcon className="mr-2 h-4 w-4" /> Export
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {[
+                  { label: 'Barangay', field: 'barangay' },
+                  { label: 'Submissions', field: 'submissionCount' },
+                  { label: 'Last Activity', field: 'lastActivity' }
+                ].map(({ label, field }) => (
+                  <TableHead 
+                    key={field} 
+                    onClick={() => handleSort(field as SortField)}
+                    className="cursor-pointer hover:bg-gray-100"
+                  >
+                    <div className="flex items-center">
+                      {label}
+                      {sortConfig.field === field && (
+                        sortConfig.order === 'asc' 
+                          ? <ChevronUpIcon className="ml-2 h-4 w-4" /> 
+                          : <ChevronDownIcon className="ml-2 h-4 w-4" />
+                      )}
+                    </div>
+                  </TableHead>
+                ))}
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array(5).fill(0).map((_, i) => (
+                  <TableRow key={i}>
+                    {[1, 2, 3, 4].map(j => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                processedData.map((entry) => {
+                  const status = getActivityStatus(entry.submissionCount);
+                  return (
+                    <TableRow key={entry.barangay} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">{entry.barangay}</TableCell>
+                      <TableCell>{entry.submissionCount}</TableCell>
+                      <TableCell>
+                        {new Date(entry.lastActivity).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <ActivityStatusBadge status={status} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+        <CardFooter className="flex justify-between items-center">
+          <span className="text-sm text-gray-500">
+            {!isLoading && `Showing ${processedData.length} of ${data.details?.length || 0} barangays`}
+          </span>
+        </CardFooter>
+      </Card>
+    </div>
   );
 };
 

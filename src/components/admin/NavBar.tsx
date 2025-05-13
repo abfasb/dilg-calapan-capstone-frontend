@@ -1,11 +1,26 @@
 import { useState, useRef, useEffect } from "react";
-import { 
-  FiChevronDown, FiBell, FiSearch, FiUser, 
-  FiSettings, FiLogOut, FiShield, FiFileText, 
-  FiMenu, FiMaximize2, FiMinimize2 
+import {
+  FiChevronDown,
+  FiBell,
+  FiSearch,
+  FiUser,
+  FiSettings,
+  FiLogOut,
+  FiShield,
+  FiFileText,
+  FiMenu,
 } from "react-icons/fi";
 import { FaUserCircle } from "react-icons/fa";
 import { Maximize, Minimize } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "../ui/dropdown-menu";
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -16,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const adminEmail = localStorage.getItem('adminEmail');
+  const adminEmail = localStorage.getItem("adminEmail");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -79,11 +94,45 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
       </div>
 
       <div className="flex items-center space-x-6">
-        <button className="relative p-2 hover:bg-gray-800 rounded-full">
-          <FiBell className="h-6 w-6 text-gray-300" />
-          <span className="absolute top-0 right-0 bg-red-500 text-xs px-1.5 py-0.5 rounded-full">3</span>
-        </button>
+        {/* Notifications Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="relative p-2 hover:bg-gray-800 rounded-full focus:outline-none">
+              <FiBell className="h-6 w-6 text-gray-300" />
+              <span className="absolute top-0 right-0 bg-red-500 text-xs px-1.5 py-0.5 rounded-full">
+                3
+              </span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-80 bg-gray-800 text-white border border-gray-700"
+          >
+            <DropdownMenuLabel className="text-gray-400">Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-gray-700" />
 
+            <DropdownMenuItem className="hover:bg-gray-700">
+              <div className="text-sm">
+                <p className="font-medium text-white">New user registered</p>
+                <p className="text-xs text-gray-400">2 mins ago</p>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="hover:bg-gray-700">
+              <div className="text-sm">
+                <p className="font-medium text-white">System maintenance at 12AM</p>
+                <p className="text-xs text-gray-400">1 hour ago</p>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="hover:bg-gray-700">
+              <div className="text-sm">
+                <p className="font-medium text-white">5 reports submitted</p>
+                <p className="text-xs text-gray-400">Today</p>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Fullscreen Toggle */}
         <button
           onClick={toggleFullscreen}
           className="p-2 rounded-full hover:bg-gray-800 transition-all duration-200"
@@ -95,6 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
           )}
         </button>
 
+        {/* User Menu */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -105,7 +155,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
               <p className="text-sm font-medium">Super Admin</p>
               <p className="text-xs text-gray-400">{adminEmail}</p>
             </div>
-            <FiChevronDown className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
+            <FiChevronDown
+              className={`h-4 w-4 transition-transform ${isDropdownOpen ? "transform rotate-180" : ""}`}
+            />
           </button>
 
           {isDropdownOpen && (
@@ -135,7 +187,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
               </div>
 
               <div className="py-1 border-t border-gray-700">
-                <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center w-full px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700"
+                >
                   <FiLogOut className="h-5 w-5 mr-3" />
                   Sign Out
                 </button>

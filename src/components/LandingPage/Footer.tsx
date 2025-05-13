@@ -10,7 +10,7 @@ const Footer: React.FC = () => {
               <img
                 src="https://i.ibb.co/QFh5dS8r/images-1.png"
                 alt="DILG Logo"
-                className="w-16 h-16 object-cover"
+                className="w-16 h-16 object-cover rounded-full"
               />
               <span className="ml-2 font-bold text-black dark:text-white">DILG Calapan</span>
             </a>

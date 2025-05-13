@@ -90,7 +90,30 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export const DashboardHome = () => {
-  const [stats, setStats] = useState(null);
+  interface DashboardStats {
+    trends?: {
+      submissionHistory: number[];
+    };
+    predictions?: {
+      resolutionRate: number;
+      nextMonthSubmissions?: number;
+    };
+    overview?: {
+      totalForms: number;
+      totalSubmissions: number;
+      activeUsers: number;
+    };
+    statusDistribution?: {
+      submissions: { _id: string; count: number }[];
+    };
+    peakActivity?: { day: string; percentage: number }[];
+    departmentPerformance?: {
+      allBarangays: { barangay: string; percentage: number }[];
+      overallPerformance: string;
+    };
+  }
+
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -113,22 +136,20 @@ export const DashboardHome = () => {
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 300000); // every 5 minutes
+    const interval = setInterval(fetchStats, 300000); 
     return () => clearInterval(interval);
   }, []);
 
-  // Format submission trends data for the chart
   const getTrendsData = () => {
     if (!stats?.trends?.submissionHistory) return [];
     
-    return stats.trends.submissionHistory.map((value, index) => ({
+    return stats.trends.submissionHistory.map((value : any, index : any) => ({
       month: new Date(0, index).toLocaleString('default', { month: 'short' }),
       submissions: value,
-      resolved: Math.round(value * (stats.predictions.resolutionRate / 100))
+      resolved: Math.round(value * ((stats?.predictions?.resolutionRate ?? 0) / 100))
     }));
   };
 
-  // Format submission status data for the chart
   const getStatusData = () => {
     if (!stats?.statusDistribution?.submissions) return [];
     
@@ -162,7 +183,7 @@ export const DashboardHome = () => {
   const getSystemHealth = () => {
     if (!stats) return null;
     
-    const formsResponseRate = ((stats.overview.totalForms / stats.overview.totalSubmissions) * 100 || 0).toFixed(1);
+    const formsResponseRate = ((stats?.overview?.totalForms ?? 0) / (stats?.overview?.totalSubmissions ?? 1) * 100).toFixed(1);
     
     return [
       { 
@@ -224,11 +245,10 @@ export const DashboardHome = () => {
         </button>
       </div>
 
-      {/* Quick Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard 
           title="Total Submissions" 
-          value={stats.overview.totalSubmissions.toLocaleString()} 
+          value={(stats?.overview?.totalSubmissions ?? 0).toLocaleString()} 
           icon={<TrendingUp className="w-5 h-5 text-blue-300" />}
           trend="month"
           delta={12.5}
@@ -236,7 +256,7 @@ export const DashboardHome = () => {
         />
         <StatsCard 
           title="Total Forms" 
-          value={stats.overview.totalForms}
+          value={stats?.overview?.totalForms ?? 0}
           icon={<CheckCircle className="w-5 h-5 text-green-300" />}
           trend="week"
           delta={5.2}
@@ -244,7 +264,7 @@ export const DashboardHome = () => {
         />
         <StatsCard 
           title="Active Users" 
-          value={stats.overview.activeUsers}
+          value={stats?.overview?.activeUsers ?? 0}
           icon={<Users className="w-5 h-5 text-amber-300" />}
           trend="month"
           delta={7.8}
@@ -252,7 +272,7 @@ export const DashboardHome = () => {
         />
         <StatsCard 
           title="Response Rate" 
-          value={`${stats.predictions.resolutionRate}%`}
+          value={`${stats?.predictions?.resolutionRate ?? 0}%`}
           icon={<Activity className="w-5 h-5 text-purple-300" />}
           trend="week"
           delta={-2.3}
@@ -260,7 +280,6 @@ export const DashboardHome = () => {
         />
       </div>
 
-      {/* AI Forecast + Status Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-2xl transform transition-all hover:shadow-blue-900/5">
           <div className="flex items-center gap-3 mb-6">
@@ -273,7 +292,7 @@ export const DashboardHome = () => {
             <div className="p-4 rounded-xl bg-gray-700/40 backdrop-blur-sm border border-gray-600/50">
               <p className="text-sm text-gray-300 mb-1">Next Month Submissions</p>
               <div className="flex items-center gap-2">
-                <p className="text-3xl font-bold text-white">{stats.predictions.nextMonthSubmissions}</p>
+                <p className="text-3xl font-bold text-white">{stats?.predictions?.nextMonthSubmissions ?? 'N/A'}</p>
                 <div className="flex items-center gap-1 text-xs bg-blue-900/40 px-2 py-1 rounded-full text-blue-300">
                   <TrendingUp className="w-3 h-3" />
                   <span>+8%</span>
@@ -427,7 +446,7 @@ export const DashboardHome = () => {
           </div>
           <div className="space-y-4">
             {/* Use actual peak activity data from API */}
-            {getPeakActivityData().map((dayData, index) => (
+            {getPeakActivityData().map((dayData : any, index : any) => (
               <div key={index} className="flex items-center p-2 gap-3">
                 <div className="w-24 text-sm text-gray-400">{dayData.day}</div>
                 <div className="flex-1">
@@ -454,7 +473,7 @@ export const DashboardHome = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
               {/* Use actual department performance data from API */}
-              {getDepartmentPerformanceData().map((dept, index) => (
+              {getDepartmentPerformanceData().map((dept : any, index : any) => (
                 <div key={index} className="p-3 rounded-lg bg-gray-700/40 backdrop-blur-sm hover:bg-gray-700/60 transition-all">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">

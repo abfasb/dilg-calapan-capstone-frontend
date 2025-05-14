@@ -823,7 +823,7 @@ const LGUAppointments = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-gray-700 hover:bg-gray-800 text-gray-100"
+                className="border-gray-700 bg-black hover:bg-gray-800 text-white"
                 disabled={true} 
               >
                 Previous

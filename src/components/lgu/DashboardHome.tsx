@@ -179,17 +179,18 @@ export const DashboardHome = () => {
     }));
   };
 
-  // Calculate system health metrics
   const getSystemHealth = () => {
     if (!stats) return null;
     
-    const formsResponseRate = ((stats?.overview?.totalForms ?? 0) / (stats?.overview?.totalSubmissions ?? 1) * 100).toFixed(1);
+    // Fix: Calculate response rate correctly based on total submissions divided by total forms
+    // This is the percentage of forms that have received submissions
+    const formsResponseRate = ((stats?.overview?.totalSubmissions ?? 0) / (stats?.overview?.totalForms ?? 1) * 100).toFixed(1);
     
     return [
       { 
         label: 'Forms Response Rate', 
         value: `${formsResponseRate}%`,
-        percentage: parseFloat(formsResponseRate)
+        percentage: parseFloat(formsResponseRate) > 100 ? 100 : parseFloat(formsResponseRate)
       },
       { 
         label: 'Avg. Resolution Time', 
@@ -302,7 +303,7 @@ export const DashboardHome = () => {
             <div className="p-4 rounded-xl bg-gray-700/40 backdrop-blur-sm border border-gray-600/50">
               <p className="text-sm text-gray-300 mb-1">Estimated Resolution Rate</p>
               <div className="flex items-center gap-2">
-                <p className="text-3xl font-bold text-white">{stats.predictions.resolutionRate}%</p>
+                <p className="text-3xl font-bold text-white">{stats?.predictions?.resolutionRate ?? 0}%</p>
                 <div className="flex items-center gap-1 text-xs bg-green-900/40 px-2 py-1 rounded-full text-green-300">
                   <TrendingUp className="w-3 h-3" />
                   <span>+5%</span>

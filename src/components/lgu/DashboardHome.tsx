@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { 
   AreaChart, Area,
   BarChart, Bar,
-  LineChart, Line,
   CartesianGrid, XAxis, YAxis, Cell,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -12,10 +11,8 @@ import {
   CheckCircle,
   Users,
   Calendar,
-  Clock,
   TrendingUp,
   Zap,
-  ArrowDown,
   RefreshCw,
   Cpu,
   PieChart
@@ -24,8 +21,16 @@ import { cn } from '../../lib/utils';
 import { Skeleton } from '../ui/skeleton';
 import { fetchDashboardStats } from '../../api/analyticsApi';
 
-// StatsCard component from first example
-const StatsCard = ({ title, value, icon, trend, delta, className }) => {
+interface StatsCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  trend: string;
+  delta?: number;
+  className?: string;
+}
+
+const StatsCard = ({ title, value, icon, trend, delta, className }: StatsCardProps) => {
   return (
     <div className={cn(
       "relative overflow-hidden rounded-2xl p-6 border border-gray-700/50 shadow-2xl backdrop-blur-sm transition-all duration-300 hover:shadow-blue-900/10",
@@ -59,13 +64,13 @@ const StatsCard = ({ title, value, icon, trend, delta, className }) => {
 };
 
 // Custom tooltip component from first example
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-xl backdrop-blur-sm transition-all duration-300 transform translate-y-0 opacity-100">
         <p className="font-medium text-lg mb-2 text-gray-100">{label}</p>
         <div className="space-y-1">
-          {payload.map((entry, index) => (
+          {payload.map((entry : any, index  : any) => (
             <div 
               key={index}
               className="flex items-center justify-between gap-4"
@@ -512,7 +517,7 @@ export const DashboardHome = () => {
                 </div>
               </div>
               <p className="text-4xl font-bold text-white mb-4">
-                {stats.departmentPerformance?.overallPerformance || "0.0"}%
+                {stats?.departmentPerformance?.overallPerformance || "0.0"}%
               </p>
               <p className="text-xs text-gray-400">Average across all barangays</p>
               <div className="mt-6">
@@ -523,7 +528,7 @@ export const DashboardHome = () => {
                 <div className="relative h-1.5 w-full rounded-full bg-gray-600/50">
                   <div 
                     className="absolute h-1.5 rounded-full bg-gradient-to-r from-green-500 to-green-300" 
-                    style={{ width: `${parseFloat(stats.departmentPerformance?.overallPerformance || 0)}%` }} 
+                    style={{ width: `${parseFloat(stats?.departmentPerformance?.overallPerformance || '0')}%` }}
                   />
                   <div className="absolute w-0.5 h-3 bg-white/50 rounded-full" style={{ left: '85%', top: '-3px' }} />
                 </div>

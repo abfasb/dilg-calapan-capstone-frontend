@@ -156,24 +156,12 @@ export default function MainCitizen() {
 
   const reportsPerPage = 8;
 
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formDataa, setFormDataa] = useState({
-    title: '',
-    date: '',
-    time: '',
-    description: '',
-  });
-
-  const userId = localStorage.getItem('userId');
   const token = localStorage.getItem('token');
 
-  const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+type Report = {
+  submittedUsers?: string[];
+  [key: string]: any;
+};
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -183,9 +171,9 @@ export default function MainCitizen() {
         
         if (!response.ok) throw new Error(data.message || 'Failed to fetch reports');
 
-        const reportsWithStatus = data.map(report => ({
+        const reportsWithStatus = data.map( (report : Report)  => ({
           ...report,
-          hasSubmitted: report.submittedUsers?.includes(localStorage.getItem("userId"))
+          hasSubmitted: report.submittedUsers?.includes(localStorage.getItem("userId") || "")
         }));
         
         setReports(reportsWithStatus);
@@ -218,14 +206,6 @@ export default function MainCitizen() {
     }
   }, [id, navigate]); 
   
-  
-  const categories = [
-    'Road Issues',
-    'Sanitation',
-    'Public Safety',
-    'Infrastructure',
-    'Other'
-  ];
 
  
 
@@ -238,9 +218,6 @@ export default function MainCitizen() {
   });
 
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentReports = filteredReports.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
 
   const [formData, setFormData] = useState({
@@ -301,27 +278,126 @@ export default function MainCitizen() {
   };
   
   
-if (isLoading) {
-    return (
-      <Card className="dark:bg-gray-800 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle>
-            <Skeleton className="h-6 w-[250px]" />
-          </CardTitle>
-          <CardDescription>
-            <Skeleton className="h-4 w-[400px]" />
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {Array(5).fill(0).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-lg" />
-            ))}
+    if (isLoading) {
+      return (
+        <ThemeProvider>
+          <div className="min-h-screen bg-muted/40 dark:bg-gray-900/50">
+            {/* Header placeholder */}
+            <div className="w-full h-16 bg-background/95 border-b dark:bg-gray-800 dark:border-gray-700">
+              <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-full">
+                <Skeleton className="h-6 w-36" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <Skeleton className="h-10 w-24" />
+                </div>
+              </div>
+            </div>
+            
+            <main className="max-w-7xl mx-auto p-4 grid gap-6">
+              {/* Top cards row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="dark:bg-gray-800 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-6 w-6 rounded-full" />
+                          <Skeleton className="h-6 w-40" />
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-9 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Tabs skeleton */}
+              <div className="w-full space-y-6">
+                <div className="w-full grid grid-cols-2 lg:grid-cols-5 h-14 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-10 w-11/12 mx-auto my-2 rounded-xl" />
+                  ))}
+                </div>
+                
+                {/* Tab content skeleton */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {[1, 2].map((i) => (
+                    <Card key={i} className="dark:bg-gray-800 dark:border-gray-700">
+                      <CardHeader>
+                        <CardTitle>
+                          <Skeleton className="h-6 w-48" />
+                        </CardTitle>
+                        <CardDescription>
+                          <Skeleton className="h-4 w-64" />
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {[1, 2, 3, 4].map((j) => (
+                          <Skeleton key={j} className="h-10 w-full rounded-md" />
+                        ))}
+                        <Skeleton className="h-36 w-full rounded-md" />
+                      </CardContent>
+                      <CardFooter>
+                        <Skeleton className="h-10 w-full rounded-md" />
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Emergency alert skeleton */}
+              <Card className="border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/30">
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <Skeleton className="w-8 h-8 rounded-full" />
+                  <div>
+                    <Skeleton className="h-6 w-40" />
+                    <Skeleton className="h-4 w-64 mt-2" />
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Bottom section */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card className="dark:bg-gray-800 dark:border-gray-700 h-full">
+                  <CardHeader>
+                    <CardTitle>
+                      <Skeleton className="h-6 w-40" />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Skeleton className="h-32 w-full rounded-md" />
+                    <Skeleton className="h-10 w-full rounded-md" />
+                  </CardContent>
+                </Card>
+                
+                <Card className="dark:bg-gray-800 dark:border-gray-700 md:col-span-2">
+                  <CardHeader>
+                    <CardTitle>
+                      <Skeleton className="h-6 w-40" />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center justify-between p-4 border rounded-md">
+                          <div className="space-y-2">
+                            <Skeleton className="h-5 w-40" />
+                            <Skeleton className="h-4 w-60" />
+                          </div>
+                          <Skeleton className="h-8 w-24 rounded-md" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </main>
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
+        </ThemeProvider>
+      );
+    }
 
   const handleViewDetails = (reportId: string) => {
     navigate(`/report/${reportId}`);

@@ -832,7 +832,7 @@ const LGUAppointments = () => {
                 variant="outline"
                 size="sm"
                 className="border-gray-700 hover:bg-gray-800 text-gray-100"
-                disabled={true} // Add pagination logic
+                disabled={true} 
               >
                 Next
               </Button>

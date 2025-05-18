@@ -44,7 +44,6 @@ export const Sidebar = ({
       icon: <FiShield className="w-5 h-5" />,
       subItems: [
         { text: "RBAC Management", path: "access-control/rbac", icon: <FiLock /> },
-        { text: "Session Policies", path: "access-control/session-policies", icon: <FiActivity /> },
         { text: "Audit Logs", path: "access-control/audit-logs", icon: <FiFileText /> }
       ]
     },

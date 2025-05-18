@@ -11,7 +11,7 @@ import {
   FiMenu,
 } from "react-icons/fi";
 import { FaUserCircle } from "react-icons/fa";
-import { Maximize, Minimize } from "lucide-react";
+import { AlertCircle, Maximize, Minimize } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -30,6 +31,35 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+    useEffect(() => {
+      const fetchNotifications = async () => {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/notify/admin`);
+          const data = await response.json();
+          setNotifications(data);
+          setUnreadNotifications(data.filter((n: any) => !n.read).length);
+        } catch (error) {
+          console.error('Error fetching notifications:', error);
+        }
+      };
+      
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }, []);
+
+    const handleMarkAllAsRead = async () => {
+      try {
+        await fetch(`${import.meta.env.VITE_API_URL}/api/notify/mark-read`, { method: 'PUT' });
+        setUnreadNotifications(0);
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      } catch (error) {
+        console.error('Error marking notifications:', error);
+      }
+    };
 
   const adminEmail = localStorage.getItem("adminEmail");
 
@@ -104,35 +134,41 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
               </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-80 bg-gray-800 text-white border border-gray-700"
-          >
-            <DropdownMenuLabel className="text-gray-400">Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-gray-700" />
-
-            <DropdownMenuItem className="hover:bg-gray-700">
-              <div className="text-sm">
-                <p className="font-medium text-white">New user registered</p>
-                <p className="text-xs text-gray-400">2 mins ago</p>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="hover:bg-gray-700">
-              <div className="text-sm">
-                <p className="font-medium text-white">System maintenance at 12AM</p>
-                <p className="text-xs text-gray-400">1 hour ago</p>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="hover:bg-gray-700">
-              <div className="text-sm">
-                <p className="font-medium text-white">5 reports submitted</p>
-                <p className="text-xs text-gray-400">Today</p>
-              </div>
+          <DropdownMenuContent className="w-96" align="end">
+            <DropdownMenuLabel className="flex items-center justify-between">
+              Notifications
+              <Button variant="link" size="sm" onClick={handleMarkAllAsRead}>
+                Mark all as read
+              </Button>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-96 overflow-y-auto">
+              {notifications.map((notification) => (
+                <DropdownMenuItem 
+                  key={notification._id}
+                  className="flex items-start gap-3 py-3"
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <AlertCircle className="h-4 w-4 mt-1 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{notification.message}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(notification.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {!notification.read && (
+                    <div className="ml-auto h-2 w-2 rounded-full bg-blue-500" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="justify-center text-primary">
+              View all notifications
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Fullscreen Toggle */}
         <button
           onClick={toggleFullscreen}
           className="p-2 rounded-full hover:bg-gray-800 transition-all duration-200"
@@ -144,7 +180,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
           )}
         </button>
 
-        {/* User Menu */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -163,7 +198,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
           {isDropdownOpen && (
             <div className="absolute z-50 right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
               <div className="px-4 py-3 border-b border-gray-700">
-                <p className="text-sm font-medium">Juan Dela Cruz</p>
+                <p className="text-sm font-medium">DILG Calapan City</p>
                 <p className="text-xs text-gray-400 mt-1">Super Administrator</p>
               </div>
 

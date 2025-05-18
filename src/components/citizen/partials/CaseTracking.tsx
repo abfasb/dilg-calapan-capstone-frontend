@@ -1,28 +1,28 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { Badge } from '../../ui/badge';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../ui/pagination';
+import { Skeleton } from '../../ui/skeleton';
+import { Button } from '../../ui/button';
+import { Alert, AlertDescription, AlertTitle } from '../../ui/alert';
 import { 
   ExclamationTriangleIcon, 
   ArrowPathIcon, 
   DocumentMagnifyingGlassIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
-import { Input } from '@/components/ui/input';
+import { Input } from '../../ui/input';
 import { 
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem
-} from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
+} from '../../ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '../../ui/drawer';
 
 interface CaseHistory {
   status: string;
@@ -506,7 +506,6 @@ const CaseTracking = ({ userId }: { userId: string }) => {
         </CardContent>
       </Card>
 
-      {/* Case Details Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent className="max-h-[90%]">
           <DrawerHeader>

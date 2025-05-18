@@ -64,9 +64,7 @@ import { Navigate } from "react-router-dom";
 import UnAuthorizedPage from "../../pages/authentication/UnAuthorizedPage";
 import { AppointmentsCard } from "./ui/AppointmentCard";
 import CaseTracking from "./partials/CaseTracking";
-
-
-
+import { BellOff, Bell } from "lucide-react";
 
 interface Report {
   _id: string;
@@ -153,6 +151,31 @@ export default function MainCitizen() {
 
     fetchEvents()
   }, [])
+
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
+useEffect(() => {
+  if ('Notification' in window) {
+    setNotificationPermission(Notification.permission);
+  }
+}, []);
+
+const requestNotificationPermission = async () => {
+  try {
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    
+    if (permission === 'granted') {
+      toast.success('Notifications enabled successfully!', {
+        icon: <Bell className="w-5 h-5 text-green-400" />,
+      });
+    }
+  } catch (error) {
+    console.error('Error requesting notification permission:', error);
+    toast.error('Failed to enable notifications');
+  }
+};
+
 
   const reportsPerPage = 8;
 
@@ -282,7 +305,6 @@ type Report = {
       return (
         <ThemeProvider>
           <div className="min-h-screen bg-muted/40 dark:bg-gray-900/50">
-            {/* Header placeholder */}
             <div className="w-full h-16 bg-background/95 border-b dark:bg-gray-800 dark:border-gray-700">
               <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-full">
                 <Skeleton className="h-6 w-36" />
@@ -294,7 +316,6 @@ type Report = {
             </div>
             
             <main className="max-w-7xl mx-auto p-4 grid gap-6">
-              {/* Top cards row */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[1, 2, 3].map((i) => (
                   <Card key={i} className="dark:bg-gray-800 dark:border-gray-700">
@@ -313,7 +334,6 @@ type Report = {
                 ))}
               </div>
 
-              {/* Tabs skeleton */}
               <div className="w-full space-y-6">
                 <div className="w-full grid grid-cols-2 lg:grid-cols-5 h-14 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl">
                   {[1, 2, 3, 4, 5].map((i) => (
@@ -321,7 +341,6 @@ type Report = {
                   ))}
                 </div>
                 
-                {/* Tab content skeleton */}
                 <div className="grid md:grid-cols-2 gap-6">
                   {[1, 2].map((i) => (
                     <Card key={i} className="dark:bg-gray-800 dark:border-gray-700">
@@ -420,22 +439,55 @@ type Report = {
       <main className="max-w-7xl mx-auto p-4 grid gap-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Shield className="w-6 h-6 text-primary" />
-                        Anonymous Reporting
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <span>Enable Anonymous Mode</span>
-                        <Switch 
-                          checked={anonymousMode}
-                          onCheckedChange={setAnonymousMode}
-                        />
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      {notificationPermission === 'granted' ? (
+                        <Bell className="w-6 h-6 text-primary" />
+                      ) : (
+                        <BellOff className="w-6 h-6 text-muted-foreground" />
+                      )}
+                      Notifications
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm">Current Status</p>
+                        <Badge 
+                          variant={
+                            notificationPermission === 'granted' ? 'default' :
+                            notificationPermission === 'denied' ? 'destructive' : 'secondary'
+                          }
+                        >
+                          {notificationPermission.toUpperCase()}
+                        </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <Button 
+                        variant={notificationPermission === 'granted' ? 'outline' : 'default'}
+                        onClick={requestNotificationPermission}
+                        disabled={!('Notification' in window) || notificationPermission === 'granted'}
+                      >
+                        {notificationPermission === 'granted' ? 'Enabled' : 'Enable Notifications'}
+                      </Button>
+                    </div>
+                    {!('Notification' in window) && (
+                      <Alert variant="destructive" className="mt-4">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Your browser does not support notifications
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    {notificationPermission === 'denied' && (
+                      <Alert variant="destructive" className="mt-4">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Notifications are blocked. Please update your browser settings.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
 
                   <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
                     <CardHeader>

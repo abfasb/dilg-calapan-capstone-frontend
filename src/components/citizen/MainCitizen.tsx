@@ -65,6 +65,8 @@ import UnAuthorizedPage from "../../pages/authentication/UnAuthorizedPage";
 import { AppointmentsCard } from "./ui/AppointmentCard";
 import CaseTracking from "./partials/CaseTracking";
 import { BellOff, Bell } from "lucide-react";
+import { getToken, onMessage } from "firebase/messaging";
+import { messaging } from "../../config/firebase";
 
 interface Report {
   _id: string;
@@ -160,22 +162,73 @@ useEffect(() => {
   }
 }, []);
 
+
+const saveFCMTokenToBackend = async (token: string) => {
+  try {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      console.error('No user ID found');
+      return;
+    }
+
+    await fetch(`${import.meta.env.VITE_API_URL}/api/notify/save-fcm-token`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify({ userId, fcmToken: token }),
+    });
+  } catch (error) {
+    console.error('Error saving FCM token:', error);
+  }
+};
+
+
 const requestNotificationPermission = async () => {
   try {
     const permission = await Notification.requestPermission();
     setNotificationPermission(permission);
     
     if (permission === 'granted') {
-      toast.success('Notifications enabled successfully!', {
-        icon: <Bell className="w-5 h-5 text-green-400" />,
-      });
+      const token = await getToken(messaging, { vapidKey: import.meta.env.VITE_PUBLIC_VAPID_KEY });
+      if (token) {
+        await saveFCMTokenToBackend(token);
+        toast.success('Notifications enabled successfully!', {
+          icon: <Bell className="w-5 h-5 text-green-400" />,
+        });
+      }
     }
   } catch (error) {
     console.error('Error requesting notification permission:', error);
     toast.error('Failed to enable notifications');
   }
 };
+   const userId = localStorage.getItem('userId');
+ 
+   useEffect(() => {
+    const registerFCMToken = async () => {
+      
+      try {
 
+        const currentToken = await getToken(messaging, {
+          vapidKey: import.meta.env.VITE_PUBLIC_VAPID_KEY,
+        });
+
+        if (currentToken) {
+          await saveFCMTokenToBackend(currentToken);
+        } else {
+          console.warn('No registration token available. Request permission to generate one.');
+        }
+      } catch (err) {
+        console.error('An error occurred while retrieving token. ', err);
+      }
+    };
+
+    if (notificationPermission === 'granted') {
+      registerFCMToken();
+    }
+  }, [notificationPermission, userId]);
 
   const reportsPerPage = 8;
 
@@ -229,8 +282,6 @@ type Report = {
     }
   }, [id, navigate]); 
   
-
- 
 
   const filteredReports = reports.filter(report => {
     const categoryMatch = selectedCategories.length === 0 || 

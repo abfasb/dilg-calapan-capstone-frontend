@@ -8,10 +8,10 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "../ui/card";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Skeleton } from "../ui/skeleton";
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -19,22 +19,23 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "../ui/dialog";
+} from "@/components/ui/dialog";
 import { 
   Alert, 
   AlertDescription, 
   AlertTitle 
-} from "../ui/alert";
+} from "@/components/ui/alert";
 import { 
   ArrowLeft, 
-  Filter, 
   AlertCircle, 
   CheckCircle2, 
   Clock, 
   MapPin, 
   Tag,
   Search,
-  X
+  X,
+  Filter,
+  MoreHorizontal
 } from "lucide-react";
 import {
   Select,
@@ -42,14 +43,28 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
+} from "@/components/ui/select";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "../ui/hover-card";
-import { Separator } from "../ui/separator";
-import { Input } from "../ui/input";
+} from "@/components/ui/hover-card";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface ComplaintType {
   _id: string;
@@ -131,29 +146,44 @@ const Complaint = () => {
     navigate(-1);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusInfo = (status: string) => {
     switch (status) {
       case 'Pending':
-        return 'bg-amber-100 text-amber-800 hover:bg-amber-200';
+        return {
+          icon: <Clock className="h-4 w-4" />,
+          color: "text-amber-500 dark:text-amber-400",
+          bgColor: "bg-amber-100 dark:bg-amber-950/50",
+          borderColor: "border-amber-500 dark:border-amber-400",
+          hoverColor: "hover:bg-amber-200 dark:hover:bg-amber-900/50",
+          description: "Your complaint is being reviewed by our team."
+        };
       case 'In Review':
-        return 'bg-sky-100 text-sky-800 hover:bg-sky-200';
+        return {
+          icon: <AlertCircle className="h-4 w-4" />,
+          color: "text-blue-500 dark:text-blue-400",
+          bgColor: "bg-blue-100 dark:bg-blue-950/50",
+          borderColor: "border-blue-500 dark:border-blue-400",
+          hoverColor: "hover:bg-blue-200 dark:hover:bg-blue-900/50",
+          description: "Our team is actively working on your complaint."
+        };
       case 'Resolved':
-        return 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
+        return {
+          icon: <CheckCircle2 className="h-4 w-4" />,
+          color: "text-emerald-500 dark:text-emerald-400",
+          bgColor: "bg-emerald-100 dark:bg-emerald-950/50",
+          borderColor: "border-emerald-500 dark:border-emerald-400",
+          hoverColor: "hover:bg-emerald-200 dark:hover:bg-emerald-900/50",
+          description: "Your complaint has been addressed and resolved."
+        };
       default:
-        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Pending':
-        return <Clock className="h-4 w-4 mr-1 text-amber-600" />;
-      case 'In Review':
-        return <AlertCircle className="h-4 w-4 mr-1 text-sky-600" />;
-      case 'Resolved':
-        return <CheckCircle2 className="h-4 w-4 mr-1 text-emerald-600" />;
-      default:
-        return null;
+        return {
+          icon: null,
+          color: "text-gray-500 dark:text-gray-400",
+          bgColor: "bg-gray-100 dark:bg-gray-800",
+          borderColor: "border-gray-300 dark:border-gray-700",
+          hoverColor: "hover:bg-gray-200 dark:hover:bg-gray-700",
+          description: "Status unknown"
+        };
     }
   };
 
@@ -170,39 +200,43 @@ const Complaint = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 max-w-6xl">
+      <div className="container mx-auto p-4 md:p-6 max-w-6xl">
         <div className="flex items-center mb-8 space-x-2">
           <Skeleton className="h-10 w-10 rounded-full" />
           <Skeleton className="h-8 w-48" />
         </div>
         
-        <div className="flex justify-between items-center mb-6">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-40" />
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <Skeleton className="h-8 w-full md:w-64" />
+            <Skeleton className="h-10 w-full md:w-40" />
+          </div>
+          
+          <Skeleton className="h-px w-full mb-6" />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-lg border bg-card p-4">
+                <div className="space-y-2 mb-4">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+                <Skeleton className="h-16 w-full mb-4" />
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-9 w-24" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="mb-4 border-l-4 border-l-gray-300">
-            <CardHeader>
-              <Skeleton className="h-6 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-1/2" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-10 w-24" />
-            </CardFooter>
-          </Card>
-        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-6 max-w-6xl">
+      <div className="container mx-auto p-4 md:p-6 max-w-6xl">
         <Button onClick={handleReturn} variant="outline" className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
@@ -216,206 +250,283 @@ const Complaint = () => {
     );
   }
 
+  const complaintsByStatus = {
+    all: filteredAndSearchedComplaints,
+    Pending: filteredAndSearchedComplaints.filter(c => c.status === 'Pending'),
+    'In Review': filteredAndSearchedComplaints.filter(c => c.status === 'In Review'),
+    Resolved: filteredAndSearchedComplaints.filter(c => c.status === 'Resolved')
+  };
+
+  const statusCounts = {
+    all: filteredAndSearchedComplaints.length,
+    Pending: complaintsByStatus.Pending.length,
+    'In Review': complaintsByStatus['In Review'].length,
+    Resolved: complaintsByStatus.Resolved.length
+  };
+
   return (
-    <div className="container mx-auto p-6 max-w-6xl bg-gray-50 min-h-screen">
-      <div className="flex items-center mb-8">
+    <div className="container mx-auto p-4 md:p-6 max-w-6xl min-h-screen">
+      <div className="flex items-center mb-6">
         <Button 
           onClick={handleReturn} 
           variant="ghost" 
-          className="mr-4 hover:bg-gray-200"
+          size="sm"
+          className="mr-4"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          <span className="sr-only md:not-sr-only">Back</span>
         </Button>
-        <h1 className="text-3xl font-bold text-gray-800">My Complaints</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">My Complaints</h1>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="relative col-span-2">
-            <Input 
-              type="text" 
-              placeholder="Search complaints..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 py-2 border-gray-300 focus:ring-2 focus:ring-primary-500"
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            {searchQuery && (
-              <X 
-                onClick={() => setSearchQuery('')} 
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600" 
+      <Card className="mb-6 border shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl">Track Your Complaints</CardTitle>
+          <CardDescription>
+            View and manage all the complaints you've submitted
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="text" 
+                placeholder="Search complaints..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-full"
               />
-            )}
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Clear search</span>
+                </Button>
+              )}
+            </div>
+            
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
+              <SelectTrigger className="w-full md:w-[180px]">
+                <div className="flex items-center">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filter Status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses ({statusCounts.all})</SelectItem>
+                <SelectItem value="Pending">Pending ({statusCounts.Pending})</SelectItem>
+                <SelectItem value="In Review">In Review ({statusCounts['In Review']})</SelectItem>
+                <SelectItem value="Resolved">Resolved ({statusCounts.Resolved})</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
-          <Select
-            value={statusFilter}
-            onValueChange={setStatusFilter}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filter Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="In Review">In Review</SelectItem>
-              <SelectItem value="Resolved">Resolved</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <Separator className="mb-6" />
-
-        {filteredAndSearchedComplaints.length === 0 ? (
-          <div className="text-center py-12 bg-gray-100 rounded-lg">
-            <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-xl text-gray-500 mb-4">No complaints found</p>
-            <p className="text-gray-600 mb-6">Try adjusting your search or filter</p>
-            {(statusFilter !== "all" || searchQuery) && (
-              <Button 
-                onClick={() => {
-                  setStatusFilter("all");
-                  setSearchQuery("");
-                }}
-                variant="outline"
-                className="hover:bg-gray-200"
-              >
-                Reset Filters
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredAndSearchedComplaints.map((complaint) => (
-              <Card 
-                key={complaint._id} 
-                className={`
-                  border-l-4 shadow-sm hover:shadow-md transition-all duration-300 
-                  ${
-                    complaint.status === 'Resolved' ? 'border-l-emerald-500 hover:border-l-emerald-600' :
-                    complaint.status === 'In Review' ? 'border-l-sky-500 hover:border-l-sky-600' :
-                    'border-l-amber-500 hover:border-l-amber-600'
-                  }
-                `}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-grow pr-4">
-                      <CardTitle className="text-xl truncate">{complaint.title}</CardTitle>
-                      <CardDescription className="mt-1">
-                        {complaint.anonymous ? 'Anonymous' : formatDate(complaint.createdAt)}  
-                      </CardDescription>
-                    </div>
-                    <HoverCard>
-                      <HoverCardTrigger asChild>
-                        <Badge className={`cursor-pointer ${getStatusColor(complaint.status)}`}>
-                          {getStatusIcon(complaint.status)} {complaint.status}
-                        </Badge>
-                      </HoverCardTrigger>
-                      <HoverCardContent className="w-64">
-                        <div className="space-y-2">
-                          <h4 className="font-medium">Status Information</h4>
-                          <p className="text-sm text-gray-600">
-                            {complaint.status === 'Pending' && "Your complaint is being reviewed by our team."}
-                            {complaint.status === 'In Review' && "Our team is actively working on your complaint."}
-                            {complaint.status === 'Resolved' && "Your complaint has been addressed and resolved."}
-                          </p>
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
+          <Tabs defaultValue={statusFilter === "all" ? "all" : statusFilter} onValueChange={setStatusFilter} className="w-full">
+            <TabsList className="grid grid-cols-4 mb-4">
+              <TabsTrigger value="all" className="text-xs md:text-sm">
+                All ({statusCounts.all})
+              </TabsTrigger>
+              <TabsTrigger value="Pending" className="text-xs md:text-sm">
+                Pending ({statusCounts.Pending})
+              </TabsTrigger>
+              <TabsTrigger value="In Review" className="text-xs md:text-sm">
+                In Review ({statusCounts['In Review']})
+              </TabsTrigger>
+              <TabsTrigger value="Resolved" className="text-xs md:text-sm">
+                Resolved ({statusCounts.Resolved})
+              </TabsTrigger>
+            </TabsList>
+            
+            {Object.entries(complaintsByStatus).map(([status, complaints]) => (
+              <TabsContent key={status} value={status} className="mt-0">
+                {complaints.length === 0 ? (
+                  <div className="text-center py-12 bg-muted/30 rounded-lg border border-dashed">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-xl font-medium text-muted-foreground mb-2">No complaints found</p>
+                    <p className="text-muted-foreground mb-6">Try adjusting your search or filter</p>
+                    {(statusFilter !== "all" || searchQuery) && (
+                      <Button 
+                        onClick={() => {
+                          setStatusFilter("all");
+                          setSearchQuery("");
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Reset Filters
+                      </Button>
+                    )}
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="line-clamp-3 text-gray-700 mb-3">{complaint.description}</p>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Tag className="h-4 w-4 mr-1 text-gray-400" />
-                      {complaint.category}
-                      <span className="mx-2">•</span>
-                      <MapPin className="h-4 w-4 mr-1 text-gray-400" />
-                      {complaint.location}
-                    </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {complaints.map((complaint) => {
+                      const statusInfo = getStatusInfo(complaint.status);
+                      
+                      return (
+                        <Card 
+                          key={complaint._id} 
+                          className={cn(
+                            "border-l-4 transition-all duration-200 hover:shadow-md",
+                            statusInfo.borderColor
+                          )}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex-grow">
+                                <CardTitle className="text-base md:text-lg font-bold truncate">
+                                  {complaint.title}
+                                </CardTitle>
+                                <CardDescription className="text-xs md:text-sm mt-1">
+                                  {complaint.anonymous ? 'Anonymous' : formatDate(complaint.createdAt)}  
+                                </CardDescription>
+                              </div>
+                              
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      "cursor-pointer flex items-center gap-1 px-2 py-1",
+                                      statusInfo.bgColor,
+                                      statusInfo.color,
+                                      statusInfo.hoverColor
+                                    )}
+                                  >
+                                    {statusInfo.icon}
+                                    <span className="text-xs hidden xs:inline">{complaint.status}</span>
+                                  </Badge>
+                                </HoverCardTrigger>
+                                <HoverCardContent align="end" className="w-64">
+                                  <div className="space-y-2">
+                                    <h4 className="font-medium">Status: {complaint.status}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      {statusInfo.description}
+                                    </p>
+                                  </div>
+                                </HoverCardContent>
+                              </HoverCard>
+                            </div>
+                          </CardHeader>
+                          
+                          <CardContent className="pb-2">
+                            <p className="line-clamp-2 text-sm">{complaint.description}</p>
+                          </CardContent>
+                          
+                          <CardFooter className="flex items-center justify-between pt-0">
+                            <div className="flex items-center text-xs text-muted-foreground">
+                              <div className="flex items-center mr-3">
+                                <Tag className="h-3 w-3 mr-1" />
+                                <span className="truncate max-w-[100px]">{complaint.category}</span>
+                              </div>
+                              <div className="flex items-center">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                <span className="truncate max-w-[100px]">{complaint.location}</span>
+                              </div>
+                            </div>
+                            
+                            <Button
+                              onClick={() => handleViewDetails(complaint._id)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs md:text-sm"
+                            >
+                              View Details
+                            </Button>
+                          </CardFooter>
+                        </Card>
+                      );
+                    })}
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-end pt-2">
-                  <Button
-                    onClick={() => handleViewDetails(complaint._id)}
-                    variant="outline"
-                    className="hover:bg-gray-100"
-                  >
-                    View Details
-                  </Button>
-                </CardFooter>
-              </Card>
+                )}
+              </TabsContent>
             ))}
-          </div>
-        )}
-      </div>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-3xl max-h-[90vh]">
           {selectedComplaint && (
             <>
-              <DialogHeader className="border-b pb-4">
-                <div className="flex justify-between items-center">
-                  <DialogTitle className="text-2xl font-bold">{selectedComplaint.title}</DialogTitle>
+              <DialogHeader>
+                <div className="flex justify-between items-start gap-2">
+                  <DialogTitle className="text-xl font-bold pr-4">{selectedComplaint.title}</DialogTitle>
                   <Badge 
-                    className={`${getStatusColor(selectedComplaint.status)} px-3 py-1`}
+                    variant="outline"
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 whitespace-nowrap",
+                      getStatusInfo(selectedComplaint.status).bgColor,
+                      getStatusInfo(selectedComplaint.status).color
+                    )}
                   >
-                    {getStatusIcon(selectedComplaint.status)} {selectedComplaint.status}
+                    {getStatusInfo(selectedComplaint.status).icon}
+                    <span>{selectedComplaint.status}</span>
                   </Badge>
                 </div>
-                <DialogDescription className="mt-2 text-base text-gray-600">
+                <DialogDescription className="text-sm text-muted-foreground">
                   {selectedComplaint.anonymous ? 'Anonymous' : `Submitted by: ${selectedComplaint.name}`} • {formatDate(selectedComplaint.createdAt)}
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="space-y-6 my-4">
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
-                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {selectedComplaint.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                    <div className="flex items-centermb-2">
-                      <Tag className="h-4 w-4 mr-2 text-gray-600" />
-                      <h3 className="font-medium text-gray-700">Category</h3>
+              <ScrollArea className="max-h-[calc(90vh-12rem)]">
+                <div className="space-y-6 p-1">
+                  <div>
+                    <h3 className="font-medium text-sm mb-2">Description</h3>
+                    <div className="bg-muted/30 p-4 rounded-md border">
+                      <p className="text-sm whitespace-pre-wrap">
+                        {selectedComplaint.description}
+                      </p>
                     </div>
-                    <p className="text-gray-800 font-semibold">{selectedComplaint.category}</p>
                   </div>
-                  
-                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                    <div className="flex items-center mb-2">
-                      <MapPin className="h-4 w-4 mr-2 text-gray-600" />
-                      <h3 className="font-medium text-gray-700">Location</h3>
-                    </div>
-                    <p className="text-gray-800 font-semibold">{selectedComplaint.location}</p>
-                  </div>
-                </div>
 
-                {selectedComplaint.adminNote && (
-                  <div className="bg-sky-50 p-4 rounded-md border-l-4 border-sky-500">
-                    <h3 className="font-semibold text-sky-800 mb-2 flex items-center">
-                      <AlertCircle className="h-5 w-5 mr-2 text-sky-600" />
-                      Admin Note
-                    </h3>
-                    <p className="text-sky-700 whitespace-pre-wrap bg-white p-3 rounded-md shadow-sm">
-                      {selectedComplaint.adminNote}
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-muted/30 p-4 rounded-md border">
+                      <div className="flex items-center mb-2">
+                        <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <h3 className="text-sm font-medium">Category</h3>
+                      </div>
+                      <p className="text-sm font-medium">{selectedComplaint.category}</p>
+                    </div>
+                    
+                    <div className="bg-muted/30 p-4 rounded-md border">
+                      <div className="flex items-center mb-2">
+                        <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <h3 className="text-sm font-medium">Location</h3>
+                      </div>
+                      <p className="text-sm font-medium">{selectedComplaint.location}</p>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {selectedComplaint.adminNote && (
+                    <Alert 
+                      className={cn(
+                        "border-l-4 border-blue-500 dark:border-blue-400",
+                        "bg-blue-50 dark:bg-blue-950/50"
+                      )}
+                    >
+                      <AlertCircle className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                      <AlertTitle className="text-blue-700 dark:text-blue-300">Admin Note</AlertTitle>
+                      <AlertDescription className="text-blue-700 dark:text-blue-300 mt-2 whitespace-pre-wrap bg-white dark:bg-background p-3 rounded-md border border-blue-100 dark:border-blue-800 shadow-sm">
+                        {selectedComplaint.adminNote}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </ScrollArea>
               
               <DialogFooter>
                 <Button 
                   variant="outline" 
                   onClick={() => setDialogOpen(false)}
-                  className="w-full sm:w-auto"
                 >
                   Close
                 </Button>

@@ -172,7 +172,7 @@ const saveFCMTokenToBackend = async (token: string) => {
     }
 
     await fetch(`${import.meta.env.VITE_API_URL}/api/notify/save-fcm-token`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 
         'Content-Type': 'application/json',
         Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -187,9 +187,23 @@ const saveFCMTokenToBackend = async (token: string) => {
 
 const requestNotificationPermission = async () => {
   try {
+    if (Notification.permission === 'denied') {
+      toast.error('Notifications blocked. Please enable them in your browser settings.', {
+        icon: <AlertTriangle className="w-5 h-5 text-red-400" />,
+      });
+      return;
+    }
+
     const permission = await Notification.requestPermission();
     setNotificationPermission(permission);
     
+    if (permission === 'denied') {
+      toast.error('Notifications permission denied. Please enable them in your browser settings.', {
+        icon: <AlertTriangle className="w-5 h-5 text-red-400" />,
+      });
+      return;
+    }
+
     if (permission === 'granted') {
       const token = await getToken(messaging, { vapidKey: import.meta.env.VITE_PUBLIC_VAPID_KEY });
       if (token) {
@@ -513,12 +527,14 @@ type Report = {
                           {notificationPermission.toUpperCase()}
                         </Badge>
                       </div>
-                      <Button 
+                     <Button 
                         variant={notificationPermission === 'granted' ? 'outline' : 'default'}
                         onClick={requestNotificationPermission}
-                        disabled={!('Notification' in window) || notificationPermission === 'granted'}
+                        disabled={!('Notification' in window) || notificationPermission === 'granted' || notificationPermission === 'denied'}
                       >
-                        {notificationPermission === 'granted' ? 'Enabled' : 'Enable Notifications'}
+                        {notificationPermission === 'granted' ? 'Enabled' : 
+                        notificationPermission === 'denied' ? 'Enable in Browser Settings' : 
+                        'Enable Notifications'}
                       </Button>
                     </div>
                     {!('Notification' in window) && (

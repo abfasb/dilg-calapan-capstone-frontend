@@ -67,6 +67,7 @@ import CaseTracking from "./partials/CaseTracking";
 import { BellOff, Bell } from "lucide-react";
 import { getToken, onMessage } from "firebase/messaging";
 import { messaging } from "../../config/firebase";
+import AISearchCard from "./ui/AISearchCard";
 
 interface Report {
   _id: string;
@@ -556,30 +557,10 @@ type Report = {
                   </CardContent>
                 </Card>
 
-                  <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Bot className="w-6 h-6 text-primary" />
-                        AI Reporting Assistant
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Button className="w-full" variant="outline">
-                        Start Smart Report
-                      </Button>
-                    </CardContent>
-                  </Card>
+                <AISearchCard />
 
                   <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Camera className="w-6 h-6 text-primary" />
-                        Image Recognition
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Input type="file" accept="image/*" className="cursor-pointer" />
-                    </CardContent>
+                    <ChatBot />
                   </Card>
                 </div>
 

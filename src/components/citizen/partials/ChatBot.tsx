@@ -292,27 +292,27 @@ const handleConnectToHuman = () => {
 
   return (
     <Card className="relative group hover:shadow-lg transition-shadow h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-3 text-lg font-semibold">
-          <MessageSquare className="w-6 h-6 text-primary" />
-          Government AI Assistant
-          <Badge variant="outline" className="ml-2">
-            Live
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Button 
-          className="w-full flex items-center gap-2" 
-          onClick={() => setIsChatOpen(true)}
-        >
-          <MessageSquare className="w-5 h-5" />
-          Start Chat
-        </Button>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-3 text-lg font-semibold">
+            <MessageSquare className="w-6 h-6 text-primary" />
+            Government AI Assistant
+            <Badge variant="outline" className="ml-2">
+              Live
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button 
+            className="w-full flex items-center gap-2" 
+            onClick={() => setIsChatOpen(true)}
+          >
+            <MessageSquare className="w-5 h-5" />
+            Start Chat
+          </Button>
 
         {isChatOpen && (
-          <div className="fixed inset-0 w-full h-full bg-black/50 z-50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-lg h-[80vh] flex flex-col shadow-xl">
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center m-0 p-0">
+           <Card className="w-full max-w-lg h-[80vh] flex flex-col shadow-xl overflow-hidden">
               <CardHeader className="bg-primary text-primary-foreground py-3 border-b flex flex-row justify-between items-center">
                 <CardTitle className="flex items-center gap-3">
                   <Avatar className="w-8 h-8 bg-primary-foreground text-primary">

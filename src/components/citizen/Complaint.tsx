@@ -8,10 +8,10 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Skeleton } from "../ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +19,12 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "../ui/dialog";
 import { 
   Alert, 
   AlertDescription, 
   AlertTitle 
-} from "@/components/ui/alert";
+} from "../ui/alert";
 import { 
   ArrowLeft, 
   AlertCircle, 
@@ -43,28 +43,28 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../ui/select";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
+} from "../ui/hover-card";
+import { Separator } from "../ui/separator";
+import { Input } from "../ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "../ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+} from "../ui/dropdown-menu";
+import { ScrollArea } from "../ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { cn } from '../../lib/utils';
 
 interface ComplaintType {
   _id: string;

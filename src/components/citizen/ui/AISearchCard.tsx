@@ -72,33 +72,45 @@ export default function AISearchCard() {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Matching Forms Found</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {results.length === 0 ? (
-              <p>No matching forms found</p>
-            ) : (
-              results.map((result, index) => (
-                <div 
-                  key={result.form._id}
-                  className="p-4 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                  onClick={() => window.location.href = `/forms/${result.form._id}`}
-                >
-                  <h3 className="font-semibold">{result.form.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {result.form.description}
-                  </p>
-                  <div className="mt-2 text-xs text-primary">
-                    Match Confidence: {(result.score * 100).toFixed(1)}%
-                  </div>
-                </div>
+         <DialogContent className="max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Matching Forms Found</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {results.length === 0 ? (
+                <p className="text-center text-gray-500">No matching forms found</p>
+              ) : (
+                results.map((result) => (
+                <Card key={result.formId} className="transition-shadow hover:shadow-md">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {result.title}
+                      {result.isExactMatch && (
+                        <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                          Exact Match
+                        </span>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        Template: {result.templateFileName}
+                      </span>
+                      <Button 
+                        size="sm"
+                        onClick={() => window.location.href = `/forms/${result.formId}`}
+                      >
+                        Open Form
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))
-            )}
-          </div>
-        </DialogContent>
+              )}
+            </div>
+          </DialogContent>
       </Dialog>
     </>
   );

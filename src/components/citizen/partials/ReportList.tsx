@@ -95,30 +95,24 @@ export const ReportList = ({
     );
   };
 
-  // Function to get page range to display
   const getPageRange = () => {
-    const delta = 2; // Number of pages to show before and after current page
+    const delta = 2; 
     let range = [];
     
-    // Always include page 1
     range.push(1);
     
-    // Calculate range of pages around current page
     for (let i = currentPage - delta; i <= currentPage + delta; i++) {
       if (i > 1 && i < totalPages) {
         range.push(i);
       }
     }
     
-    // Always include last page if there's more than one page
     if (totalPages > 1) {
       range.push(totalPages);
     }
     
-    // Sort and deduplicate
     range = [...new Set(range)].sort((a, b) => a - b);
     
-    // Add ellipses where needed
     let result = [];
     let prevPage = null;
     

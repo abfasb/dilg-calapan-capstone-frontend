@@ -27,6 +27,8 @@ const BlogList = () => {
         document.documentElement.classList.add("dark"); 
       }
     }, []);
+
+    console.log('hello world');
   
     const toggleTheme = () => {
       const newTheme = theme === "light" ? "dark" : "light";

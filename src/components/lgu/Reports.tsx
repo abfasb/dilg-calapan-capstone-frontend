@@ -14,7 +14,8 @@ import {
   FileText, 
   Clock, 
   XCircle, 
-  PenLine
+  PenLine,
+  RefreshCw
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import {
@@ -81,6 +82,7 @@ interface FormResponse {
     timestamp: string;
     comments?: string;
   }>;
+  isUserUpdatedRejected: boolean; // Added this field
 }
 
 export default function Reports() {
@@ -100,7 +102,7 @@ export default function Reports() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
-    const [pendingStatus, setPendingStatus] = useState<FormResponse["status"] | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<FormResponse["status"] | null>(null);
 
   const [loading, setLoading] = useState({
     forms: true,
@@ -792,7 +794,15 @@ const handleSaveSignature = async () => {
                     ) : (
                       filteredResponses.map(response => (
                         <tr key={response._id} className="border-b border-gray-700/50 hover:bg-gray-700/10 transition-colors">
-                          <td className="px-6 py-4 font-mono text-cyan-400">{response.referenceNumber}</td>
+                          <td className="px-6 py-4 font-mono text-cyan-400">
+                            {response.referenceNumber}
+                            {response.isUserUpdatedRejected && (
+                              <span className="ml-2 bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full inline-flex items-center">
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                                Updated
+                              </span>
+                            )}
+                          </td>
                           <td className="px-6 py-4">
                             <span className={`px-2 py-1 rounded-full text-xs ${
                               response.bulkFile 
@@ -862,9 +872,17 @@ const handleSaveSignature = async () => {
                 ) : selectedResponse && (
                   <>
                     <DialogHeader>
-                      <DialogTitle className="text-cyan-400">
-                        {selectedResponse.referenceNumber}
-                      </DialogTitle>
+                      <div className="flex items-center justify-between">
+                        <DialogTitle className="text-cyan-400">
+                          {selectedResponse.referenceNumber}
+                        </DialogTitle>
+                        {selectedResponse.isUserUpdatedRejected && (
+                          <div className="flex items-center gap-2 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full">
+                            <RefreshCw className="w-4 h-4" />
+                            <span className="text-sm font-medium">Updated Submission</span>
+                          </div>
+                        )}
+                      </div>
                     </DialogHeader>
 
                     {selectedResponse.bulkFile ? (

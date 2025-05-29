@@ -107,7 +107,6 @@ export default function EditReport() {
     if (e.target.files) {
       setNewFiles(Array.from(e.target.files));
       
-      // Preview first file if it's an image
       if (e.target.files[0] && e.target.files[0].type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -123,7 +122,7 @@ export default function EditReport() {
   const handleBulkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setNewFiles([e.target.files[0]]);
-      setFilePreview(null); // Reset image preview for bulk files
+      setFilePreview(null); 
     }
   };
 

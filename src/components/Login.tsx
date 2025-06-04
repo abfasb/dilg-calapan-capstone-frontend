@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import { FcGoogle } from 'react-icons/fc';
-import { FaEye, FaEyeSlash, FaExclamationCircle, FaGithub } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaExclamationCircle, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { loginUser } from '../api/registrationApi';
 import { toast, Toaster } from 'react-hot-toast';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { Checkbox } from './ui/checkbox';
+import barangays from '../types/barangays';
+
+interface GoogleFormInput {
+  firstName: string;
+  lastName: string;
+  barangay: string;
+  position: string;
+  phoneNumber: string;
+}
 
 interface IFormInput {
   email: string;
@@ -24,6 +33,30 @@ const Login: React.FC = () => {
   
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  
+  const { 
+    register: registerGoogle, 
+    handleSubmit: handleSubmitGoogle, 
+    formState: { errors: googleErrors, isValid: isGoogleValid } 
+  } = useForm<GoogleFormInput>({ 
+    mode: 'onChange',
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      barangay: '',
+      position: '',
+      phoneNumber: ''
+    }
+  });
+
+  const positionOptions = [
+    "Barangay Captain",
+    "Barangay Secretary",
+    "Barangay Treasurer",
+    "SK Chairman",
+    "Barangay Councilo"
+  ];
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     setError("");
@@ -64,6 +97,11 @@ const Login: React.FC = () => {
     }
   };
 
+  const onSubmitGoogle: SubmitHandler<GoogleFormInput> = (data) => {
+    sessionStorage.setItem('googleSignupData', JSON.stringify(data));
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+  };
+
   return ( 
     <>
       <Toaster
@@ -99,7 +137,7 @@ const Login: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Google Sign In - Enhanced Single Button */}
+          {/* Google Sign In Button */}
           <div className="mb-8">
             <motion.button
               whileHover={{ y: -2, scale: 1.02 }}
@@ -107,7 +145,7 @@ const Login: React.FC = () => {
               className="w-full p-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 
                          flex items-center justify-center gap-3 transition-all duration-200
                          hover:shadow-lg hover:shadow-cyan-500/10 group"
-              onClick={() => window.location.href=`${import.meta.env.VITE_API_URL}/auth/google`}sense
+              onClick={() => setShowGoogleModal(true)}
             >
               <FcGoogle className="w-6 h-6" />
               <span className="text-white font-medium group-hover:text-cyan-100 transition-colors">
@@ -130,7 +168,7 @@ const Login: React.FC = () => {
 
           {/* Login Form */}
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {/* Email Field with Autocomplete Fix */}
+            {/* Email Field */}
             <div>
               <div className="relative">
                 <input
@@ -326,6 +364,203 @@ const Login: React.FC = () => {
           <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-white/5 to-transparent" />
         </motion.div>
       </div>
+
+      {/* Google Signup Modal */}
+      <AnimatePresence>
+        {showGoogleModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 20, scale: 0.95 }}
+              className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <button 
+                onClick={() => setShowGoogleModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors"
+              >
+                <FaTimes className="w-5 h-5" />
+              </button>
+              
+              <div className="p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <FcGoogle className="w-8 h-8" />
+                  <h2 className="text-xl font-bold text-white">Complete Your Profile</h2>
+                </div>
+                
+                <p className="text-slate-400 mb-6">
+                  Please provide additional information to complete your registration
+                </p>
+                
+                <form onSubmit={handleSubmitGoogle(onSubmitGoogle)} className="space-y-4">
+                  {/* First Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      {...registerGoogle("firstName", { 
+                        required: "First name is required",
+                        minLength: {
+                          value: 2,
+                          message: "First name must be at least 2 characters"
+                        }
+                      })}
+                      type="text"
+                      className={`w-full px-4 py-3 rounded-xl bg-slate-800 border ${
+                        googleErrors.firstName ? 'border-red-500' : 'border-slate-700'
+                      } focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all
+                      duration-200 text-white placeholder-slate-500`}
+                      placeholder="Enter your first name"
+                    />
+                    {googleErrors.firstName && (
+                      <p className="text-red-400 text-sm mt-2 flex items-center gap-2">
+                        <FaExclamationCircle className="w-4 h-4" />
+                        {googleErrors.firstName.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Last Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      {...registerGoogle("lastName", { 
+                        required: "Last name is required",
+                        minLength: {
+                          value: 2,
+                          message: "Last name must be at least 2 characters"
+                        }
+                      })}
+                      type="text"
+                      className={`w-full px-4 py-3 rounded-xl bg-slate-800 border ${
+                        googleErrors.lastName ? 'border-red-500' : 'border-slate-700'
+                      } focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all
+                      duration-200 text-white placeholder-slate-500`}
+                      placeholder="Enter your last name"
+                    />
+                    {googleErrors.lastName && (
+                      <p className="text-red-400 text-sm mt-2 flex items-center gap-2">
+                        <FaExclamationCircle className="w-4 h-4" />
+                        {googleErrors.lastName.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Barangay */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Barangay <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      {...registerGoogle("barangay", { 
+                        required: "Please select your barangay" 
+                      })}
+                      className={`w-full px-4 py-3 rounded-xl bg-slate-800 border ${
+                        googleErrors.barangay ? 'border-red-500' : 'border-slate-700'
+                      } focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all
+                      duration-200 text-white appearance-none`}
+                    >
+                      <option value="">Select Barangay</option>
+                      {barangays.map((barangay) => (
+                        <option key={barangay.id} value={barangay.name}>
+                          {barangay.name}
+                        </option>
+                      ))}
+                    </select>
+                    {googleErrors.barangay && (
+                      <p className="text-red-400 text-sm mt-2 flex items-center gap-2">
+                        <FaExclamationCircle className="w-4 h-4" />
+                        {googleErrors.barangay.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Position */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Position <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      {...registerGoogle("position", { 
+                        required: "Please select your position" 
+                      })}
+                      className={`w-full px-4 py-3 rounded-xl bg-slate-800 border ${
+                        googleErrors.position ? 'border-red-500' : 'border-slate-700'
+                      } focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all
+                      duration-200 text-white appearance-none`}
+                    >
+                      <option value="">Select Position</option>
+                      {positionOptions.map((position, index) => (
+                        <option key={index} value={position}>
+                          {position}
+                        </option>
+                      ))}
+                    </select>
+                    {googleErrors.position && (
+                      <p className="text-red-400 text-sm mt-2 flex items-center gap-2">
+                        <FaExclamationCircle className="w-4 h-4" />
+                        {googleErrors.position.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Phone Number */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      {...registerGoogle("phoneNumber", { 
+                        required: "Phone number is required",
+                        pattern: {
+                          value: /^[0-9]{11}$/,
+                          message: "Please enter a valid 11-digit phone number"
+                        }
+                      })}
+                      type="tel"
+                      className={`w-full px-4 py-3 rounded-xl bg-slate-800 border ${
+                        googleErrors.phoneNumber ? 'border-red-500' : 'border-slate-700'
+                      } focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all
+                      duration-200 text-white placeholder-slate-500`}
+                      placeholder="09XXXXXXXXX"
+                    />
+                    {googleErrors.phoneNumber && (
+                      <p className="text-red-400 text-sm mt-2 flex items-center gap-2">
+                        <FaExclamationCircle className="w-4 h-4" />
+                        {googleErrors.phoneNumber.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="pt-4">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={!isGoogleValid}
+                      className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 
+                                text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-lg
+                                hover:shadow-cyan-500/25 disabled:opacity-50 disabled:cursor-not-allowed
+                                flex items-center justify-center gap-2"
+                    >
+                      <FcGoogle className="w-5 h-5" />
+                      Continue with Google
+                    </motion.button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

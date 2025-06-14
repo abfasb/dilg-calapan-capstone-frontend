@@ -66,7 +66,7 @@ const HeroSection = () => {
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden">
                 <div className="h-85 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
                   <div className="text-center h-80 space-y-4">
-                    <img src="https://i.ibb.co/QFg9CwMb/react-dashboard.jpg" className="h-full w-full" alt="DILG Dashboard" />
+                    <img src="https://i.ibb.co/m5fQd0FN/react-dashboard.jpg" className="h-full w-full" alt="DILG Dashboard" />
                   </div>
                 </div>
               </div>

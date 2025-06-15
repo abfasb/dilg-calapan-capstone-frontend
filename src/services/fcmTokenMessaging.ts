@@ -13,3 +13,4 @@ getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY' }).then((token : any) => {
     body: JSON.stringify({ userId: id, fcmToken: token }),
   });
 });
+

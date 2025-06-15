@@ -1,4 +1,3 @@
-// src/components/LGUAppointments.tsx
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
@@ -169,53 +168,66 @@ const LGUAppointments = () => {
     setFilteredAppointments(filtered);
   };
 
-  const handleStatusUpdate = async (id: string, newStatus: 'pending' | 'confirmed' | 'cancelled', time?: string) => {
-    try {
-      setUpdatingId(id);
-      const payload = newStatus === 'confirmed' ? { status: newStatus, time } : { status: newStatus };
-      
-      const { data } = await api.patch(`/appointments/${id}/status`, payload);
-      
-      setAppointments(prev =>
-        prev.map(appt => 
-          appt._id === id ? { ...appt, ...data } : appt
-        )
-      );
+  const handleStatusUpdate = async (
+  id: string,
+  newStatus: 'pending' | 'confirmed' | 'cancelled',
+  time?: string,
+  userId?: string
+) => {
+  try {
+    setUpdatingId(id);
 
-      const statusMessages = {
-        confirmed: 'Appointment confirmed successfully!',
-        cancelled: 'Appointment cancelled',
-        pending: 'Appointment marked as pending'
-      };
-
-      const statusIcons = {
-        confirmed: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
-        cancelled: <XCircle className="w-6 h-6 text-red-400" />,
-        pending: <Clock className="w-6 h-6 text-yellow-400" />
-      };
-
-      toast.success(statusMessages[newStatus], {
-        icon: statusIcons[newStatus],
-        style: {
-          background: '#1a1d24',
-          color: '#fff',
-          border: '1px solid #2a2f38',
-          padding: '16px',
-          borderRadius: '10px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        },
-        duration: 4000,
-      });
-    } catch (err) {
-      handleError(err);
-    } finally {
-      setUpdatingId(null);
-      setIsConfirmOpen(false);
-      setDetailsOpen(false);
-      setSelectedTime('');
-      setTimeError('');
+    const payload: any = { status: newStatus };
+    if (newStatus === 'confirmed') {
+      payload.time = time;
     }
-  };
+    if (userId) {
+      payload.userId = userId; 
+    }
+
+    const { data } = await api.patch(`/appointments/${id}/status`, payload);
+
+    setAppointments(prev =>
+      prev.map(appt =>
+        appt._id === id ? { ...appt, ...data } : appt
+      )
+    );
+
+    const statusMessages = {
+      confirmed: 'Appointment confirmed successfully!',
+      cancelled: 'Appointment cancelled',
+      pending: 'Appointment marked as pending'
+    };
+
+    const statusIcons = {
+      confirmed: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
+      cancelled: <XCircle className="w-6 h-6 text-red-400" />,
+      pending: <Clock className="w-6 h-6 text-yellow-400" />
+    };
+
+    toast.success(statusMessages[newStatus], {
+      icon: statusIcons[newStatus],
+      style: {
+        background: '#1a1d24',
+        color: '#fff',
+        border: '1px solid #2a2f38',
+        padding: '16px',
+        borderRadius: '10px',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+      },
+      duration: 4000,
+    });
+  } catch (err) {
+    handleError(err);
+  } finally {
+    setUpdatingId(null);
+    setIsConfirmOpen(false);
+    setDetailsOpen(false);
+    setSelectedTime('');
+    setTimeError('');
+  }
+};
+
 
   const openConfirmationDialog = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -244,7 +256,7 @@ const LGUAppointments = () => {
   const handleConfirmation = () => {
     if (!selectedAppointment || !validateTime(selectedTime)) return;
     
-    handleStatusUpdate(selectedAppointment._id, 'confirmed', selectedTime);
+    handleStatusUpdate(selectedAppointment._id, 'confirmed', selectedTime, selectedAppointment.user._id);
   };
 
   const getStatusVariant = (status: string) => {

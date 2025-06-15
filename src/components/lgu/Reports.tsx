@@ -525,13 +525,6 @@ const handleSaveSignature = async () => {
                   <Clock className="w-5 h-5" />
                   View Activity Timeline
                 </button>
-                <Button 
-                  onClick={() => setShowSignatureModal(true)}
-                  className="bg-cyan-600 hover:bg-cyan-700"
-                >
-                  <PenLine  className="w-4 h-4 mr-2" />
-                  Create E-Signature
-                </Button>
               </div>
               <div className="flex items-center gap-2">
                 {loading.forms ? (

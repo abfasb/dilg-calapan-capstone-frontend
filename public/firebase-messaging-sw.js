@@ -19,8 +19,7 @@ messaging.onBackgroundMessage((payload) => {
     body: payload.notification.body,
     icon: '/logo.png',
     data: {
-      // Get click_action from payload.data, not payload.notification
-      click_action: payload?.data?.click_action || 'http://localhost:5173/' // fallback
+      click_action: payload?.data?.click_action || 'http://localhost:5173/' 
     }
   };
 

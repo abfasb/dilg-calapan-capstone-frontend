@@ -27,13 +27,58 @@ import {
   Inbox
 } from "lucide-react";
 
+interface INotification {
+  _id: string;
+  userId: string;
+  message: string;
+  read: boolean;
+  type: 'submission' | 'complaint' | 'appointment';
+  referenceId: string;
+  createdAt: string;
+}
+
 export function Header() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const [user, setUser] = useState<{ name: string; email: string; token?: string } | null>(null);
   const userId = localStorage.getItem("userId");
+  
+  const [notifications, setNotifications] = useState<INotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!userId) return;
+      
+      try {
+        setLoadingNotifications(true);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/citizen/notification/${userId}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch notifications: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setNotifications(data);
+        
+        const unread = data.filter((n: INotification) => !n.read).length;
+        setUnreadCount(unread);
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+
+    fetchNotifications();
+    
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, [userId]);
+
+  // Handle user data
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const googleName = queryParams.get("name");
@@ -53,8 +98,52 @@ export function Header() {
     }
   }, [location]);
 
-  const [unreadNotifications] = useState(3); 
   const { theme, toggleTheme } = useTheme();  
+
+  const markAsRead = async (id: string) => {
+    try {
+      setNotifications(prev => 
+        prev.map(n => n._id === id ? { ...n, read: true } : n)
+      );
+      setUnreadCount(prev => prev - 1);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/citizen/notification/${id}/read`, { 
+        method: 'PATCH' 
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to mark notification as read: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      setNotifications(prev => 
+        prev.map(n => n._id === id ? { ...n, read: false } : n)
+      );
+      setUnreadCount(prev => prev + 1);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const unreadIds = notifications
+        .filter(n => !n.read)
+        .map(n => n._id);
+      
+      const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
+      setNotifications(updatedNotifications);
+      setUnreadCount(0);
+      
+      await Promise.all(
+        unreadIds.map(id => 
+          fetch(`/api/citizen/notification/${id}/read`, { method: 'PATCH' })
+        )
+      );
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      setNotifications(prev => prev);
+      setUnreadCount(prev => prev);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("name");
@@ -86,6 +175,47 @@ export function Header() {
   const navigateToComplaintHistory = () => {
     navigate(`/account/citizen/complaint/${userId}`);
   }
+
+  const navigateToAllNotifications = () => {
+    navigate(`/account/citizen/notifications/${userId}`);
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} min ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Get notification icon based on type
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'submission':
+        return <FileText className="h-4 w-4 mt-1 text-blue-500" />;
+      case 'complaint':
+        return <AlertCircle className="h-4 w-4 mt-1 text-orange-500" />;
+      case 'appointment':
+        return <Calendar className="h-4 w-4 mt-1 text-green-500" />;
+      default:
+        return <AlertCircle className="h-4 w-4 mt-1 text-muted-foreground" />;
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -161,45 +291,78 @@ export function Header() {
                   className="relative rounded-full aspect-square p-2"
                 >
                   <Bell className="h-5 w-5" />
-                  {unreadNotifications > 0 && (
+                  {unreadCount > 0 && (
                     <Badge 
                       variant="destructive" 
                       className="absolute -top-1 -right-1 h-5 w-5 justify-center rounded-full"
                     >
-                      {unreadNotifications}
+                      {unreadCount}
                     </Badge>
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-96" align="end">
+              <DropdownMenuContent className="w-96 max-h-[80vh]" align="end">
                 <DropdownMenuLabel className="flex items-center justify-between">
-                  Notifications
-                  <Button variant="link" size="sm">Mark all as read</Button>
+                  <span>Notifications</span>
+                  {unreadCount > 0 && (
+                    <Button 
+                      variant="link" 
+                      size="sm"
+                      onClick={markAllAsRead}
+                      className="h-6 p-0"
+                    >
+                      Mark all as read
+                    </Button>
+                  )}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                <div className="max-h-96 overflow-y-auto">
-                  {[1, 2, 3].map((notification) => (
-                    <DropdownMenuItem 
-                      key={notification}
-                      className="flex items-start gap-3 py-3"
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      <AlertCircle className="h-4 w-4 mt-1 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">New update on case #12345</p>
-                        <p className="text-sm text-muted-foreground">
-                          2 hours ago · Status changed to "In Progress"
-                        </p>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
+                <div className="max-h-[65vh] overflow-y-auto">
+                  {loadingNotifications ? (
+                    <div className="flex justify-center items-center py-6">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <Inbox className="h-10 w-10 text-muted-foreground mb-2" />
+                      <p className="text-muted-foreground">No notifications yet</p>
+                      <p className="text-sm text-muted-foreground mt-1">We'll notify you when something arrives</p>
+                    </div>
+                  ) : (
+                    notifications.map(notification => (
+                      <DropdownMenuItem 
+                        key={notification._id}
+                        className={`flex items-start gap-3 py-3 ${!notification.read ? 'bg-muted/50 dark:bg-gray-800' : ''}`}
+                        onSelect={() => markAsRead(notification._id)}
+                      >
+                        {getNotificationIcon(notification.type)}
+                        <div className="w-full">
+                          <p className="font-medium">{notification.message}</p>
+                          <div className="flex justify-between items-center w-full mt-1">
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(notification.createdAt)}
+                            </p>
+                            {!notification.read && (
+                              <span className="h-2 w-2 rounded-full bg-primary"></span>
+                            )}
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  )}
                 </div>
                 
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="justify-center text-primary">
-                  View all notifications
-                </DropdownMenuItem>
+                {notifications.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="justify-center text-primary font-medium"
+                      onSelect={navigateToAllNotifications}
+                    >
+                      View all notifications
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
             
@@ -219,9 +382,13 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src="/user-avatar.jpg" />
+                  <AvatarImage src="/user-avatar.jpg" alt="User avatar" />
                   <AvatarFallback>
-                    <User className="h-4 w-4" />
+                    {user?.name ? (
+                      user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
@@ -229,9 +396,9 @@ export function Header() {
               <DropdownMenuContent className="w-64" align="end">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {user?.email}
+                    <p className="text-sm font-medium">{user?.name || "User"}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.email || "no-email@example.com"}
                     </p>
                   </div>
                 </DropdownMenuLabel>

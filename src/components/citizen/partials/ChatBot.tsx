@@ -65,7 +65,6 @@ export default function ChatBot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Update the useEffect for socket connection
   useEffect(() => {
     const newSocket = io('http://localhost:5000', {
       transports: ['websocket'],
@@ -282,8 +281,6 @@ export default function ChatBot() {
     setCurrentAgent('ai')
     setIsHumanRequested(false)
     
-    // We don't clear the messages when returning to AI
-    // This way the entire conversation history is preserved
   }
 
   const clearChatHistory = () => {
@@ -292,8 +289,8 @@ export default function ChatBot() {
   }
 
   return (
-    <Card className="relative group hover:shadow-lg transition-shadow h-full">
-      <CardHeader className="pb-2">
+    <Card className="relative group hover:shadow-lg transition-shadow h-full dark:bg-gray-800 dark:border-gray-700">
+      <CardHeader className="pb-2 ">
         <CardTitle className="flex items-center gap-3 text-lg font-semibold">
           <MessageSquare className="w-6 h-6 text-primary" />
           Government AI Assistant
@@ -302,7 +299,7 @@ export default function ChatBot() {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 mt-4">
         <Button 
           className="w-full flex items-center gap-2" 
           onClick={() => setIsChatOpen(true)}

@@ -128,7 +128,6 @@ const Complaint = () => {
       result = result.filter(complaint => complaint.status === statusFilter);
     }
 
-    // Filter by priority
     if (priorityFilter !== "all") {
       result = result.filter(complaint => complaint.priority === priorityFilter);
     }
@@ -143,7 +142,6 @@ const Complaint = () => {
       );
     }
 
-    // Sorting
     if (sortOrder === 'newest') {
       result = [...result].sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

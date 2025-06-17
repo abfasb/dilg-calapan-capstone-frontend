@@ -26,7 +26,9 @@ import {
   MessageSquare,
   Inbox,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Menu,
+  X
 } from "lucide-react";
 
 interface INotification {
@@ -50,6 +52,7 @@ export function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -108,7 +111,7 @@ export function Header() {
       setNotifications(prev => 
         prev.map(n => n._id === id ? { ...n, read: true } : n)
       );
-      setUnreadCount(prev => prev - 1);
+      setUnreadCount(prev => Math.max(0, prev - 1));
       
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/citizen/notification/${id}/read`, { 
         method: 'PATCH' 
@@ -132,19 +135,23 @@ export function Header() {
         .filter(n => !n.read)
         .map(n => n._id);
       
+      if (unreadIds.length === 0) return;
+      
       const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
       setNotifications(updatedNotifications);
       setUnreadCount(0);
       
       await Promise.all(
         unreadIds.map(id => 
-          fetch(`/api/citizen/notification/${id}/read`, { method: 'PATCH' })
+          fetch(`${import.meta.env.VITE_API_URL}/api/citizen/notification/${id}/read`, { method: 'PATCH' })
         )
       );
     } catch (error) {
       console.error("Error marking all as read:", error);
-      setNotifications(prev => prev);
-      setUnreadCount(prev => prev);
+      // Revert on error
+      const originalNotifications = notifications;
+      setNotifications(originalNotifications);
+      setUnreadCount(originalNotifications.filter(n => !n.read).length);
     }
   };
 
@@ -165,22 +172,27 @@ export function Header() {
 
   const navigateToReports = () => {
     navigate(`/account/citizen/my-report/${userId}`);
+    setMobileMenuOpen(false);
   }
 
   const navigateToAppointments = () => {
     navigate(`/account/citizen/appointments/${userId}`);
+    setMobileMenuOpen(false);
   }
 
   const navigateToProfile = () => {
     navigate(`/account/citizen/profile/${userId}`);
+    setMobileMenuOpen(false);
   }
 
   const navigateToComplaintHistory = () => {
     navigate(`/account/citizen/complaint/${userId}`);
+    setMobileMenuOpen(false);
   }
 
   const navigateToAllNotifications = () => {
     navigate(`/account/citizen/notifications/${userId}`);
+    setMobileMenuOpen(false);
   }
 
   const formatDate = (dateString: string) => {
@@ -210,405 +222,364 @@ export function Header() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'submission':
-        return <FileText className="h-4 w-4 mt-1 text-blue-500" />;
+        return <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />;
       case 'complaint':
-        return <AlertCircle className="h-4 w-4 mt-1 text-orange-500" />;
+        return <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />;
       case 'appointment':
-        return <Calendar className="h-4 w-4 mt-1 text-green-500" />;
+        return <Calendar className="h-4 w-4 text-green-500 flex-shrink-0" />;
       default:
-        return <AlertCircle className="h-4 w-4 mt-1 text-muted-foreground" />;
+        return <AlertCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />;
     }
   };
 
   return (
     <TooltipProvider>
-      <header className="relative bg-gradient-to-r from-background via-background/95 to-background/90 backdrop-blur-xl border-b border-border/50 sticky top-0 z-50 shadow-sm dark:shadow-gray-900/20">
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
-        
-        <div className="relative flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          {/* Left Section - Brand & Navigation */}
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
-              <div className="relative">
-                <Shield className="h-7 w-7 text-primary transition-all duration-300 group-hover:scale-110 group-hover:rotate-3" />
-                <div className="absolute -inset-1 bg-primary/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                  CitizenPortal
-                </span>
-                <span className="text-xs text-muted-foreground font-medium">Your Digital Gateway</span>
-              </div>
-            </div>
+      <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="container flex h-16 items-center justify-between px-4">
+          {/* Brand Section */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
             
-            {/* Enhanced Navigation */}
-            <div className="hidden lg:flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={navigateToReports} 
-                    className="gap-2 hover:bg-primary/10 hover:text-primary transition-all duration-200 hover:scale-105 rounded-xl"
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span className="hidden xl:inline font-medium">My Reports</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-popover/95 backdrop-blur-sm">
-                  <p className="font-semibold">View submitted reports</p>
-                  <p className="text-xs text-muted-foreground">Track your submissions</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={navigateToComplaintHistory} 
-                    className="gap-2 hover:bg-primary/10 hover:text-primary transition-all duration-200 hover:scale-105 rounded-xl"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    <span className="hidden xl:inline font-medium">My Complaints</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-popover/95 backdrop-blur-sm">
-                  <p className="font-semibold">View admin responses</p>
-                  <p className="text-xs text-muted-foreground">Check complaint status</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={navigateToAppointments} 
-                    className="gap-2 hover:bg-primary/10 hover:text-primary transition-all duration-200 hover:scale-105 rounded-xl"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    <span className="hidden xl:inline font-medium">Appointments</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-popover/95 backdrop-blur-sm">
-                  <p className="font-semibold">Manage appointments</p>
-                  <p className="text-xs text-muted-foreground">Schedule & track meetings</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="gap-2 hover:bg-primary/10 hover:text-primary transition-all duration-200 hover:scale-105 rounded-xl"
-                  >
-                    <HelpCircle className="h-4 w-4" />
-                    <span className="hidden xl:inline font-medium">Support</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-popover/95 backdrop-blur-sm">
-                  <p className="font-semibold">Get help & support</p>
-                  <p className="text-xs text-muted-foreground">FAQs and assistance</p>
-                </TooltipContent>
-              </Tooltip>
+            <div 
+              className="flex items-center gap-2 cursor-pointer group" 
+              onClick={() => navigate('/')}
+            >
+              <div className="relative">
+                <Shield className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
+              </div>
+              <div className="hidden sm:block">
+                <span className="text-xl font-bold">CitizenPortal</span>
+              </div>
             </div>
           </div>
 
-          {/* Enhanced Center Search */}
-          <div className="flex-1 max-w-2xl mx-6 hidden md:block">
-            <div className={`relative transition-all duration-300 ${searchFocused ? 'scale-105' : ''}`}>
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/5 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-50" />
-              <Search className={`absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200 ${
-                searchFocused ? 'text-primary' : 'text-muted-foreground'
-              }`} />
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={navigateToReports} 
+                  className="gap-2 transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>My Reports</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View your submitted reports</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={navigateToComplaintHistory} 
+                  className="gap-2 transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span>My Complaints</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View your complaints and responses</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={navigateToAppointments} 
+                  className="gap-2 transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Appointments</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Manage your appointments</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-2 transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Support</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Get help and support</p>
+              </TooltipContent>
+            </Tooltip>
+          </nav>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-lg mx-4 hidden md:block">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search reports, announcements, services..."
-                className="pl-12 pr-4 py-3 rounded-full border-2 bg-background/50 backdrop-blur-sm transition-all duration-200 focus:border-primary/50 focus:bg-background focus:shadow-lg focus:shadow-primary/10 hover:bg-background/80"
+                className="pl-10 pr-4 bg-background border-input transition-colors focus-visible:ring-2 focus-visible:ring-ring"
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Badge variant="secondary" className="text-xs px-2 py-1">
-                  ⌘K
-                </Badge>
-              </div>
             </div>
           </div>
 
-          {/* Enhanced Right Section */}
-          <div className="flex items-center gap-3">
-            {/* Enhanced Notifications */}
+          {/* Right Section */}
+          <div className="flex items-center gap-2">
+            {/* Notifications */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  size="sm" 
-                  className="relative rounded-full p-2.5 hover:bg-primary/10 hover:scale-110 transition-all duration-200 group"
+                  size="icon" 
+                  className="relative transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
-                  <Bell className="h-5 w-5 group-hover:text-primary transition-colors" />
+                  <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <>
-                      <Badge 
-                        variant="destructive" 
-                        className="absolute -top-1 -right-1 h-5 w-5 justify-center rounded-full text-xs animate-pulse shadow-lg"
-                      >
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </Badge>
-                      <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive animate-ping opacity-20" />
-                    </>
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full text-xs p-0"
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Badge>
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-96 max-h-[80vh] bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl" align="end">
-                <DropdownMenuLabel className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/5 to-transparent">
-                  <div className="flex items-center gap-2">
-                    <Bell className="h-4 w-4 text-primary" />
-                    <span className="font-semibold">Notifications</span>
-                  </div>
+              <DropdownMenuContent className="w-96 max-h-96 overflow-y-auto" align="end">
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  <span>Notifications</span>
                   {unreadCount > 0 && (
                     <Button 
                       variant="link" 
                       size="sm"
                       onClick={markAllAsRead}
-                      className="h-6 p-0 text-primary hover:text-primary/80 font-medium"
+                      className="h-auto p-0 text-xs"
                     >
                       Mark all as read
                     </Button>
                   )}
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-border/50" />
+                <DropdownMenuSeparator />
                 
-                <div className="max-h-[65vh] overflow-y-auto">
-                  {loadingNotifications ? (
-                    <div className="flex justify-center items-center py-8">
-                      <div className="relative">
-                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary/20 border-t-primary"></div>
-                        <Sparkles className="absolute inset-0 h-8 w-8 text-primary/40 animate-pulse" />
-                      </div>
-                    </div>
-                  ) : notifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <div className="relative mb-4">
-                        <Inbox className="h-12 w-12 text-muted-foreground/50" />
-                        <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 animate-pulse" />
-                      </div>
-                      <p className="font-medium text-muted-foreground">All caught up!</p>
-                      <p className="text-sm text-muted-foreground/70 mt-1">We'll notify you when something new arrives</p>
-                    </div>
-                  ) : (
-                    notifications.map(notification => (
-                      <DropdownMenuItem 
-                        key={notification._id}
-                        className={`flex items-start gap-3 py-4 px-4 cursor-pointer transition-all duration-200 hover:bg-primary/5 ${
-                          !notification.read ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary/50' : ''
-                        }`}
-                        onSelect={() => markAsRead(notification._id)}
-                      >
-                        <div className="relative">
-                          {getNotificationIcon(notification.type)}
+                {loadingNotifications ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Inbox className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">No notifications</p>
+                  </div>
+                ) : (
+                  notifications.map(notification => (
+                    <DropdownMenuItem 
+                      key={notification._id}
+                      className={`flex items-start gap-3 p-3 cursor-pointer transition-colors ${
+                        !notification.read ? 'bg-accent/50' : ''
+                      }`}
+                      onSelect={() => markAsRead(notification._id)}
+                    >
+                      {getNotificationIcon(notification.type)}
+                      <div className="flex-1 space-y-1">
+                        <p className={`text-sm leading-snug ${!notification.read ? 'font-medium' : ''}`}>
+                          {notification.message}
+                        </p>
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(notification.createdAt)}
+                          </p>
                           {!notification.read && (
-                            <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
+                            <div className="h-2 w-2 rounded-full bg-primary"></div>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-medium leading-snug ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            {notification.message}
-                          </p>
-                          <div className="flex justify-between items-center mt-2">
-                            <p className="text-xs text-muted-foreground/70 font-medium">
-                              {formatDate(notification.createdAt)}
-                            </p>
-                            {!notification.read && (
-                              <div className="flex items-center gap-1">
-                                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
-                                <span className="text-xs text-primary font-medium">New</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </div>
+                      </div>
+                    </DropdownMenuItem>
+                  ))
+                )}
                 
                 {notifications.length > 0 && (
                   <>
-                    <DropdownMenuSeparator className="bg-border/50" />
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      className="justify-center text-primary font-semibold py-3 hover:bg-primary/10 transition-colors"
+                      className="justify-center text-center"
                       onSelect={navigateToAllNotifications}
                     >
-                      <span className="flex items-center gap-2">
-                        View all notifications
-                        <ChevronDown className="h-3 w-3 rotate-[-90deg]" />
-                      </span>
+                      View all notifications
                     </DropdownMenuItem>
                   </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Enhanced Theme Toggle */}
+            {/* Theme Toggle */}
             <Button 
               variant="ghost" 
-              size="sm" 
-              className="relative rounded-full p-2.5 hover:bg-primary/10 hover:scale-110 transition-all duration-200 group overflow-hidden"
+              size="icon" 
+              className="transition-colors hover:bg-accent hover:text-accent-foreground"
               onClick={toggleTheme}
             >
-              <div className="relative z-10">
-                {theme === "dark" ? (
-                  <Sun className="h-5 w-5 group-hover:text-yellow-500 transition-colors" />
-                ) : (
-                  <Moon className="h-5 w-5 group-hover:text-blue-500 transition-colors" />
-                )}
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
             </Button>
 
-            {/* Enhanced User Menu */}
+            {/* User Menu */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 hover:scale-105 transition-transform duration-200 group">
-                <Avatar className="h-10 w-10 ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all duration-200">
-                  <AvatarImage src="/user-avatar.jpg" alt="User avatar" />
-                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">
-                    {user?.name ? (
-                      user.name.split(' ').map(n => n[0]).join('').toUpperCase()
-                    ) : (
-                      <User className="h-5 w-5" />
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors opacity-70" />
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="/user-avatar.jpg" alt="User avatar" />
+                    <AvatarFallback>
+                      {user?.name ? (
+                        user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
               </DropdownMenuTrigger>
               
-              <DropdownMenuContent className="w-72 bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl" align="end">
-                <DropdownMenuLabel className="font-normal px-4 py-3 bg-gradient-to-r from-primary/5 to-transparent">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12 ring-2 ring-primary/30">
+              <DropdownMenuContent className="w-64" align="end">
+                <DropdownMenuLabel>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-10 w-10">
                       <AvatarImage src="/user-avatar.jpg" alt="User avatar" />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold text-lg">
+                      <AvatarFallback>
                         {user?.name ? (
                           user.name.split(' ').map(n => n[0]).join('').toUpperCase()
                         ) : (
-                          <User className="h-6 w-6" />
+                          <User className="h-5 w-5" />
                         )}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col">
-                      <p className="text-sm font-semibold">{user?.name || "User"}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                        {user?.email || "no-email@example.com"}
-                      </p>
-                      <Badge variant="outline" className="w-fit mt-1 text-xs">
-                        Citizen
-                      </Badge>
+                    <div>
+                      <p className="text-sm font-medium">{user?.name || "User"}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email || "no-email@example.com"}</p>
                     </div>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-border/50" />
+                <DropdownMenuSeparator />
                 
-                <DropdownMenuItem onClick={navigateToProfile} className="py-3 hover:bg-primary/5 transition-colors">
-                  <User className="mr-3 h-4 w-4 text-primary" />
-                  <span className="font-medium">My Profile</span>
+                <DropdownMenuItem onClick={navigateToProfile} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>My Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={navigateToReports} className="py-3 hover:bg-primary/5 transition-colors">
-                  <FileText className="mr-3 h-4 w-4 text-blue-500" />
-                  <span className="font-medium">My Reports</span>
+                <DropdownMenuItem onClick={navigateToReports} className="cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>My Reports</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={navigateToComplaintHistory} className="py-3 hover:bg-primary/5 transition-colors">
-                  <MessageSquare className="mr-3 h-4 w-4 text-orange-500" />
-                  <span className="font-medium">My Complaints</span>
+                <DropdownMenuItem onClick={navigateToComplaintHistory} className="cursor-pointer">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  <span>My Complaints</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={navigateToAppointments} className="py-3 hover:bg-primary/5 transition-colors">
-                  <Calendar className="mr-3 h-4 w-4 text-green-500" />
-                  <span className="font-medium">Appointments</span>
+                <DropdownMenuItem onClick={navigateToAppointments} className="cursor-pointer">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  <span>Appointments</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border/50" />
-                <DropdownMenuItem className="py-3 hover:bg-primary/5 transition-colors">
-                  <Settings className="mr-3 h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Settings</span>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="py-3 hover:bg-primary/5 transition-colors">
-                  <Mail className="mr-3 h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Contact Support</span>
+                <DropdownMenuItem className="cursor-pointer">
+                  <Mail className="mr-2 h-4 w-4" />
+                  <span>Contact Support</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border/50" />
-                <DropdownMenuItem className="py-3 hover:bg-primary/5 transition-colors">
-                  <Shield className="mr-3 h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Privacy Policy</span>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>Privacy Policy</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border/50" />
-                <DropdownMenuItem className="text-destructive hover:bg-destructive/10 py-3 transition-colors" onClick={handleLogout}>
-                  <LogOut className="mr-3 h-4 w-4" />
-                  <span className="font-medium">Sign Out</span>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive cursor-pointer" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
-        {/* Enhanced Mobile Section */}
-        <div className="md:hidden border-t border-border/50 bg-gradient-to-r from-background/95 to-background/90 backdrop-blur-sm">
-          <div className="p-4">
-            <div className={`relative transition-all duration-300 ${searchFocused ? 'scale-105' : ''}`}>
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200 ${
-                searchFocused ? 'text-primary' : 'text-muted-foreground'
-              }`} />
-              <Input
-                placeholder="Search portal..."
-                className="pl-10 pr-4 py-3 rounded-xl bg-background/50 backdrop-blur-sm border-2 transition-all duration-200 focus:border-primary/50 focus:bg-background focus:shadow-lg focus:shadow-primary/10"
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-              />
-            </div>
-            
-            {/* Enhanced Mobile Navigation */}
-            <div className="grid grid-cols-4 gap-3 mt-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={navigateToReports} 
-                className="flex flex-col items-center gap-2 h-auto py-3 rounded-xl hover:bg-primary/10 hover:scale-105 transition-all duration-200 group"
-              >
-                <FileText className="h-5 w-5 group-hover:text-primary transition-colors" />
-                <span className="text-xs font-semibold">Reports</span>
-              </Button>
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t bg-background">
+            <div className="p-4 space-y-4">
+              {/* Mobile Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  className="pl-10"
+                />
+              </div>
               
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={navigateToComplaintHistory} 
-                className="flex flex-col items-center gap-2 h-auto py-3 rounded-xl hover:bg-primary/10 hover:scale-105 transition-all duration-200 group"
-              >
-                <MessageSquare className="h-5 w-5 group-hover:text-primary transition-colors" />
-                <span className="text-xs font-semibold">Complaints</span>
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={navigateToAppointments} 
-                className="flex flex-col items-center gap-2 h-auto py-3 rounded-xl hover:bg-primary/10 hover:scale-105 transition-all duration-200 group"
-              >
-                <Calendar className="h-5 w-5 group-hover:text-primary transition-colors" />
-                <span className="text-xs font-semibold">Appointments</span>
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="flex flex-col items-center gap-2 h-auto py-3 rounded-xl hover:bg-primary/10 hover:scale-105 transition-all duration-200 group"
-              >
-                <HelpCircle className="h-5 w-5 group-hover:text-primary transition-colors" />
-                <span className="text-xs font-semibold">Support</span>
-              </Button>
+              {/* Mobile Navigation */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="ghost" 
+                  onClick={navigateToReports} 
+                  className="flex items-center gap-2 justify-start h-12"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>My Reports</span>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  onClick={navigateToComplaintHistory} 
+                  className="flex items-center gap-2 justify-start h-12"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span>My Complaints</span>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  onClick={navigateToAppointments} 
+                  className="flex items-center gap-2 justify-start h-12"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Appointments</span>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center gap-2 justify-start h-12"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Support</span>
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </header>
-      </TooltipProvider>
+    </TooltipProvider>
   );
 }

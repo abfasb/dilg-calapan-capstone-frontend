@@ -318,7 +318,6 @@ export default function ChatBot() {
 
       </CardContent>
 
-      {/* Rest of the Dialog content remains the same */}
       <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
         <DialogContent className="sm:max-w-md md:max-w-lg p-0 gap-0 h-[85vh] max-h-[85vh] flex flex-col">
           <DialogHeader className="bg-primary text-primary-foreground py-3 px-4 border-b flex flex-row justify-between items-center">

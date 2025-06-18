@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -16,32 +17,26 @@ const BlogDetail = () => {
   const { id } = useParams();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [error, setError] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: boolean}>({});
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [readingProgress, setReadingProgress] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Simplified theme management - use only the theme state
+  const isDarkMode = theme === "dark";
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(newTheme);
+  };
+
   useEffect(() => {
-    // Enhanced dark mode detection with system preference listening
-    const checkDarkMode = () => {
-      const stored = localStorage.getItem('darkMode');
-      const systemPrefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      return stored === 'true' || (!stored && systemPrefers);
-    };
-
-    setIsDarkMode(checkDarkMode());
-
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('darkMode')) {
-        setIsDarkMode(e.matches);
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
+    // Initialize theme
+    document.documentElement.classList.add(theme);
     
     const fetchBlog = async () => {
       try {
@@ -69,10 +64,9 @@ const BlogDetail = () => {
     window.addEventListener('scroll', handleScroll);
 
     return () => {
-      mediaQuery.removeEventListener('change', handleChange);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [id]);
+  }, [id, theme]);
 
   // Advanced grid layout system with magazine-style design
   const getOptimizedGridLayout = (index: number, total: number) => {
@@ -257,9 +251,8 @@ const BlogDetail = () => {
         ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' 
         : 'bg-gradient-to-br from-gray-50 via-white to-gray-50'
     }`}>
-      <Navbar />
+      <Navbar toggleTheme={toggleTheme} theme={theme} />
       
-      {/* Reading Progress Bar */}
       <div className={`fixed top-0 left-0 h-1 z-50 transition-all duration-300 ${
         isDarkMode ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gradient-to-r from-blue-600 to-purple-600'
       }`} 

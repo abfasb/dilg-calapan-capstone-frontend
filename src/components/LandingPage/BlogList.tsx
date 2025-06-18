@@ -236,7 +236,6 @@ const BlogList = () => {
                     {truncateContent(blog.content)}
                   </p>
                   
-                  {/* Read More Button */}
                   <div className={`inline-flex items-center text-sm font-semibold transition-all duration-300 ${
                     theme === 'dark' 
                       ? 'text-purple-400 group-hover:text-pink-300' 
@@ -254,7 +253,6 @@ const BlogList = () => {
                   </div>
                 </div>
                 
-                {/* Glow effect on hover */}
                 <div className={`absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
                   theme === 'dark' 
                     ? 'shadow-2xl shadow-purple-500/25' 

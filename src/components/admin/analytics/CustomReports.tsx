@@ -1,24 +1,24 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { Button } from '../../ui/button'
-import { Input } from '../../ui/input'
-import { Textarea } from '../../ui/textarea'
-import { Switch } from '../../ui/switch'
-import { Label } from '../../ui/label'
-import { toast, Toaster } from 'react-hot-toast'
+import React, { useEffect, useState, useCallback } from 'react';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import { Textarea } from '../../ui/textarea';
+import { Switch } from '../../ui/switch';
+import { Label } from '../../ui/label';
+import { toast, Toaster } from 'react-hot-toast';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription
-} from '../../ui/dialog'
+} from '../../ui/dialog';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent
-} from '../../ui/card'
+} from '../../ui/card';
 import {
   FiEdit,
   FiCheck,
@@ -28,58 +28,75 @@ import {
   FiType,
   FiToggleRight,
   FiSave,
-  FiBox
-} from 'react-icons/fi'
-import { FaRegCheckCircle } from 'react-icons/fa'
+  FiBox,
+  FiDownload,
+  FiX
+} from 'react-icons/fi';
+import { FaRegCheckCircle } from 'react-icons/fa';
+
+interface Template {
+  fileName: string;
+  fileUrl: string;
+  mimetype: string;
+}
 
 interface FormField {
-  id: string
-  type: 'text' | 'checkbox' | 'image' | 'number'
-  label: string
-  required: boolean
-  description: string
-  options?: string[]
+  id: string;
+  type: 'text' | 'checkbox' | 'image' | 'number';
+  label: string;
+  required: boolean;
+  description: string;
+  options?: string[];
 }
 
 interface ReportForm {
-  _id: string
-  title: string
-  description: string
-  fields: FormField[]
-  __v: number
+  _id: string;
+  title: string;
+  description: string;
+  fields: FormField[];
+  template?: Template;
+  __v: number;
 }
 
 const CustomReports: React.FC = () => {
-  const [forms, setForms] = useState<ReportForm[]>([])
-  const [selectedFormId, setSelectedFormId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [savingId, setSavingId] = useState<string | null>(null)
+  const [forms, setForms] = useState<ReportForm[]>([]);
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [newTemplateFile, setNewTemplateFile] = useState<File | null>(null);
+  const [removeTemplate, setRemoveTemplate] = useState(false);
 
-  const selectedForm = forms.find(form => form._id === selectedFormId) || null
+  const selectedForm = forms.find(form => form._id === selectedFormId) || null;
 
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const response = await fetch('http://localhost:5000/form/get-report')
-        if (!response.ok) throw new Error('Failed to fetch')
-        const data = await response.json()
-        setForms(data)
+        const response = await fetch('http://localhost:5000/form/get-report');
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data = await response.json();
+        setForms(data);
       } catch (err) {
-        setError('Failed to load forms. Please try again later.')
-        toast.error('Failed to fetch report forms')
+        setError('Failed to load forms. Please try again later.');
+        toast.error('Failed to fetch report forms');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchForms()
-  }, [])
+    };
+    fetchForms();
+  }, []);
+
+  // Reset template states when form changes
+  useEffect(() => {
+    setNewTemplateFile(null);
+    setRemoveTemplate(false);
+  }, [selectedFormId]);
 
   const handleFormChange = useCallback((formId: string, field: keyof ReportForm, value: any) => {
     setForms(prev => prev.map(form => 
       form._id === formId ? { ...form, [field]: value } : form
-    ))
-  }, [])
+    ));
+  }, []);
 
   const handleFieldChange = useCallback((formId: string, fieldId: string, key: keyof FormField, value: any) => {
     setForms(prev => prev.map(form => {
@@ -91,9 +108,9 @@ const CustomReports: React.FC = () => {
           )
         }
       }
-      return form
-    }))
-  }, [])
+      return form;
+    }));
+  }, []);
 
   const handleAddOption = useCallback((formId: string, fieldId: string) => {
     setForms(prev => prev.map(form => {
@@ -107,9 +124,9 @@ const CustomReports: React.FC = () => {
           )
         }
       }
-      return form
-    }))
-  }, [])
+      return form;
+    }));
+  }, []);
 
   const handleRemoveOption = useCallback((formId: string, fieldId: string, index: number) => {
     setForms(prev => prev.map(form => {
@@ -118,44 +135,67 @@ const CustomReports: React.FC = () => {
           ...form,
           fields: form.fields.map(field => {
             if (field.id === fieldId && field.options) {
-              const options = [...field.options]
-              options.splice(index, 1)
-              return { ...field, options }
+              const options = [...field.options];
+              options.splice(index, 1);
+              return { ...field, options };
             }
-            return field
+            return field;
           })
         }
       }
-      return form
-    }))
-  }, [])
+      return form;
+    }));
+  }, []);
 
   const handleSaveForm = async (formId: string) => {
-    setSavingId(formId)
+    setSavingId(formId);
     try {
-      const formToUpdate = forms.find(f => f._id === formId)
-      if (!formToUpdate) return
+      const formToUpdate = forms.find(f => f._id === formId);
+      if (!formToUpdate) return;
+
+      const formData = new FormData();
+      formData.append('title', formToUpdate.title);
+      formData.append('description', formToUpdate.description || '');
+      formData.append('fields', JSON.stringify(formToUpdate.fields));
+      
+      if (removeTemplate) {
+        formData.append('removeTemplate', 'true');
+      }
+      
+      if (newTemplateFile) {
+        formData.append('template', newTemplateFile);
+      }
 
       const response = await fetch(`http://localhost:5000/form/update-report/${formId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formToUpdate)
-      })
+        body: formData,
+      });
 
-      if (!response.ok) throw new Error('Update failed')
-      toast.success('Form updated successfully')
-    } catch (err) {
-      toast.error('Failed to update form')
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Update failed');
+      }
+
+      const result = await response.json();
+      setForms(prev => 
+        prev.map(form => form._id === formId ? result.data : form)
+      );
+      
+      toast.success('Form updated successfully');
+      setNewTemplateFile(null);
+      setRemoveTemplate(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update form');
     } finally {
-      setSavingId(null)
+      setSavingId(null);
     }
-  }
+  };
 
   if (error) return (
     <div className="p-6 bg-red-50 text-red-700 rounded-md max-w-2xl mx-auto mt-8">
       {error}
     </div>
-  )
+  );
 
   return (
     <>
@@ -167,44 +207,49 @@ const CustomReports: React.FC = () => {
           className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
         }}
       />
-
       <div className="min-h-screen bg-muted/40 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <FiEdit className="w-6 h-6" />
-              Manage Report Forms
-            </h1>
-          </div>
+              <div className="max-w-7xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                  <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                    <FiEdit className="w-6 h-6" />
+                    Manage Report Forms
+                  </h1>
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {forms.map(form => (
-              <Card
-                key={form._id}
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => setSelectedFormId(form._id)}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FiBox className="w-5 h-5 text-primary" />
-                    {form.title}
-                  </CardTitle>
-                  <CardDescription className="line-clamp-3">
-                    {form.description || 'No description provided'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground">
-                    {form.fields.length} fields
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {forms.map(form => (
+                    <Card
+                      key={form._id}
+                      className="hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => setSelectedFormId(form._id)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FiBox className="w-5 h-5 text-primary" />
+                          {form.title}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-3">
+                          {form.description || 'No description provided'}
+                        </CardDescription>
+                        {form.template && (
+                          <div className="mt-2 flex items-center gap-1 text-xs text-blue-500">
+                            <FiDownload className="w-3 h-3" />
+                            <span>Template: {form.template.fileName}</span>
+                          </div>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-sm text-muted-foreground">
+                          {form.fields.length} fields
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-      <Dialog
+        <Dialog
         open={!!selectedFormId}
         onOpenChange={(open) => !open && setSelectedFormId(null)}
       >
@@ -238,7 +283,75 @@ const CustomReports: React.FC = () => {
                   />
                 </div>
 
-                <div className="space-y-4">
+                {/* Template Section */}
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-lg font-semibold">Template File</h3>
+                  
+                  {selectedForm.template && !removeTemplate && (
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <FiDownload className="w-4 h-4 text-blue-500" />
+                        <a 
+                          href={selectedForm.template.fileUrl} 
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline"
+                        >
+                          {selectedForm.template.fileName}
+                        </a>
+                      </div>
+                      <Button 
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setRemoveTemplate(true)}
+                      >
+                        <FiTrash2 className="w-4 h-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+
+                  {(removeTemplate || !selectedForm.template) && (
+                    <div className="space-y-2">
+                      <Label>Upload Template</Label>
+                      <Input 
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx"
+                        onChange={(e) => 
+                          setNewTemplateFile(e.target.files?.[0] || null)
+                        }
+                      />
+                      {newTemplateFile && (
+                        <div className="flex items-center justify-between p-2 bg-muted/10 rounded-md">
+                          <span className="text-sm truncate max-w-[70%]">
+                            {newTemplateFile.name}
+                          </span>
+                          <Button 
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setNewTemplateFile(null)}
+                          >
+                            <FiX className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {removeTemplate && (
+                        <Button 
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setRemoveTemplate(false)}
+                        >
+                          <FiX className="w-4 h-4 mr-1" />
+                          Cancel Removal
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Form Fields Section */}
+                <div className="space-y-4 border-t pt-4">
                   <h3 className="text-lg font-semibold">Form Fields</h3>
                   {selectedForm.fields.map(field => (
                     <FormFieldItem
@@ -252,7 +365,7 @@ const CustomReports: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 pt-4">
                   <Button
                     variant="outline"
                     onClick={() => setSelectedFormId(null)}

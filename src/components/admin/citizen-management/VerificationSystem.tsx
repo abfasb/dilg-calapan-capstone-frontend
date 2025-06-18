@@ -103,7 +103,6 @@ const ChatSupport = () => {
     setSelectedUser(userId);
     setIsConnecting(true);
     
-    // Clear any previous chat history
     setChatHistory([]);
     
     setTimeout(() => {

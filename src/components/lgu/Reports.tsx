@@ -82,7 +82,7 @@ interface FormResponse {
     timestamp: string;
     comments?: string;
   }>;
-  isUserUpdatedRejected: boolean; // Added this field
+  isUserUpdatedRejected: boolean;
 }
 
 export default function Reports() {

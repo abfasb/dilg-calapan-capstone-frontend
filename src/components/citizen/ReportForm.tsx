@@ -65,7 +65,6 @@ export default function ReportForm() {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/form/${id}`);
         setReport(response.data);
         
-        // Initialize form data only if in form mode
         const initialData: Record<string, any> = {};
         response.data.fields.forEach((field: ReportField) => {
           initialData[field.id] = field.type === 'checkbox' ? [] : '';

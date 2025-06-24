@@ -360,7 +360,6 @@ export default function ChatBot() {
                 className="h-8 w-8 rounded-full hover:bg-primary-foreground/20"
                 onClick={() => setIsChatOpen(false)}
               >
-                <X className="w-4 h-4" />
               </Button>
             </div>
           </DialogHeader>

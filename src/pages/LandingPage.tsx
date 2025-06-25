@@ -20,7 +20,7 @@ const LandingPage: React.FC = () => {
       setTheme(savedTheme);
       document.documentElement.classList.add(savedTheme);
     } else {
-      document.documentElement.classList.add("dark"); 
+      document.documentElement.classList.add("dark");
     }
   }, []);
 
@@ -35,47 +35,45 @@ const LandingPage: React.FC = () => {
   return (
     <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <Navbar theme={theme} toggleTheme={toggleTheme} />
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="w-full mx-auto"
       >
-        {/* Main content sections */}
+        {/* Main content sections - removed alternating backgrounds */}
         <section id="hero" className="min-h-screen w-full">
           <HeroSection />
         </section>
-
-        <section id="features" className="py-20 bg-gray-100 dark:bg-gray-800">
+        
+        <section id="features" className="py-20">
           <FeaturesSection />
         </section>
-
-        <section id="statistics" className="py-20 bg-white dark:bg-gray-800">
+        
+        <section id="statistics" className="py-20">
           <StatisticsSection />
         </section>
-
-        <section id="testimonials" className="py-20 bg-gray-100 dark:bg-gray-800">
+        
+        <section id="testimonials" className="py-20">
           <TestimonialSection />
         </section>
-
-        <section id="cta" className="py-20 bg-white dark:bg-gray-800">
+        
+        <section id="cta" className="py-20">
           <CTASection />
         </section>
-
-        <section id="faq" className="py-20 bg-gray-100 dark:bg-gray-800">
+        
+        <section id="faq" className="py-20">
           <FaqSection />
         </section>
-
-        <section id="partners" className="py-20 bg-white dark:bg-gray-800">
+        
+        <section id="partners" className="py-20">
           <PartnersSection />
         </section>
-
-        <section id="contact" className="py-20 bg-gray-100 dark:bg-gray-800">
+        
+        <section id="contact" className="py-20">
           <ContactSection />
         </section>
       </motion.div>
-
       <Footer />
     </div>
   );

@@ -1,4 +1,3 @@
-// StatisticsSection.tsx
 import { motion, useAnimation } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";

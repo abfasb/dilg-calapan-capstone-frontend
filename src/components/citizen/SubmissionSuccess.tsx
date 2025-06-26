@@ -174,7 +174,6 @@ export default function SubmissionSuccess(): JSX.Element {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-blue-950 p-6 print:bg-white print:from-white print:to-white">
       <div className="max-w-4xl mx-auto space-y-8 print:max-w-none">
-        {/* Success Header with Animation */}
         <div className="text-center space-y-4 print:hidden">
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-green-100 dark:bg-green-900/30 rounded-full animate-ping"></div>
@@ -189,11 +188,9 @@ export default function SubmissionSuccess(): JSX.Element {
           </p>
         </div>
 
-        {/* Official Receipt Document */}
         <div id="official-receipt" className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border-[6px] border-blue-900/90 dark:border-blue-700 relative 
           print:shadow-none print:border-4 print:rounded-none print:p-6 overflow-hidden">
           
-          {/* Security Background Elements */}
           <div className="absolute inset-0 z-0 opacity-5 pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMDY2Y2MiIHN0cm9rZS13aWR0aD0iMiI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiLz48Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjUwIi8+PHBhdGggZD0iTTAgMCBMIDIwMCAyMDBNMjAwIDAgTCAwIDIwMCIvPjwvZz48L3N2Zz4=')]" />
           
           <div className="absolute top-1/4 left-0 right-0 opacity-[0.03] text-[120px] font-bold text-blue-900 rotate-12 -z-10 text-center select-none">
@@ -204,13 +201,11 @@ export default function SubmissionSuccess(): JSX.Element {
             OFFICIAL
           </div>
 
-          {/* Decorative Corner Elements */}
           <div className="absolute top-0 left-0 w-32 h-32 border-t-8 border-l-8 border-blue-800 dark:border-blue-600 rounded-tl-lg -mt-1 -ml-1"></div>
           <div className="absolute top-0 right-0 w-32 h-32 border-t-8 border-r-8 border-blue-800 dark:border-blue-600 rounded-tr-lg -mt-1 -mr-1"></div>
           <div className="absolute bottom-0 left-0 w-32 h-32 border-b-8 border-l-8 border-blue-800 dark:border-blue-600 rounded-bl-lg -mb-1 -ml-1"></div>
           <div className="absolute bottom-0 right-0 w-32 h-32 border-b-8 border-r-8 border-blue-800 dark:border-blue-600 rounded-br-lg -mb-1 -mr-1"></div>
 
-          {/* Letterhead Section */}
           <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b-4 border-blue-900 dark:border-blue-700 pb-6 relative">
             
             <div className="mb-4 md:mb-0 flex items-center gap-4">
@@ -239,12 +234,10 @@ export default function SubmissionSuccess(): JSX.Element {
             </div>
           </div>
 
-          {/* Decorative Ribbon */}
           <div className="relative mb-10">
             <div className="absolute -top-4 left-0 right-0 h-2 bg-gradient-to-r from-blue-900 via-blue-700 to-blue-900"></div>
           </div>
 
-          {/* Tracking Information */}
           <div className="mb-8 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 rounded-xl shadow-inner border border-blue-200 dark:border-blue-700 print:p-3">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div>

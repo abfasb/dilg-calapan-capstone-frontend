@@ -29,6 +29,7 @@ import ProtectedRoute from './routes/ProtectedRoutes';
 import AppointmentPages from './pages/citizen/AppointmentPages';
 import ProfilePage from './pages/citizen/ProfilePage';
 import ComplaintPage from './pages/citizen/ComplaintPage';
+import VerificationPage from './pages/citizen/VerificationPage';
 
 function App() {
   return (
@@ -82,6 +83,9 @@ function App() {
           <Route path='/account/citizen/appointments/:id' element={<AppointmentPages />} />
           <Route path='/account/citizen/complaint/:id' element={<ComplaintPage />} />
         </ Route>
+
+          <Route path='/verify/:referenceNumber' element={<VerificationPage />} />
+
 
 
         <Route path='*' element={ <NotFoundPage />}/>

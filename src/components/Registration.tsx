@@ -416,9 +416,6 @@ function Registration() {
       <div className="hidden md:flex flex-col items-start justify-center p-12 bg-center bg-cover bg-opacity-10 text-white lg:p-16"
        style={{  backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url('https://i.ibb.co/Xrcwr3fm/474975489-624902033229226-8762022534966171083-n.jpg')" }}>
         <div className="max-w-md">
-            <div className="mb-8 flex justify-center items-center">
-              <img src={realLogo} alt="Government Logo" className="w-32 rounded-full" />
-            </div>
             <h2 className="text-4xl font-bold mb-6 lg:text-5xl">Digital Governance Platform</h2>
             <p className="text-lg mb-8 text-blue-100">
               Empowering Oriental Mindoro barangay officials with modern tools for community management, 

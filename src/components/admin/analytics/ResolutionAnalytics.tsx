@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "../../ui/card"
 import {
   BarChart,
   Bar,
@@ -16,10 +16,10 @@ import {
   Pie,
   PieChart,
 } from "recharts"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Skeleton } from "../../ui/skeleton"
+import { Separator } from "../../ui/separator"
+import { Badge } from "../../ui/badge"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/tabs"
 import {
   Users,
   FileText,
@@ -36,10 +36,10 @@ import {
   Eye,
   Settings,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
+import { cn } from "../../../lib/utils"
+import { Button } from "../../ui/button"
+import { Avatar, AvatarFallback } from "../../ui/avatar"
+import { Progress } from "../../ui/progress"
 
 interface AnalyticsData {
   userStats?: {

@@ -77,7 +77,6 @@ interface StatCardProps {
   delta?: number;
   subtitle?: string;
   progress?: number;
-  chartData?: Array<{ month: string; count: number }>;
   loading?: boolean;
   className?: string;
   color?: 'blue' | 'green' | 'purple' | 'orange' | 'red';
@@ -112,10 +111,6 @@ interface ActivityType {
   type: 'complaint' | 'appointment' | 'response';
   timestamp: string;
   status?: string;
-  user?: {
-    name: string;
-    avatar?: string;
-  };
 }
 
 const Dashboard = () => {
@@ -333,8 +328,8 @@ const Dashboard = () => {
           title="Total Reports" 
           value={stats?.totalReports.toLocaleString() || '0'} 
           icon={<FileText className="h-6 w-6 text-blue-500" />}
-          delta={45}
-          subtitle="Monthly reports"
+          delta={stats?.deltas.reports}
+          subtitle={`${selectedPeriod === 'week' ? 'Weekly' : selectedPeriod === 'year' ? 'Yearly' : 'Monthly'} reports`}
           loading={isLoading}
           color="blue"
         />
@@ -342,8 +337,8 @@ const Dashboard = () => {
           title="Resolved Cases" 
           value={stats?.resolvedCases.toLocaleString() || '0'} 
           icon={<CheckCircle2 className="h-6 w-6 text-green-500" />}
-          progress={((stats?.resolvedCases ?? 0) / (stats?.totalReports ?? 1)) * 100 || 0}
-          delta={45}
+          progress={((stats?.resolvedCases ?? 0) / (stats?.totalReports || 1)) * 100}
+          delta={stats?.deltas.resolved}
           subtitle="Case resolution rate"
           loading={isLoading}
           color="green"
@@ -352,8 +347,8 @@ const Dashboard = () => {
           title="Registered Users" 
           value={stats?.registeredUsers.toLocaleString() || '0'} 
           icon={<Users className="h-6 w-6 text-purple-500" />}
-          delta={45}
-          subtitle="Active this month"
+          delta={stats?.deltas.users}
+          subtitle={selectedPeriod === 'week' ? 'New this week' : selectedPeriod === 'year' ? 'New this year' : 'New this month'}
           loading={isLoading}
           color="purple"
         />
@@ -361,7 +356,7 @@ const Dashboard = () => {
           title="Avg. Resolution" 
           value={`${stats?.avgResolutionTime || 0}d`} 
           icon={<Clock className="h-6 w-6 text-orange-500" />}
-          delta={45}
+          delta={0}
           subtitle="Average handling time"
           loading={isLoading}
           color="orange"
@@ -376,13 +371,13 @@ const Dashboard = () => {
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Activity className="h-5 w-5 text-blue-500" /> Report Trends
                 </CardTitle>
-                <CardDescription>Monthly report submission analysis</CardDescription>
+                <CardDescription>Report submission analysis</CardDescription>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8">
                     <Calendar className="h-3.5 w-3.5 mr-2" />
-                    Last 12 months
+                    {selectedPeriod === 'week' ? 'Last 12 weeks' : selectedPeriod === 'year' ? 'Last 3 years' : 'Last 12 months'}
                     <ArrowDown className="h-3.5 w-3.5 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -438,24 +433,24 @@ const Dashboard = () => {
             </div>
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { title: "Total Reports", value: "7", change: "+12.3%", status: "increase" },
-                { title: "Avg. Resolution", value: "4.2d", change: "-2.1d", status: "increase" },
-                { title: "Response Rate", value: "92%", change: "+5.4%", status: "increase" },
-                { title: "User Satisfaction", value: "4.8/5", change: "+0.2", status: "increase" }
+                { title: "Total Reports", value: stats?.totalReports.toLocaleString() || '0', change: stats?.deltas.reports, status: "increase" },
+                { title: "Avg. Resolution", value: `${stats?.avgResolutionTime || 0}d`, change: 0, status: "increase" },
+                { title: "Response Rate", value: `${stats?.satisfaction}%`, change: 0, status: "increase" },
+                { title: "User Satisfaction", value: `${stats?.satisfaction}%`, change: 0, status: "increase" }
               ].map((item, i) => (
                 <div key={i} className="bg-muted/50 rounded-lg p-3">
                   <div className="text-sm text-muted-foreground">{item.title}</div>
                   <div className="text-xl font-semibold mt-1">{item.value}</div>
                   <div className={cn(
                     "text-xs mt-1 flex items-center gap-1",
-                    item.status === "increase" ? "text-green-600" : "text-red-600"
+                    item.change && item.change > 0 ? "text-green-600" : "text-red-600"
                   )}>
-                    {item.status === "increase" ? (
+                    {item.change && item.change > 0 ? (
                       <ArrowUp className="h-3 w-3" />
                     ) : (
                       <ArrowDown className="h-3 w-3" />
                     )}
-                    {item.change}
+                    {item.change ? `${Math.abs(item.change).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
               ))}
@@ -577,12 +572,16 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between gap-2">
                   <Users className="h-5 w-5 text-blue-600" />
                   <Badge variant="secondary" className="bg-blue-50 text-blue-800 ml-auto">
-                    <ArrowUp className="h-3 w-3 mr-1" />
-                    +14%
+                    {stats?.deltas.activeUsers && stats.deltas.activeUsers > 0 ? (
+                      <ArrowUp className="h-3 w-3 mr-1" />
+                    ) : (
+                      <ArrowDown className="h-3 w-3 mr-1" />
+                    )}
+                    {stats?.deltas.activeUsers ? `${Math.abs(stats.deltas.activeUsers).toFixed(1)}%` : 'N/A'}
                   </Badge>
                 </div>
                 <p className="text-3xl font-bold mt-3">{stats?.activeUsers.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground mt-1">Daily Active Users</p>
+                <p className="text-sm text-muted-foreground mt-1">Active Users</p>
               </div>
               <div className="p-4 rounded-lg border bg-card shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-green-400 opacity-60" />
@@ -637,7 +636,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">New Users</span>
-                  <span className="font-medium">+142</span>
+                  <span className="font-medium">+{stats?.registeredUsers || 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Retention</span>
@@ -659,7 +658,7 @@ const Dashboard = () => {
                 <CardDescription>Current appointment tracking</CardDescription>
               </div>
               <Button variant="outline" size="sm" className="h-8">
-                <Calendar className="h-3.5 w-3.5 mr-2" />
+                <Calendar className="h-3.5 w-3.5 mr-1" />
                 View Calendar
               </Button>
             </div>
@@ -680,14 +679,14 @@ const Dashboard = () => {
                       <div 
                         className="h-full rounded-full"
                         style={{ 
-                          width: `${((count / (stats?.totalReports || 1)) * 100).toFixed(1)}%`,
+                          width: `${((count / (Object.values(stats?.appointmentStatus || {}).reduce((a, b) => a + b, 0)) * 100).toFixed(1))}%`,
                           backgroundColor: statusColors[status as keyof typeof statusColors]
                         }}
                       />
                     </div>
                     <span className="font-semibold w-8 text-right">{count}</span>
                     <span className="text-muted-foreground text-sm w-14 text-right">
-                      {((count / (stats?.totalReports || 1)) * 100).toFixed(1)}%
+                      {((count / (Object.values(stats?.appointmentStatus || {}).reduce((a, b) => a + b, 0)) * 100).toFixed(1))}%
                     </span>
                   </div>
                 </div>
@@ -847,15 +846,12 @@ const Dashboard = () => {
                   >
                     <div className="flex-shrink-0">
                       <Avatar className="h-10 w-10 border shadow-sm">
-                        <AvatarImage src={`/api/placeholder/32/32`} alt="User" />
                         <AvatarFallback className={cn(
                           activity.type === 'complaint' ? 'bg-red-100 text-red-800' :
                           activity.type === 'appointment' ? 'bg-blue-100 text-blue-800' :
                           'bg-green-100 text-green-800'
                         )}>
-                          {activity.user?.name?.[0] || 
-                            (activity.type === 'complaint' ? 'C' : 
-                             activity.type === 'appointment' ? 'A' : 'R')}
+                          {activity.type.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </div>
@@ -923,28 +919,55 @@ const Dashboard = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Resolution Rate</span>
-                    <span className="text-sm font-medium text-green-600">87%</span>
+                    <span className="text-sm font-medium text-green-600">
+                      {stats?.resolvedCases && stats.totalReports 
+                        ? `${((stats.resolvedCases / stats.totalReports) * 100).toFixed(1)}%` 
+                        : '0%'}
+                    </span>
                   </div>
                   <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: '87%' }} />
+                    <div 
+                      className="h-full bg-green-500 rounded-full" 
+                      style={{ 
+                        width: stats?.resolvedCases && stats.totalReports 
+                          ? `${((stats.resolvedCases / stats.totalReports) * 100).toFixed(1)}%` 
+                          : '0%' 
+                      }} 
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Response Time</span>
-                    <span className="text-sm font-medium text-amber-600">72%</span>
+                    <span className="text-sm font-medium text-amber-600">
+                      {stats?.avgResolutionTime ? `${stats.avgResolutionTime}d` : 'N/A'}
+                    </span>
                   </div>
                   <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 rounded-full" style={{ width: '72%' }} />
+                    <div 
+                      className="h-full bg-amber-500 rounded-full" 
+                      style={{ 
+                        width: stats?.avgResolutionTime 
+                          ? `${Math.min(stats.avgResolutionTime * 10, 100)}%` 
+                          : '0%' 
+                      }} 
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">User Satisfaction</span>
-                    <span className="text-sm font-medium text-blue-600">94%</span>
+                    <span className="text-sm font-medium text-blue-600">
+                      {stats?.satisfaction ? `${stats.satisfaction}%` : '0%'}
+                    </span>
                   </div>
                   <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '94%' }} />
+                    <div 
+                      className="h-full bg-blue-500 rounded-full" 
+                      style={{ 
+                        width: stats?.satisfaction ? `${stats.satisfaction}%` : '0%' 
+                      }} 
+                    />
                   </div>
                 </div>
               </div>
@@ -952,14 +975,10 @@ const Dashboard = () => {
               <div className="md:col-span-2 h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={[
-                      { name: 'Jan', resolved: 65, pending: 35 },
-                      { name: 'Feb', resolved: 70, pending: 30 },
-                      { name: 'Mar', resolved: 75, pending: 25 },
-                      { name: 'Apr', resolved: 80, pending: 20 },
-                      { name: 'May', resolved: 85, pending: 15 },
-                      { name: 'Jun', resolved: 87, pending: 13 },
-                    ]}
+                    data={stats?.categoryDistribution.slice(0, 6).map(item => ({
+                      name: item.category,
+                      count: item.count
+                    }))}
                     margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -967,8 +986,7 @@ const Dashboard = () => {
                     <YAxis />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
-                    <Bar dataKey="resolved" name="Resolved" stackId="a" fill="#10b981" />
-                    <Bar dataKey="pending" name="Pending" stackId="a" fill="#f59e0b" />
+                    <Bar dataKey="count" name="Reports" fill="#3b82f6" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -995,8 +1013,10 @@ const Dashboard = () => {
                     <Clock className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-sm">Overdue Responses</p>
-                    <p className="text-xs text-muted-foreground mt-1">12 reports need immediate attention</p>
+                    <p className="font-medium text-sm">Pending Approvals</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stats?.appointmentStatus?.pending || 0} appointments need review
+                    </p>
                     <Button variant="outline" size="sm" className="mt-2 h-7 text-xs">Review</Button>
                   </div>
                 </div>
@@ -1008,8 +1028,10 @@ const Dashboard = () => {
                     <AlertCircle className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-sm">Escalated Issues</p>
-                    <p className="text-xs text-muted-foreground mt-1">5 issues have been escalated</p>
+                    <p className="font-medium text-sm">Overdue Responses</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {Math.round((stats?.totalReports || 0) * 0.1)} reports need immediate attention
+                    </p>
                     <Button variant="outline" size="sm" className="mt-2 h-7 text-xs">Address</Button>
                   </div>
                 </div>
@@ -1022,7 +1044,9 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <p className="font-medium text-sm">Upcoming Meetings</p>
-                    <p className="text-xs text-muted-foreground mt-1">3 meetings scheduled today</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stats?.appointmentStatus?.confirmed || 0} meetings scheduled
+                    </p>
                     <Button variant="outline" size="sm" className="mt-2 h-7 text-xs">View Calendar</Button>
                   </div>
                 </div>
@@ -1108,7 +1132,7 @@ const StatCard = ({
                 )}>
                   {Math.abs(delta).toFixed(1)}%
                 </span>
-                <span className="text-muted-foreground">vs last month</span>
+                <span className="text-muted-foreground">vs last period</span>
               </div>
             )}
             {progress !== undefined && (

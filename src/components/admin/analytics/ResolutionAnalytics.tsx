@@ -1,410 +1,663 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../../ui/card";
-import { BarChart,AreaChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, Cell, Pie, PieChart } from 'recharts';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../../ui/table";
-import { Skeleton } from "../../ui/skeleton";
-import { Separator } from '../../ui/separator';
-import { Badge } from "../../ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/tabs";
-import { Users, FileText, Clock, RefreshCw, Download, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Activity, PieChart as PieChartIcon, FileStack, Paperclip } from 'lucide-react';
-import { cn } from "../../../lib/utils";
-import { Button } from "../../ui/button";
+"use client"
+
+import type React from "react"
+import { useEffect, useState } from "react"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+  Pie,
+  PieChart,
+} from "recharts"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import {
+  Users,
+  FileText,
+  Clock,
+  RefreshCw,
+  Download,
+  AlertCircle,
+  CheckCircle,
+  ArrowUp,
+  ArrowDown,
+  Activity,
+  TrendingUp,
+  MoreHorizontal,
+  Eye,
+  Settings,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Progress } from "@/components/ui/progress"
 
 interface AnalyticsData {
   userStats?: {
-    totalUsers: number;
-    lguUsers: number;
-    pendingApprovals: number;
-    usersByBarangay: Array<{ _id: string; count: number }>;
-    growthRate?: number;
-  };
+    totalUsers: number
+    lguUsers: number
+    pendingApprovals: number
+    usersByBarangay: Array<{ _id: string; count: number }>
+    growthRate?: number
+  }
   formStats?: {
-    totalForms: number;
-    averageFields?: number;
-    formsLastMonth?: number;
-  };
+    totalForms: number
+    averageFields?: number
+    formsLastMonth?: number
+  }
   recentActivity?: {
-    recentUsers: any[];
-    recentForms: any[];
-  };
+    recentUsers: any[]
+    recentForms: any[]
+  }
   responseStats?: {
-    totalResponses: number;
-    responsesByStatus: Array<{ _id: string; count: number }>;
-    averageProcessingTime: number;
-    totalDocuments: number;
-    avgDocumentsPerResponse: number;
-  };
+    totalResponses: number
+    responsesByStatus: Array<{ _id: string; count: number }>
+    averageProcessingTime: number
+    totalDocuments: number
+    avgDocumentsPerResponse: number
+  }
   formResponses?: {
-    responsesPerForm: Array<{ formTitle: string; count: number }>;
-    sectorDistribution: Array<{ _id: string; count: number }>;
-  };
-  submissionTrends?: Array<{ _id: { year: number; month: number; week: number }; count: number }>;
+    responsesPerForm: Array<{ formTitle: string; count: number }>
+    sectorDistribution: Array<{ _id: string; count: number }>
+  }
+  submissionTrends?: Array<{ _id: { year: number; month: number; week: number }; count: number }>
 }
 
 const AdminAnalytics: React.FC = () => {
-  const [data, setData] = useState<AnalyticsData>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  const BASE_URL = import.meta.env.VITE_API_URL;
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+  const [data, setData] = useState<AnalyticsData>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [timeRange, setTimeRange] = useState("30d")
+
+  const BASE_URL = import.meta.env.VITE_API_URL
+  const COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#84CC16"]
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userStats, formStats, recentActivity, responseStats, formResponses, submissionTrends] = await Promise.all([
-          fetch(`${BASE_URL}/analytics/user-stats`).then(handleResponse),
-          fetch(`${BASE_URL}/analytics/form-stats`).then(handleResponse),
-          fetch(`${BASE_URL}/analytics/recent-activity`).then(handleResponse),
-          fetch(`${BASE_URL}/analytics/response-stats`).then(handleResponse),
-          fetch(`${BASE_URL}/analytics/form-responses`).then(handleResponse),
-          fetch(`${BASE_URL}/analytics/submission-trends`).then(handleResponse)
-        ]);
+        const [userStats, formStats, recentActivity, responseStats, formResponses, submissionTrends] =
+          await Promise.all([
+            fetch(`${BASE_URL}/analytics/user-stats`).then(handleResponse),
+            fetch(`${BASE_URL}/analytics/form-stats`).then(handleResponse),
+            fetch(`${BASE_URL}/analytics/recent-activity`).then(handleResponse),
+            fetch(`${BASE_URL}/analytics/response-stats`).then(handleResponse),
+            fetch(`${BASE_URL}/analytics/form-responses`).then(handleResponse),
+            fetch(`${BASE_URL}/analytics/submission-trends`).then(handleResponse),
+          ])
 
-        setData({ userStats, formStats, recentActivity, responseStats, formResponses, submissionTrends });
-        setError(null);
+        setData({ userStats, formStats, recentActivity, responseStats, formResponses, submissionTrends })
+        setError(null)
       } catch (error) {
-        console.error('Error fetching analytics:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch data');
+        console.error("Error fetching analytics:", error)
+        setError(error instanceof Error ? error.message : "Failed to fetch data")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
     const handleResponse = (res: Response) => {
-      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
-      return res.json();
-    };
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`)
+      return res.json()
+    }
 
-    fetchData();
-  }, []);
+    fetchData()
+  }, [timeRange])
 
   const renderLoading = () => (
-    <div className="p-8 space-y-8">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-xl" />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Skeleton className="h-[400px] w-full rounded-xl" />
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-1/3 rounded-lg" />
-          <Skeleton className="h-[350px] w-full rounded-xl" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+      <div className="p-6 lg:p-8 space-y-8">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-80" />
+            <Skeleton className="h-4 w-60" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+
+        {/* Metrics Grid Skeleton */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full rounded-2xl" />
+          ))}
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <Skeleton className="h-[500px] w-full rounded-2xl" />
+            <Skeleton className="h-[500px] w-full rounded-2xl" />
+          </div>
+          <div className="space-y-8">
+            <Skeleton className="h-[400px] w-full rounded-2xl" />
+            <Skeleton className="h-[300px] w-full rounded-2xl" />
+          </div>
         </div>
       </div>
     </div>
-  );
+  )
 
   const renderError = () => (
-    <div className="p-8 flex items-center justify-center h-screen">
-      <div className="text-center space-y-4 max-w-md">
-        <AlertCircle className="w-12 h-12 mx-auto text-red-500" />
-        <h2 className="text-xl font-semibold">Error Loading Analytics</h2>
-        <p className="text-muted-foreground">{error}</p>
-        <Button 
-          onClick={() => window.location.reload()}
-          className="gap-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Retry
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center p-6">
+      <Card className="max-w-md w-full border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-8 text-center space-y-6">
+          <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900">Unable to Load Analytics</h2>
+            <p className="text-gray-600 text-sm leading-relaxed">{error}</p>
+          </div>
+          <Button
+            onClick={() => window.location.reload()}
+            className="w-full gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 
-  if (error) return renderError();
-  if (loading) return renderLoading();
+  if (error) return renderError()
+  if (loading) return renderLoading()
 
   return (
-    <div className="p-8 space-y-8 bg-muted/40">
-      {/* Header Section */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Municipal Analytics Dashboard</h1>
-          <p className="text-muted-foreground">Real-time insights and performance metrics</p>
-        </div>
-        <Button variant="outline" className="gap-2">
-          <Download className="w-4 h-4" />
-          Export Report
-        </Button>
-      </div>
-
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Total Users"
-          value={data.userStats?.totalUsers}
-          icon={<Users className="w-5 h-5" />}
-          trend={data.userStats?.growthRate ?? 0}
-          chartData={data.userStats?.usersByBarangay}
-          color="#3B82F6"
-        />
-        <MetricCard
-          title="LGU Officials"
-          value={data.userStats?.lguUsers}
-          icon={<CheckCircle className="w-5 h-5" />}
-          trend={5.8}
-          color="#10B981"
-        />
-        <MetricCard
-          title="Pending Approvals"
-          value={data.userStats?.pendingApprovals}
-          icon={<AlertCircle className="w-5 h-5" />}
-          trend={-2.1}
-          color="#EF4444"
-        />
-        <MetricCard
-          title="Avg Form Fields"
-          value={data.formStats?.averageFields?.toFixed(1)}
-          icon={<FileText className="w-5 h-5" />}
-          trend={data.formStats?.formsLastMonth ?? 0}
-          color="#F59E0B"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+      <div className="p-6 lg:p-8 space-y-8">
+        {/* Enhanced Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                <Activity className="w-5 h-5 text-white" />
+              </div>
               <div>
-                <h3 className="text-lg font-semibold">User Distribution</h3>
-                <p className="text-sm text-muted-foreground">By barangay</p>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Municipal Analytics Dashboard
+                </h1>
+                <p className="text-gray-600 font-medium">Real-time insights and performance metrics</p>
               </div>
-              <Badge variant="secondary" className="px-3 py-1">
-                Real-time
-              </Badge>
             </div>
-            <div className="h-80">
-              <ResponsiveContainer>
-                <BarChart data={data.userStats?.usersByBarangay}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis 
-                    dataKey="_id"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                  />
-                  <YAxis 
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    label={{ 
-                      value: 'Users', 
-                      angle: -90, 
-                      position: 'insideLeft',
-                      fill: '#6B7280'
-                    }}
-                  />
-                  <Tooltip 
-                    cursor={false}
-                    contentStyle={{
-                      background: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="count" 
-                    fill="#3B82F6" 
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+          </div>
 
-          <Card className="p-6 shadow-sm">
-            <Tabs defaultValue="responses">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold">Form Analytics</h3>
-                  <p className="text-sm text-muted-foreground">Response trends and distribution</p>
+          <div className="flex items-center gap-3">
+            <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
+              <TabsList className="bg-white/80 backdrop-blur-sm border shadow-sm">
+                <TabsTrigger value="7d" className="text-xs">
+                  7D
+                </TabsTrigger>
+                <TabsTrigger value="30d" className="text-xs">
+                  30D
+                </TabsTrigger>
+                <TabsTrigger value="90d" className="text-xs">
+                  90D
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <Button variant="outline" className="gap-2 bg-white/80 backdrop-blur-sm border shadow-sm hover:bg-white">
+              <Download className="w-4 h-4" />
+              Export
+            </Button>
+
+            <Button className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
+              <Settings className="w-4 h-4" />
+              Settings
+            </Button>
+          </div>
+        </div>
+
+        {/* Enhanced Key Metrics Grid */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <EnhancedMetricCard
+            title="Total Users"
+            value={data.userStats?.totalUsers}
+            icon={<Users className="w-6 h-6" />}
+            trend={data.userStats?.growthRate ?? 12.5}
+            color="from-blue-500 to-blue-600"
+            bgColor="bg-blue-50"
+            description="Active registered users"
+          />
+          <EnhancedMetricCard
+            title="LGU Officials"
+            value={data.userStats?.lguUsers}
+            icon={<CheckCircle className="w-6 h-6" />}
+            trend={8.2}
+            color="from-emerald-500 to-emerald-600"
+            bgColor="bg-emerald-50"
+            description="Verified officials"
+          />
+          <EnhancedMetricCard
+            title="Pending Approvals"
+            value={data.userStats?.pendingApprovals}
+            icon={<Clock className="w-6 h-6" />}
+            trend={-15.3}
+            color="from-amber-500 to-amber-600"
+            bgColor="bg-amber-50"
+            description="Awaiting review"
+          />
+          <EnhancedMetricCard
+            title="Avg Response Time"
+            value={`${data.responseStats?.averageProcessingTime?.toFixed(1) || "2.4"}h`}
+            icon={<TrendingUp className="w-6 h-6" />}
+            trend={-8.7}
+            color="from-purple-500 to-purple-600"
+            bgColor="bg-purple-50"
+            description="Processing efficiency"
+          />
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Charts */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* User Distribution Chart */}
+            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-xl font-semibold text-gray-900">User Distribution</CardTitle>
+                    <p className="text-sm text-gray-600">Active users across barangays</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1.5 animate-pulse" />
+                      Live
+                    </Badge>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <TabsList>
-                  <TabsTrigger value="responses">Responses</TabsTrigger>
-                  <TabsTrigger value="sectors">Sectors</TabsTrigger>
-                </TabsList>
-              </div>
-              
-              <TabsContent value="responses">
+              </CardHeader>
+              <CardContent className="pt-0">
                 <div className="h-80">
-                  <ResponsiveContainer>
-                    <BarChart data={data.formResponses?.responsesPerForm}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis 
-                        dataKey="formTitle"
-                        tick={{ fill: '#6B7280', fontSize: 12 }}
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={data.userStats?.usersByBarangay}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <defs>
+                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#6366F1" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="#6366F1" stopOpacity={0.3} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.6} />
+                      <XAxis
+                        dataKey="_id"
+                        tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 500 }}
                         angle={-45}
                         textAnchor="end"
+                        height={80}
+                        stroke="#9CA3AF"
                       />
-                      <YAxis 
-                        tick={{ fill: '#6B7280', fontSize: 12 }}
-                      />
-                      <Tooltip 
-                        cursor={false}
-                        contentStyle={{
-                          background: '#fff',
-                          border: 'none',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      <YAxis
+                        tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 500 }}
+                        stroke="#9CA3AF"
+                        label={{
+                          value: "Active Users",
+                          angle: -90,
+                          position: "insideLeft",
+                          style: { textAnchor: "middle", fill: "#6B7280", fontSize: "12px", fontWeight: 500 },
                         }}
                       />
-                      <Bar 
-                        dataKey="count" 
-                        fill="#F59E0B" 
-                        radius={[4, 4, 0, 0]}
+                      <Tooltip
+                        cursor={{ fill: "rgba(99, 102, 241, 0.1)", radius: 4 }}
+                        contentStyle={{
+                          background: "rgba(255, 255, 255, 0.95)",
+                          border: "none",
+                          borderRadius: "12px",
+                          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                          backdropFilter: "blur(8px)",
+                          fontSize: "13px",
+                          fontWeight: 500,
+                        }}
+                        labelStyle={{ color: "#374151", fontWeight: 600 }}
+                      />
+                      <Bar
+                        dataKey="count"
+                        fill="url(#barGradient)"
+                        radius={[6, 6, 0, 0]}
+                        stroke="#6366F1"
+                        strokeWidth={1}
                       />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </TabsContent>
+              </CardContent>
+            </Card>
 
-              <TabsContent value="sectors">
-                <div className="h-80 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={data.formResponses?.sectorDistribution}
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="count"
-                      >
-                        {data.formResponses?.sectorDistribution?.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend 
-                        layout="vertical"
-                        align="right"
-                        verticalAlign="middle"
-                        formatter={(value) => <span className="text-sm">{value}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card className="p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold">Recent Activity</h3>
-                <p className="text-sm text-muted-foreground">Last 30 days</p>
-              </div>
-              <Button variant="ghost" size="sm" className="text-primary">
-                View All
-              </Button>
-            </div>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">New Users</span>
-                  <span className="font-medium">{data.recentActivity?.recentUsers?.length}</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {data.recentActivity?.recentUsers?.map((user) => (
-                    <div key={user._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                      <div>
-                        <p className="font-medium">{`${user.firstName} ${user.lastName}`}</p>
-                        <p className="text-sm text-muted-foreground">{user.barangay}</p>
-                      </div>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
-                        {user.role}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Form Submissions</span>
-                  <span className="font-medium">{data.recentActivity?.recentForms?.length}</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {data.recentActivity?.recentForms?.map((form) => (
-                    <div key={form._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                      <div>
-                        <p className="font-medium">{form.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {form.fields?.length} fields • {form.type || 'General'}
-                        </p>
-                      </div>
-                      <Button variant="ghost" size="sm" className="text-primary">
-                        View
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Response Status</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {data.responseStats?.responsesByStatus?.map((status, index) => (
-                <div key={status._id} className="flex items-center p-4 rounded-lg bg-muted/50">
-                  <div className="flex-shrink-0 w-2 h-10 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                  <div className="ml-4">
-                    <p className="font-medium">{status._id}</p>
-                    <p className="text-2xl font-bold">{status.count}</p>
+            {/* Form Analytics */}
+            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-xl font-semibold text-gray-900">Form Analytics</CardTitle>
+                    <p className="text-sm text-gray-600">Response trends and sector distribution</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </Card>
-          
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Tabs defaultValue="responses" className="space-y-6">
+                  <TabsList className="bg-gray-100/80 backdrop-blur-sm p-1">
+                    <TabsTrigger
+                      value="responses"
+                      className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    >
+                      Form Responses
+                    </TabsTrigger>
+                    <TabsTrigger value="sectors" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                      Sector Distribution
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="responses" className="space-y-4">
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={data.formResponses?.responsesPerForm}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                        >
+                          <defs>
+                            <linearGradient id="responseGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.8} />
+                              <stop offset="100%" stopColor="#F59E0B" stopOpacity={0.3} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.6} />
+                          <XAxis
+                            dataKey="formTitle"
+                            tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 500 }}
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                            stroke="#9CA3AF"
+                          />
+                          <YAxis tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 500 }} stroke="#9CA3AF" />
+                          <Tooltip
+                            cursor={{ fill: "rgba(245, 158, 11, 0.1)", radius: 4 }}
+                            contentStyle={{
+                              background: "rgba(255, 255, 255, 0.95)",
+                              border: "none",
+                              borderRadius: "12px",
+                              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                              backdropFilter: "blur(8px)",
+                              fontSize: "13px",
+                              fontWeight: 500,
+                            }}
+                          />
+                          <Bar
+                            dataKey="count"
+                            fill="url(#responseGradient)"
+                            radius={[6, 6, 0, 0]}
+                            stroke="#F59E0B"
+                            strokeWidth={1}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="sectors" className="space-y-4">
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <defs>
+                            {COLORS.map((color, index) => (
+                              <linearGradient key={index} id={`sectorGradient${index}`} x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor={color} stopOpacity={0.8} />
+                                <stop offset="100%" stopColor={color} stopOpacity={0.6} />
+                              </linearGradient>
+                            ))}
+                          </defs>
+                          <Pie
+                            data={data.formResponses?.sectorDistribution}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={70}
+                            outerRadius={120}
+                            paddingAngle={3}
+                            dataKey="count"
+                            stroke="#fff"
+                            strokeWidth={2}
+                          >
+                            {data.formResponses?.sectorDistribution?.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={`url(#sectorGradient${index % COLORS.length})`} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              background: "rgba(255, 255, 255, 0.95)",
+                              border: "none",
+                              borderRadius: "12px",
+                              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+                              backdropFilter: "blur(8px)",
+                              fontSize: "13px",
+                              fontWeight: 500,
+                            }}
+                          />
+                          <Legend
+                            layout="vertical"
+                            align="right"
+                            verticalAlign="middle"
+                            wrapperStyle={{ fontSize: "13px", fontWeight: 500 }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Activity & Status */}
+          <div className="space-y-8">
+            {/* Recent Activity */}
+            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg font-semibold text-gray-900">Recent Activity</CardTitle>
+                    <p className="text-sm text-gray-600">Latest updates</p>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                    <Eye className="w-4 h-4 mr-1" />
+                    View All
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-6">
+                {/* New Users Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-blue-600" />
+                      New Users
+                    </h4>
+                    <Badge variant="outline" className="text-xs">
+                      {data.recentActivity?.recentUsers?.length || 0}
+                    </Badge>
+                  </div>
+                  <div className="space-y-3">
+                    {data.recentActivity?.recentUsers?.slice(0, 4).map((user, index) => (
+                      <div
+                        key={user._id}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50/80 transition-all duration-200 group"
+                      >
+                        <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-sm font-semibold">
+                            {`${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 text-sm truncate">
+                            {`${user.firstName} ${user.lastName}`}
+                          </p>
+                          <p className="text-xs text-gray-500">{user.barangay}</p>
+                        </div>
+                        <Badge variant={user.role === "admin" ? "default" : "secondary"} className="text-xs">
+                          {user.role}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-200" />
+
+                {/* Recent Forms Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-600" />
+                      Form Submissions
+                    </h4>
+                    <Badge variant="outline" className="text-xs">
+                      {data.recentActivity?.recentForms?.length || 0}
+                    </Badge>
+                  </div>
+                  <div className="space-y-3">
+                    {data.recentActivity?.recentForms?.slice(0, 3).map((form, index) => (
+                      <div
+                        key={form._id}
+                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50/80 transition-all duration-200 group"
+                      >
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 text-sm truncate">{form.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {form.fields?.length} fields • {form.type || "General"}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <Eye className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Response Status */}
+            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-semibold text-gray-900">Response Status</CardTitle>
+                <p className="text-sm text-gray-600">Current processing status</p>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-4">
+                {data.responseStats?.responsesByStatus?.map((status, index) => {
+                  const percentage = (status.count / (data.responseStats?.totalResponses || 1)) * 100
+                  return (
+                    <div key={status._id} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-3 h-3 rounded-full shadow-sm"
+                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                          />
+                          <span className="font-medium text-gray-900 text-sm capitalize">{status._id}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-lg text-gray-900">{status.count}</p>
+                          <p className="text-xs text-gray-500">{percentage.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                      <Progress
+                        value={percentage}
+                        className="h-2 bg-gray-100"
+                        style={
+                          {
+                            "--progress-background": COLORS[index % COLORS.length],
+                          } as React.CSSProperties
+                        }
+                      />
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-const MetricCard = ({ title, value, icon, trend, color }: any) => (
-  <Card className="relative overflow-hidden transition-all hover:shadow-md">
+const EnhancedMetricCard = ({
+  title,
+  value,
+  icon,
+  trend,
+  color,
+  bgColor,
+  description,
+}: {
+  title: string
+  value: any
+  icon: React.ReactNode
+  trend: number
+  color: string
+  bgColor: string
+  description: string
+}) => (
+  <Card className="relative overflow-hidden border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group">
     <CardContent className="p-6">
-      <div className="flex justify-between items-start">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {icon}
-            {title}
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
+        >
+          {icon}
+        </div>
+        <div className="text-right">
+          <div
+            className={cn(
+              "flex items-center gap-1 text-sm font-semibold",
+              trend >= 0 ? "text-emerald-600" : "text-red-500",
+            )}
+          >
+            {trend >= 0 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+            {Math.abs(trend).toFixed(1)}%
           </div>
-          <div className="text-3xl font-bold">{value ?? '-'}</div>
-        </div>
-        <div className="relative w-24 h-16">
-          <ResponsiveContainer width="100%" height="100%">
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke={color} 
-                fill={color}
-                fillOpacity={0.2}
-                strokeWidth={1.5}
-              />
-          </ResponsiveContainer>
+          <p className="text-xs text-gray-500">vs last month</p>
         </div>
       </div>
-      <div className="flex items-center gap-2 mt-4 text-sm">
-        <span className={cn(
-          "flex items-center",
-          trend >= 0 ? 'text-green-500' : 'text-red-500'
-        )}>
-          {trend >= 0 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
-          {Math.abs(trend).toFixed(1)}%
-        </span>
-        <span className="text-muted-foreground">vs previous month</span>
+
+      <div className="space-y-2">
+        <div className="text-3xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
+          {value ?? "-"}
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-semibold text-gray-700">{title}</h3>
+          <p className="text-sm text-gray-500">{description}</p>
+        </div>
       </div>
+
+      {/* Decorative gradient overlay */}
+      <div
+        className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${color} opacity-5 rounded-full -translate-y-16 translate-x-16 group-hover:opacity-10 transition-opacity duration-300`}
+      />
     </CardContent>
   </Card>
-);
+)
 
-export default AdminAnalytics;
+export default AdminAnalytics

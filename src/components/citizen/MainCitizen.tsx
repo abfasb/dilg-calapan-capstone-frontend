@@ -565,7 +565,7 @@ type Report = {
                 </div>
 
                 <Tabs defaultValue="reporting">
-                <TabsList className="w-full grid grid-cols-2 lg:grid-cols-5 h-14 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl">
+                <TabsList className="w-full grid grid-cols-2 lg:grid-cols-4 h-14 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl">
               <TabsTrigger value="reporting" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Report Incident
@@ -573,10 +573,6 @@ type Report = {
               <TabsTrigger value="tracking" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm">
                 <MapPin className="w-4 h-4 mr-2" />
                 Track Cases
-              </TabsTrigger>
-              <TabsTrigger value="community" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm">
-                <Megaphone className="w-4 h-4 mr-2" />
-                Community
               </TabsTrigger>
               <TabsTrigger value="public-reports" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm">
                 <ClipboardList className="w-4 h-4 mr-2" />

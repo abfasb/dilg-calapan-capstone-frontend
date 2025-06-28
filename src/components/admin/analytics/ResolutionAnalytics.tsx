@@ -558,7 +558,6 @@ const AdminAnalytics: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Response Status */}
             <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-semibold text-gray-900">Response Status</CardTitle>

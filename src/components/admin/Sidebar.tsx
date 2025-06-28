@@ -71,9 +71,8 @@ export const Sidebar = ({
       text: "System Health",
       icon: <FiMonitor className="w-5 h-5" />,
       subItems: [
-        { text: "Workflows", path: "system-health/workflows", icon: <FiActivity /> },
         { text: "Performance", path: "system-health/performance", icon: <FiBarChart /> },
-        { text: "Backups", path: "system-health/backups", icon: <FiDatabase /> }
+        { text: "Service Management", path: "system-health/backups", icon: <FiDatabase /> }
       ]
     },
     { 

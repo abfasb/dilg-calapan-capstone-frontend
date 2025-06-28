@@ -8,6 +8,8 @@ import { toast, Toaster } from 'react-hot-toast';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { Checkbox } from './ui/checkbox';
 import barangays from '../types/barangays';
+import { jwtDecode } from 'jwt-decode';
+import { useNavigate } from 'react-router-dom';
 
 interface GoogleFormInput {
   firstName: string;
@@ -20,13 +22,22 @@ interface GoogleFormInput {
 interface IFormInput {
   email: string;
   password: string;
+  rememberMe: boolean;
+}
+
+interface JwtPayload {
+  id: string;
+  role: string;
+  exp: number;
 }
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     register, 
     handleSubmit, 
-    formState: { errors, isSubmitting } 
+    formState: { errors, isSubmitting },
+    setValue
   } = useForm<IFormInput>({
     mode: 'onChange'
   });
@@ -34,6 +45,7 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   
   const { 
     register: registerGoogle, 
@@ -55,44 +67,98 @@ const Login: React.FC = () => {
     "Barangay Secretary",
     "Barangay Treasurer",
     "SK Chairman",
-    "Barangay Councilo"
+    "Barangay Councilor"
   ];
 
   useEffect(() => {
-    // Add CSS to fix autofill background issue
-    const style = document.createElement('style');
-    style.innerHTML = `
-      input:-webkit-autofill,
-      input:-webkit-autofill:hover,
-      input:-webkit-autofill:focus,
-      input:-webkit-autofill:active {
-        -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.05) inset !important;
-        -webkit-text-fill-color: white !important;
-        transition: background-color 5000s ease-in-out 0s;
+  const checkExistingSession = async () => {
+    try {
+      const rememberedToken = localStorage.getItem('token');
+      const sessionToken = sessionStorage.getItem('token');
+      
+      const token = rememberedToken || sessionToken;
+      const isRemembered = !!rememberedToken;
+      
+      if (!token) {
+        setIsCheckingSession(false);
+        return;
       }
-    `;
-    document.head.appendChild(style);
+      
+      const decoded = jwtDecode<JwtPayload>(token);
+      const isExpired = Date.now() >= decoded.exp * 1000;
+      
+      if (isExpired) {
+        clearAuthStorage();
+        setIsCheckingSession(false);
+        return;
+      }
+      
+      if (isRemembered) {
+        const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
+        const role = localStorage.getItem('role') || sessionStorage.getItem('role');
+        
+        if (userId && role) {
+          navigate(`/account/${role.toLowerCase()}/${userId}`);
+          return;
+        }
+      }
+      
+      setIsCheckingSession(false);
+    } catch (error) {
+      clearAuthStorage();
+      setIsCheckingSession(false);
+    }
+  };
 
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
+  checkExistingSession();
+}, [navigate]);
+
+  const clearAuthStorage = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('adminEmail');
+    localStorage.removeItem('name');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('firstName');
+    localStorage.removeItem('lastName');
+    localStorage.removeItem('position');
+    localStorage.removeItem('barangay');
+    localStorage.removeItem('role');
+    localStorage.removeItem('phoneNumber');
+    
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('adminEmail');
+    sessionStorage.removeItem('name');
+    sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('firstName');
+    sessionStorage.removeItem('lastName');
+    sessionStorage.removeItem('position');
+    sessionStorage.removeItem('barangay');
+    sessionStorage.removeItem('role');
+    sessionStorage.removeItem('phoneNumber');
+  };
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     setError("");
     try {
-      const response = await loginUser(data.email, data.password);
+      const response = await loginUser({
+        email: data.email,
+        password: data.password,
+        rememberMe: data.rememberMe
+      });
       
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('adminEmail', response.user.email);
-      localStorage.setItem('name', response.user.name);
-      localStorage.setItem("userId", response.user.id);
-      localStorage.setItem("firstName", response.user.firstName);
-      localStorage.setItem("lastName", response.user.lastName);
-      localStorage.setItem("position", response.user.position);
-      localStorage.setItem("barangay", response.user.barangay);
-      localStorage.setItem("role", response.user.role);
-      localStorage.setItem("phoneNumber", response.user.phoneNumber);
+      // Use localStorage if rememberMe is true, otherwise sessionStorage
+      const storage = data.rememberMe ? localStorage : sessionStorage;
+      
+      storage.setItem('token', response.token);
+      storage.setItem('adminEmail', response.user.email);
+      storage.setItem('name', response.user.name);
+      storage.setItem('userId', response.user.id);
+      storage.setItem('firstName', response.user.firstName);
+      storage.setItem('lastName', response.user.lastName);
+      storage.setItem('position', response.user.position);
+      storage.setItem('barangay', response.user.barangay);
+      storage.setItem('role', response.user.role);
+      storage.setItem('phoneNumber', response.user.phoneNumber);
       
       toast.success('Login Successful!', {
         icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
@@ -108,7 +174,7 @@ const Login: React.FC = () => {
       if (response.redirectUrl) {
         window.location.href = response.redirectUrl;
       } else {
-        window.location.href = `/dashboard/${response.user.id}`;
+        navigate(`/account/${response.user.role.toLowerCase()}/${response.user.id}`);
       }
   
     } catch (err) {
@@ -121,6 +187,17 @@ const Login: React.FC = () => {
     sessionStorage.setItem('googleSignupData', JSON.stringify(data));
     window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
   };
+
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>
+          <p className="mt-4 text-gray-300">Checking your session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return ( 
     <>
@@ -310,7 +387,11 @@ const Login: React.FC = () => {
             {/* Remember Me Checkbox */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Checkbox id="remember" className="border-cyan-400/50 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500" />
+                <Checkbox 
+                  id="remember" 
+                  {...register("rememberMe")}
+                  className="border-cyan-400/50 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500" 
+                />
                 <label
                   htmlFor="remember"
                   className="text-sm text-gray-300 font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
@@ -322,7 +403,7 @@ const Login: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 type="button"
-                onClick={() => window.location.href='/account/forgot-password'}
+                onClick={() => navigate('/account/forgot-password')}
                 className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
               >
                 Forgot password?
@@ -365,7 +446,7 @@ const Login: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 type="button"
-                onClick={() => window.location.href='/account/register'}
+                onClick={() => navigate('/account/register')}
                 className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
               >
                 Create an account

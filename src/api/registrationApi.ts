@@ -12,11 +12,23 @@ export const registerUser = async(userData: any) => {
     }
 }
 
-export const loginUser = async(email : string, password: string) => {
-    try {
-        const response = await axios.post(`${api_url}/account/signin-user`, { email, password});
-        return response.data
-    }catch (error) {
-        throw error;
-    }
-}
+export const loginUser = async (credentials: {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}) => {
+  try {
+    const response = await axios.post(
+      `${api_url}/account/signin-user`,
+      credentials,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Login failed');
+  }
+};

@@ -247,9 +247,7 @@ const PerformanceMetrics = () => {
         </div>
       )}
 
-      {/* Main Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-12">
-        {/* Cluster Overview */}
         <Card className="md:col-span-2 lg:col-span-8 bg-white dark:bg-[#023430]">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center space-x-2">
@@ -334,7 +332,6 @@ const PerformanceMetrics = () => {
           </CardContent>
         </Card>
 
-        {/* Realtime Metrics */}
         <Card className="md:col-span-2 lg:col-span-4 bg-white dark:bg-[#023430]">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center space-x-2">

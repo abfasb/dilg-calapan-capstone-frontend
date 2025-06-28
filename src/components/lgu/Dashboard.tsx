@@ -36,6 +36,7 @@ export default function MainDashboard() {
             <Route path="/staff" element={<Staff />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/appointments" element={<Appointment />} />
+            <Route path="/community" element={<Appointment />} />
             <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>

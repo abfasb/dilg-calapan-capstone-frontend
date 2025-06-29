@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
-import { FiMenu, FiX, FiBarChart2, FiFileText, FiUsers, FiGlobe, FiSettings, FiCalendar } from 'react-icons/fi';
+import { FiMenu, FiX, FiBarChart2, FiFileText, FiUsers, FiGlobe, FiSettings, FiCalendar, FiSend } from 'react-icons/fi';
 import { Megaphone, ChevronRight } from 'lucide-react';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { cn } from '../../lib/utils';
@@ -59,7 +59,7 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
           <NavItem icon={<FiFileText />} text="Reports" to="reports" isOpen={isOpen} />
           <NavItem icon={<FiUsers />} text="Staff" to="staff" isOpen={isOpen} />
           <NavItem icon={<Megaphone />} text="Announcements" to="announcements" isOpen={isOpen} />
-          <NavItem icon={<FiGlobe />} text="Community" to="community" isOpen={isOpen} />
+          <NavItem icon={<FiSend />} text="Monitoring & Submissions" to="community" isOpen={isOpen} />
           <NavItem icon={<FiCalendar />} text="Appointments" to="appointments" isOpen={isOpen} />
           <NavItem icon={<FiSettings />} text="Settings" to="settings" isOpen={isOpen} />
         </div>

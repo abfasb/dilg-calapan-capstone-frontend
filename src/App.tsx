@@ -30,6 +30,7 @@ import AppointmentPages from './pages/citizen/AppointmentPages';
 import ProfilePage from './pages/citizen/ProfilePage';
 import ComplaintPage from './pages/citizen/ComplaintPage';
 import VerificationPage from './pages/citizen/VerificationPage';
+import Community from './components/lgu/Community';
 
 function App() {
   return (
@@ -59,6 +60,7 @@ function App() {
             <Route path="reports" element={<ReportsPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="announcements" element={<AnnouncementPage />} />
+            <Route path="community" element={<Community />} />
             <Route path="appointments" element={<AppointmentPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

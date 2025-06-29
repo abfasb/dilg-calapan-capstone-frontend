@@ -70,50 +70,7 @@ const Login: React.FC = () => {
     "Barangay Councilor"
   ];
 
-  useEffect(() => {
-  const checkExistingSession = async () => {
-    try {
-      const rememberedToken = localStorage.getItem('token');
-      const sessionToken = sessionStorage.getItem('token');
-      
-      const token = rememberedToken || sessionToken;
-      const isRemembered = !!rememberedToken;
-      
-      if (!token) {
-        setIsCheckingSession(false);
-        return;
-      }
-      
-      const decoded = jwtDecode<JwtPayload>(token);
-      const isExpired = Date.now() >= decoded.exp * 1000;
-      
-      if (isExpired) {
-        clearAuthStorage();
-        setIsCheckingSession(false);
-        return;
-      }
-      
-      if (isRemembered) {
-        const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
-        const role = localStorage.getItem('role') || sessionStorage.getItem('role');
-        
-        if (userId && role) {
-          navigate(`/account/${role.toLowerCase()}/${userId}`);
-          return;
-        }
-      }
-      
-      setIsCheckingSession(false);
-    } catch (error) {
-      clearAuthStorage();
-      setIsCheckingSession(false);
-    }
-  };
-
-  checkExistingSession();
-}, [navigate]);
-
-  const clearAuthStorage = () => {
+  const clearLocalStorageAuth = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('adminEmail');
     localStorage.removeItem('name');
@@ -124,7 +81,9 @@ const Login: React.FC = () => {
     localStorage.removeItem('barangay');
     localStorage.removeItem('role');
     localStorage.removeItem('phoneNumber');
-    
+  };
+
+  const clearSessionStorageAuth = () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('adminEmail');
     sessionStorage.removeItem('name');
@@ -136,6 +95,43 @@ const Login: React.FC = () => {
     sessionStorage.removeItem('role');
     sessionStorage.removeItem('phoneNumber');
   };
+
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const rememberedToken = localStorage.getItem('token');
+        
+        if (!rememberedToken) {
+          setIsCheckingSession(false);
+          return;
+        }
+        
+        const decoded = jwtDecode<JwtPayload>(rememberedToken);
+        const isExpired = Date.now() >= decoded.exp * 1000;
+        
+        if (isExpired) {
+          clearLocalStorageAuth();
+          setIsCheckingSession(false);
+          return;
+        }
+        
+        const userId = localStorage.getItem('userId');
+        const role = localStorage.getItem('role');
+        
+        if (userId && role) {
+          navigate(`/account/${role.toLowerCase()}/${userId}`);
+          return;
+        }
+        
+        setIsCheckingSession(false);
+      } catch (error) {
+        clearLocalStorageAuth();
+        setIsCheckingSession(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [navigate]);
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     setError("");
@@ -159,6 +155,13 @@ const Login: React.FC = () => {
       storage.setItem('barangay', response.user.barangay);
       storage.setItem('role', response.user.role);
       storage.setItem('phoneNumber', response.user.phoneNumber);
+      
+      // Clear the opposite storage
+      if (data.rememberMe) {
+        clearSessionStorageAuth();
+      } else {
+        clearLocalStorageAuth();
+      }
       
       toast.success('Login Successful!', {
         icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,

@@ -9,6 +9,7 @@ import { DashboardHome } from './DashboardHome';
 import Settings from './Settings';
 import Appointment from './Appointment';
 import Announcements from './Announcements';
+import Community from './Community';
 
 export default function MainDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -36,7 +37,7 @@ export default function MainDashboard() {
             <Route path="/staff" element={<Staff />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/appointments" element={<Appointment />} />
-            <Route path="/community" element={<Appointment />} />
+            <Route path="/community" element={<Community />} />
             <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>

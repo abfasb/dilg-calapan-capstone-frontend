@@ -90,7 +90,7 @@ const HeroSection = () => {
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Get Started Free
+                Get Started
                 <motion.div
                   className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"
                   whileHover={{ x: 5 }}
@@ -111,7 +111,6 @@ const HeroSection = () => {
               </motion.button>
             </motion.div>
 
-            {/* Trust indicators */}
             <motion.div 
               className="flex items-center gap-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50"
               initial={{ opacity: 0 }}
@@ -132,7 +131,6 @@ const HeroSection = () => {
             animate={inView ? { opacity: 1, scale: 1, rotateY: 0 } : {}}
             transition={{ delay: 0.5, duration: 0.8 }}
           >
-            {/* Floating elements */}
             <motion.div 
               className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl shadow-lg flex items-center justify-center z-20"
               animate={{ y: [-10, 10, -10] }}
@@ -149,9 +147,7 @@ const HeroSection = () => {
               <FiShield className="text-white text-xl" />
             </motion.div>
 
-            {/* Main dashboard container */}
             <div className="relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl p-2 shadow-2xl transform group-hover:-translate-y-2 transition-all duration-500 border border-white/20 dark:border-gray-800/50">
-              {/* Browser chrome */}
               <div className="bg-gray-100 dark:bg-gray-800 rounded-t-2xl p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-red-400 rounded-full"></div>

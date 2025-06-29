@@ -97,41 +97,67 @@ const Login: React.FC = () => {
   };
 
   useEffect(() => {
-    const checkExistingSession = async () => {
-      try {
-        const rememberedToken = localStorage.getItem('token');
-        
-        if (!rememberedToken) {
-          setIsCheckingSession(false);
-          return;
-        }
-        
-        const decoded = jwtDecode<JwtPayload>(rememberedToken);
-        const isExpired = Date.now() >= decoded.exp * 1000;
-        
-        if (isExpired) {
+  const checkExistingSession = async () => {
+    try {
+      // Check localStorage first (Remember Me sessions)
+      const rememberedToken = localStorage.getItem('token');
+      
+      if (rememberedToken) {
+        try {
+          const decoded = jwtDecode<JwtPayload>(rememberedToken);
+          const isExpired = Date.now() >= decoded.exp * 1000;
+          
+          if (isExpired) {
+            clearLocalStorageAuth();
+          } else {
+            // Valid remembered session - auto redirect
+            const userId = localStorage.getItem('userId');
+            const role = localStorage.getItem('role');
+            
+            if (userId && role) {
+              navigate(`/account/${role.toLowerCase()}/${userId}`);
+              return;
+            }
+          }
+        } catch (error) {
           clearLocalStorageAuth();
-          setIsCheckingSession(false);
-          return;
         }
-        
-        const userId = localStorage.getItem('userId');
-        const role = localStorage.getItem('role');
-        
-        if (userId && role) {
-          navigate(`/account/${role.toLowerCase()}/${userId}`);
-          return;
-        }
-        
-        setIsCheckingSession(false);
-      } catch (error) {
-        clearLocalStorageAuth();
-        setIsCheckingSession(false);
       }
-    };
+      
+      // Check sessionStorage (non-Remember Me sessions)
+      const sessionToken = sessionStorage.getItem('token');
+      if (sessionToken) {
+        try {
+          const decoded = jwtDecode<JwtPayload>(sessionToken);
+          const isExpired = Date.now() >= decoded.exp * 1000;
+          
+          if (isExpired) {
+            clearSessionStorageAuth();
+          } else {
+            // Valid session token - also redirect (user is still logged in)
+            const userId = sessionStorage.getItem('userId');
+            const role = sessionStorage.getItem('role');
+            
+            if (userId && role) {
+              navigate(`/account/${role.toLowerCase()}/${userId}`);
+              return;
+            }
+          }
+        } catch (error) {
+          clearSessionStorageAuth();
+        }
+      }
+      
+      setIsCheckingSession(false);
+    } catch (error) {
+      clearLocalStorageAuth();
+      clearSessionStorageAuth();
+      setIsCheckingSession(false);
+    }
+  };
 
-    checkExistingSession();
-  }, [navigate]);
+  checkExistingSession();
+}, [navigate]);
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     setError("");
@@ -142,7 +168,11 @@ const Login: React.FC = () => {
         rememberMe: data.rememberMe
       });
       
-      // Use localStorage if rememberMe is true, otherwise sessionStorage
+      // Clear both storages first to prevent conflicts
+      clearLocalStorageAuth();
+      clearSessionStorageAuth();
+      
+      // Use localStorage ONLY if rememberMe is true, otherwise use sessionStorage
       const storage = data.rememberMe ? localStorage : sessionStorage;
       
       storage.setItem('token', response.token);
@@ -155,13 +185,6 @@ const Login: React.FC = () => {
       storage.setItem('barangay', response.user.barangay);
       storage.setItem('role', response.user.role);
       storage.setItem('phoneNumber', response.user.phoneNumber);
-      
-      // Clear the opposite storage
-      if (data.rememberMe) {
-        clearSessionStorageAuth();
-      } else {
-        clearLocalStorageAuth();
-      }
       
       toast.success('Login Successful!', {
         icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,

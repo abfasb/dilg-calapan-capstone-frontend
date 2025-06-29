@@ -11,7 +11,6 @@ export const registerUser = async(userData: any) => {
         throw error;
     }
 }
-
 export const loginUser = async (credentials: {
   email: string;
   password: string;

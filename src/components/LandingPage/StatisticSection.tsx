@@ -2,20 +2,35 @@ import { motion, useAnimation } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
 
-const stats = [
-  { value: 78, suffix: "%", label: "Process Automation" },
-  { value: 40, suffix: "+", label: "Integrated Services" },
-  { value: 17, suffix: "+", label: "Documents Processed" },
-  { value: 24, suffix: "/7", label: "Real-time Monitoring" }
-];
-
 const StatisticsSection = () => {
   const controls = useAnimation();
   const [ref, inView] = useInView({ threshold: 0.2 });
 
+  const [stats, setStats] = useState([
+    { value: 0, suffix: "+", label: "Documents Processed" },
+    { value: 0, suffix: "", label: "Approved Submissions" },
+    { value: 0, suffix: "", label: "Rejected Submissions" },
+    { value: 24, suffix: "/7", label: "Real-time Monitoring" }
+  ]);
+
   useEffect(() => {
     if (inView) controls.start("visible");
   }, [controls, inView]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/monitoring/stats`);
+      const data = await res.json();
+      setStats([
+        { value: data.totalSubmissions, suffix: "+", label: "Documents Processed" },
+        { value: data.approved, suffix: "", label: "Approved Submissions" },
+        { value: data.rejected, suffix: "", label: "Rejected Submissions" },
+        { value: 24, suffix: "/7", label: "Real-time Monitoring" } 
+      ]);
+    };
+
+    fetchStats();
+  }, []);
 
   return (
     <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
@@ -46,6 +61,7 @@ const StatisticsSection = () => {
     </section>
   );
 };
+
 
 const Counter = ({ from, to, duration }: { from: number; to: number; duration: number }) => {
   const [count, setCount] = useState(from);

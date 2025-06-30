@@ -158,7 +158,7 @@ export default function ReportForm() {
                  isDragActive ? 'Drop file here' : 'Click to upload or drag and drop'}
               </p>
               <p className="text-sm text-muted-foreground">
-                PDF, DOC, DOCX, XLS, XLSX up to 50MB
+                PDF, XLS, XLSX up to 10MB
               </p>
             </div>
           </div>

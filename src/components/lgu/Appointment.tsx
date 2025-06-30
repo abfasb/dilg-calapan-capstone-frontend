@@ -510,7 +510,7 @@ const LGUAppointments = () => {
             <DialogClose asChild>
               <Button
                 variant="outline"
-                className="border-gray-700 hover:bg-gray-800 text-black"
+                className="border-gray-700 hover:bg-black hover:text-white text-black"
               >
                 Close
               </Button>
@@ -724,14 +724,14 @@ const LGUAppointments = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TableCell>
-                                                    <TableCell className="text-right">
+                            <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 w-8 p-0 hover:bg-gray-800 text-gray-400"
+                                    className="h-8 w-8 p-0 hover:bg-cyan-800 hover:text-white text-gray-400"
                                     onClick={() => openDetailsDialog(appointment)}
                                   >
                                     <Eye className="h-4 w-4" />
@@ -742,58 +742,7 @@ const LGUAppointments = () => {
                                 </TooltipContent>
                               </Tooltip>
                             
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-8 w-8 p-0 hover:bg-gray-800 text-gray-400"
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent 
-                                  align="end" 
-                                  className="bg-gray-900 border-gray-800 w-48"
-                                >
-                                   <DropdownMenuItem
-                                    onClick={() => openConfirmationDialog(appointment)}
-                                    disabled={updatingId === appointment._id}
-                                    className="hover:bg-gray-800 focus:bg-gray-800 text-gray-100"
-                                  >
-                                    <CheckCircle2 className="h-4 w-4 mr-2 text-green-400" />
-                                    Confirm
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleStatusUpdate(appointment._id, 'cancelled')}
-                                    disabled={updatingId === appointment._id}
-                                    className="hover:bg-gray-800 focus:bg-gray-800 text-gray-100"
-                                  >
-                                    <XCircle className="h-4 w-4 mr-2 text-red-400" />
-                                    Cancel
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="hover:bg-gray-800 focus:bg-gray-800 text-gray-100 cursor-pointer"
-                                    onClick={() => navigator.clipboard.writeText(appointment._id)}
-                                  >
-                                    <ClipboardList className="h-4 w-4 mr-2 text-gray-400" />
-                                    Copy ID
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator className="bg-gray-800" />
-                                  <DropdownMenuItem
-                                    className="hover:bg-red-800/30 focus:bg-red-800/30 text-red-400 cursor-pointer"
-                                    onClick={() => handleStatusUpdate(appointment._id, 'cancelled')}
-                                    disabled={updatingId === appointment._id}
-                                  >
-                                    {updatingId === appointment._id ? (
-                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    ) : (
-                                      <XCircle className="h-4 w-4 mr-2" />
-                                    )}
-                                    Cancel
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              
                             </div>
                           </TableCell>
                         </motion.tr>

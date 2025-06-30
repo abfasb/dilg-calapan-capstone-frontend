@@ -54,9 +54,12 @@ export default function AISearchCard() {
        <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bot className="w-6 h-6 text-primary" />
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <Bot className="w-4 h-4 text-white" />
+            </div>
             AI Reporting Assistant
           </CardTitle>
+
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">

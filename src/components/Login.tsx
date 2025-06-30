@@ -70,49 +70,56 @@ const Login: React.FC = () => {
     "Barangay Councilor"
   ];
 
-  const clearLocalStorageAuth = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('adminEmail');
-    localStorage.removeItem('name');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('firstName');
-    localStorage.removeItem('lastName');
-    localStorage.removeItem('position');
-    localStorage.removeItem('barangay');
-    localStorage.removeItem('role');
-    localStorage.removeItem('phoneNumber');
-  };
+   const clearLocalStorageAuth = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('adminEmail');
+  localStorage.removeItem('name');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('firstName');
+  localStorage.removeItem('lastName');
+  localStorage.removeItem('position');
+  localStorage.removeItem('barangay');
+  localStorage.removeItem('role');
+  localStorage.removeItem('phoneNumber');
+};
 
-  const clearSessionStorageAuth = () => {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('adminEmail');
-    sessionStorage.removeItem('name');
-    sessionStorage.removeItem('userId');
-    sessionStorage.removeItem('firstName');
-    sessionStorage.removeItem('lastName');
-    sessionStorage.removeItem('position');
-    sessionStorage.removeItem('barangay');
-    sessionStorage.removeItem('role');
-    sessionStorage.removeItem('phoneNumber');
-  };
+ const clearSessionStorageAuth = () => {
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('adminEmail');
+  sessionStorage.removeItem('name');
+  sessionStorage.removeItem('userId');
+  sessionStorage.removeItem('firstName');
+  sessionStorage.removeItem('lastName');
+  sessionStorage.removeItem('position');
+  sessionStorage.removeItem('barangay');
+  sessionStorage.removeItem('role');
+  sessionStorage.removeItem('phoneNumber');
+};
 
-  useEffect(() => {
+ const clearAllAuthStorage = () => {
+  clearLocalStorageAuth();
+  clearSessionStorageAuth();
+};
+
+
+useEffect(() => {
   const checkExistingSession = async () => {
     try {
-      // Check localStorage first (Remember Me sessions)
-      const rememberedToken = localStorage.getItem('token');
+      // Check both storage locations
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       
-      if (rememberedToken) {
+      if (token) {
         try {
-          const decoded = jwtDecode<JwtPayload>(rememberedToken);
+          const decoded = jwtDecode<JwtPayload>(token);
           const isExpired = Date.now() >= decoded.exp * 1000;
           
           if (isExpired) {
-            clearLocalStorageAuth();
+            clearAllAuthStorage();
           } else {
-            // Valid remembered session - auto redirect
-            const userId = localStorage.getItem('userId');
-            const role = localStorage.getItem('role');
+            const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+            
+            const userId = storage.getItem('userId');
+            const role = storage.getItem('role');
             
             if (userId && role) {
               navigate(`/account/${role.toLowerCase()}/${userId}`);
@@ -120,38 +127,13 @@ const Login: React.FC = () => {
             }
           }
         } catch (error) {
-          clearLocalStorageAuth();
-        }
-      }
-      
-      // Check sessionStorage (non-Remember Me sessions)
-      const sessionToken = sessionStorage.getItem('token');
-      if (sessionToken) {
-        try {
-          const decoded = jwtDecode<JwtPayload>(sessionToken);
-          const isExpired = Date.now() >= decoded.exp * 1000;
-          
-          if (isExpired) {
-            clearSessionStorageAuth();
-          } else {
-            // Valid session token - also redirect (user is still logged in)
-            const userId = sessionStorage.getItem('userId');
-            const role = sessionStorage.getItem('role');
-            
-            if (userId && role) {
-              navigate(`/account/${role.toLowerCase()}/${userId}`);
-              return;
-            }
-          }
-        } catch (error) {
-          clearSessionStorageAuth();
+          clearAllAuthStorage();
         }
       }
       
       setIsCheckingSession(false);
     } catch (error) {
-      clearLocalStorageAuth();
-      clearSessionStorageAuth();
+      clearAllAuthStorage();
       setIsCheckingSession(false);
     }
   };

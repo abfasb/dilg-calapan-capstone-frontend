@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, Di
 import { toast } from "react-hot-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Input } from "../../ui/input";
-import { Search, UserCheck, UserCog, UserX, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Search, UserCheck, UserCog, UserX, CheckCircle, XCircle, Loader2, ShieldAlert, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "../../ui/avatar";
 import { Skeleton } from "../../ui/skeleton";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../ui/dropdown-menu";
 
 interface User {
   _id: string;
@@ -21,6 +22,9 @@ interface User {
   phoneNumber?: string;
   position: string;
   firstname?: string;
+  type: string;
+  isActive?: boolean;
+  freezeUntil?: string;
 }
 
 interface PendingLgu {
@@ -49,6 +53,18 @@ const AdminLguManagement: React.FC = () => {
     action: 'approved' | 'rejected' | null;
     name: string;
   }>({ isOpen: false, id: null, action: null, name: '' });
+  
+  const [accountActionDialog, setAccountActionDialog] = useState<{
+    isOpen: boolean;
+    user: User | null;
+    action: 'freeze' | 'delete' | null;
+    freezeDuration: string;
+  }>({
+    isOpen: false,
+    user: null,
+    action: null,
+    freezeDuration: '1'
+  });
 
   useEffect(() => {
     fetchData();
@@ -118,6 +134,7 @@ const AdminLguManagement: React.FC = () => {
             createdAt: new Date().toISOString(),
             phoneNumber: approvedLgu.phoneNumber,
             position: approvedLgu.position || 'N/A',
+            type: "Regular"
           }]);
         }
       }
@@ -139,8 +156,6 @@ const AdminLguManagement: React.FC = () => {
     if (!selectedUser || !newRole) return;
 
     try {
-      // Implement your role update logic here
-      // This is a placeholder for the actual API call
       toast.success(`Role updated successfully to ${newRole}`);
       setUsers(users.map(user => 
         user._id === selectedUser._id ? { ...user, role: newRole } : user
@@ -153,6 +168,66 @@ const AdminLguManagement: React.FC = () => {
 
   const openConfirmDialog = (id: string, action: 'approved' | 'rejected', name: string) => {
     setConfirmDialog({ isOpen: true, id, action, name });
+  };
+
+  const openAccountActionDialog = (user: User, action: 'freeze' | 'delete') => {
+    setAccountActionDialog({
+      isOpen: true,
+      user,
+      action,
+      freezeDuration: '1'
+    });
+  };
+
+  const handleAccountAction = async () => {
+    const { user, action, freezeDuration } = accountActionDialog;
+    if (!user) return;
+    
+    setProcessingId(user._id);
+    
+    try {
+      if (action === 'freeze') {
+        const days = parseInt(freezeDuration);
+        const freezeUntil = new Date();
+        freezeUntil.setDate(freezeUntil.getDate() + days);
+        
+        const response = await fetch(`http://localhost:5000/admin/freeze-account/${user._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ freezeDuration: days })
+        });
+        
+        if (!response.ok) throw new Error('Failed to freeze account');
+        
+        setUsers(users.map(u => 
+          u._id === user._id ? { ...u, isActive: false, freezeUntil: freezeUntil.toISOString() } : u
+        ));
+        
+        toast.success(`Account frozen for ${days} day${days !== 1 ? 's' : ''}`);
+      } 
+      else if (action === 'delete') {
+        const response = await fetch(`http://localhost:5000/admin/delete-account/${user._id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) throw new Error('Failed to delete account');
+        
+        setUsers(users.filter(u => u._id !== user._id));
+        toast.success('Account deleted successfully');
+      }
+      
+      setAccountActionDialog({ isOpen: false, user: null, action: null, freezeDuration: '1' });
+    } catch (error: any) {
+      toast.error(error.message || 'Action failed');
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const filteredUsers = users.filter(user => 
@@ -174,6 +249,27 @@ const AdminLguManagement: React.FC = () => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
+  };
+
+  const getStatusBadge = (user: User) => {
+    if (user.type === 'Google') {
+      return <Badge variant="secondary">Active</Badge>;
+    }
+    
+    if (user.isActive) {
+      return <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>;
+    } else {
+      if (user.freezeUntil) {
+        const freezeDate = new Date(user.freezeUntil);
+        return (
+          <Badge variant="destructive" className="bg-yellow-100 text-yellow-800">
+            Frozen until {freezeDate.toLocaleDateString()}
+          </Badge>
+        );
+      } else {
+        return <Badge variant="destructive">Permanently Frozen</Badge>;
+      }
+    }
   };
 
   return (
@@ -251,6 +347,8 @@ const AdminLguManagement: React.FC = () => {
                           <TableHead className="w-[250px]">Name</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead>Created At</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -258,7 +356,7 @@ const AdminLguManagement: React.FC = () => {
                       <TableBody>
                         {filteredUsers.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                            <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                               No users found matching your search
                             </TableCell>
                           </TableRow>
@@ -286,19 +384,57 @@ const AdminLguManagement: React.FC = () => {
                                   {user.role}
                                 </Badge>
                               </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="bg-slate-100 text-slate-800">
+                                  {user.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {getStatusBadge(user)}
+                              </TableCell>
                               <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                               <TableCell className="text-right">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="font-medium"
-                                  onClick={() => {
-                                    setSelectedUser(user);
-                                    setNewRole(user.role);
-                                  }}
-                                >
-                                  Manage Role
-                                </Button>
+                                <div className="flex justify-end gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="font-medium"
+                                    onClick={() => {
+                                      setSelectedUser(user);
+                                      setNewRole(user.role);
+                                    }}
+                                  >
+                                    Manage Role
+                                  </Button>
+                                  
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        disabled={user.role === 'admin' || user.type === 'Google'}
+                                      >
+                                        Account
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      <DropdownMenuItem 
+                                        onClick={() => openAccountActionDialog(user, 'freeze')}
+                                        disabled={!user.isActive}
+                                      >
+                                        <ShieldAlert className="mr-2 h-4 w-4" />
+                                        {user.isActive ? 'Freeze Account' : 'Account Frozen'}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem 
+                                        onClick={() => openAccountActionDialog(user, 'delete')}
+                                        className="text-red-600 focus:bg-red-50 focus:text-red-700"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Account
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -310,7 +446,7 @@ const AdminLguManagement: React.FC = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="lguRoles" className="mt-0">
+              <TabsContent value="lguRoles" className="mt-0">
               <Card className="border shadow-sm">
                 <CardContent className="p-0">
                   {isLoading ? (
@@ -480,8 +616,7 @@ const AdminLguManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Update Role Dialog */}
-      <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+       <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Update Role for {selectedUser?.name}</DialogTitle>
@@ -582,6 +717,91 @@ const AdminLguManagement: React.FC = () => {
                   {confirmDialog.action === 'approved' ? 'Approve' : 'Reject'} Application
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Account Action Dialog */}
+      <Dialog 
+        open={accountActionDialog.isOpen} 
+        onOpenChange={(open) => !open && setAccountActionDialog({ 
+          isOpen: false, 
+          user: null, 
+          action: null, 
+          freezeDuration: '1'
+        })}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {accountActionDialog.action === 'freeze' ? (
+                <>
+                  <ShieldAlert className="h-5 w-5 text-yellow-500" />
+                  Freeze Account
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-5 w-5 text-red-500" />
+                  Delete Account
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {accountActionDialog.action === 'freeze' ? (
+                `You are about to freeze ${accountActionDialog.user?.name}'s account. 
+                Select freeze duration:`
+              ) : (
+                `Are you sure you want to permanently delete ${accountActionDialog.user?.name}'s account? 
+                This action cannot be undone.`
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {accountActionDialog.action === 'freeze' && (
+            <div className="py-4">
+              <Select 
+                value={accountActionDialog.freezeDuration} 
+                onValueChange={(value) => setAccountActionDialog(prev => ({ ...prev, freezeDuration: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select freeze duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 day</SelectItem>
+                  <SelectItem value="3">3 days</SelectItem>
+                  <SelectItem value="7">1 week</SelectItem>
+                  <SelectItem value="14">2 weeks</SelectItem>
+                  <SelectItem value="30">1 month</SelectItem>
+                  <SelectItem value="0">Permanent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
+          <DialogFooter className="sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setAccountActionDialog({ 
+                isOpen: false, 
+                user: null, 
+                action: null, 
+                freezeDuration: '1'
+              })}
+              className="mt-2 sm:mt-0"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAccountAction}
+              variant={accountActionDialog.action === 'delete' ? 'destructive' : 'default'}
+              className={accountActionDialog.action === 'freeze' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}
+              disabled={processingId === accountActionDialog.user?._id}
+            >
+              {processingId === accountActionDialog.user?._id ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {accountActionDialog.action === 'freeze' ? 'Freeze Account' : 'Delete Account'}
             </Button>
           </DialogFooter>
         </DialogContent>

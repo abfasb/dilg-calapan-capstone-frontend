@@ -506,12 +506,14 @@ type Report = {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      {notificationPermission === 'granted' ? (
-                        <Bell className="w-6 h-6 text-primary" />
-                      ) : (
-                        <BellOff className="w-6 h-6 text-muted-foreground" />
-                      )}
+                   <CardTitle className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        {notificationPermission === 'granted' ? (
+                          <Bell className="w-4 h-4 text-white" />
+                        ) : (
+                          <BellOff className="w-4 h-4 text-white/70" />
+                        )}
+                      </div>
                       Notifications
                     </CardTitle>
                   </CardHeader>

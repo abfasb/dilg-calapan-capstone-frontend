@@ -79,7 +79,6 @@ const statuses = {
   rejected: { label: 'Revisions Needed', color: 'bg-rose-500', icon: XCircle },
 };
 
-
 const StatusIndicator = ({ status, report }: { status: Report['status'], report: Report }) => {
   const { color, label, icon: Icon } = statuses[status];
   const [showCommentsDialog, setShowCommentsDialog] = useState(false);
@@ -207,7 +206,6 @@ export default function MyReport() {
   const lastUpdated = reports.length > 0 && reports[0].updatedAt
     ? formatDistanceToNow(new Date(reports[0].updatedAt), { addSuffix: true })
     : 'N/A';
-
 
   if (loading) return <ReportsSkeleton />;
   
@@ -405,7 +403,7 @@ export default function MyReport() {
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link
-                          to={`/account/citizen/submission/${report._id}`}
+                          to={`/account/citizen/submission/${report.referenceNumber}`} // Fixed to use referenceNumber
                           state={{ 
                             reportData: report.data,
                             formFields: report.formId?.fields || [],
@@ -415,9 +413,10 @@ export default function MyReport() {
                               position: position || "",
                               barangay: barangay || "",
                               phoneNumber: phoneNumber || ""
-                            }
+                            },
+                            referenceNumber: report.referenceNumber, // Added referenceNumber
+                            createdAt: report.createdAt // Added createdAt
                           }}
-                          
                           className="flex items-center"
                         >
                           <Receipt className="w-4 h-4 mr-2" />

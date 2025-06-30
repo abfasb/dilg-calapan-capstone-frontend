@@ -39,6 +39,7 @@ interface SubmissionState {
     label: string;
     type: string;
   }>;
+  createdAt: string; // Added
 }
 
 interface SubmissionResponse {
@@ -79,7 +80,7 @@ export default function SubmissionSuccess(): JSX.Element {
     if (state) {
       setSubmission({
         referenceNumber: state.referenceNumber,
-        createdAt: new Date().toISOString(),
+        createdAt: state.createdAt, // Use passed createdAt
         submissionData: state.submissionData,
         userData: state.userData,
         formFields: state.formFields

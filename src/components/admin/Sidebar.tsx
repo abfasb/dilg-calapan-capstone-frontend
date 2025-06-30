@@ -201,8 +201,6 @@ export const Sidebar = ({
           <div className="flex justify-between items-center text-gray-400">
             <span className="text-xs font-medium tracking-wide">v2.1.0</span>
             <div className="flex items-center gap-1.5">
-              <FiDatabase className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-xs font-medium">98% Storage</span>
             </div>
           </div>
         </div>

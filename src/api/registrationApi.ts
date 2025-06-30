@@ -11,7 +11,6 @@ export const registerUser = async(userData: any) => {
         throw error;
     }
 }
-
 export const loginUser = async (credentials: {
   email: string;
   password: string;
@@ -23,15 +22,15 @@ export const loginUser = async (credentials: {
       credentials,
       { headers: { 'Content-Type': 'application/json' } }
     );
-    
+
     if (credentials.rememberMe) {
       sessionStorage.removeItem('token');
     } else {
       localStorage.removeItem('token');
     }
-    
+
     return response.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Login failed');
+    throw error;
   }
 };

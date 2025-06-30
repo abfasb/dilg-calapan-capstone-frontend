@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FcGoogle } from 'react-icons/fc';
-import { FaEye, FaEyeSlash, FaExclamationCircle, FaTimes } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaExclamationCircle, FaTimes, FaLock } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { loginUser } from '../api/registrationApi';
@@ -46,6 +46,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isAccountFrozen, setIsAccountFrozen] = useState(false);
   
   const { 
     register: registerGoogle, 
@@ -70,79 +71,79 @@ const Login: React.FC = () => {
     "Barangay Councilor"
   ];
 
-   const clearLocalStorageAuth = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('adminEmail');
-  localStorage.removeItem('name');
-  localStorage.removeItem('userId');
-  localStorage.removeItem('firstName');
-  localStorage.removeItem('lastName');
-  localStorage.removeItem('position');
-  localStorage.removeItem('barangay');
-  localStorage.removeItem('role');
-  localStorage.removeItem('phoneNumber');
-};
-
- const clearSessionStorageAuth = () => {
-  sessionStorage.removeItem('token');
-  sessionStorage.removeItem('adminEmail');
-  sessionStorage.removeItem('name');
-  sessionStorage.removeItem('userId');
-  sessionStorage.removeItem('firstName');
-  sessionStorage.removeItem('lastName');
-  sessionStorage.removeItem('position');
-  sessionStorage.removeItem('barangay');
-  sessionStorage.removeItem('role');
-  sessionStorage.removeItem('phoneNumber');
-};
-
- const clearAllAuthStorage = () => {
-  clearLocalStorageAuth();
-  clearSessionStorageAuth();
-};
-
-
-useEffect(() => {
-  const checkExistingSession = async () => {
-    try {
-      // Check both storage locations
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      
-      if (token) {
-        try {
-          const decoded = jwtDecode<JwtPayload>(token);
-          const isExpired = Date.now() >= decoded.exp * 1000;
-          
-          if (isExpired) {
-            clearAllAuthStorage();
-          } else {
-            const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
-            
-            const userId = storage.getItem('userId');
-            const role = storage.getItem('role');
-            
-            if (userId && role) {
-              navigate(`/account/${role.toLowerCase()}/${userId}`);
-              return;
-            }
-          }
-        } catch (error) {
-          clearAllAuthStorage();
-        }
-      }
-      
-      setIsCheckingSession(false);
-    } catch (error) {
-      clearAllAuthStorage();
-      setIsCheckingSession(false);
-    }
+  const clearLocalStorageAuth = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('adminEmail');
+    localStorage.removeItem('name');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('firstName');
+    localStorage.removeItem('lastName');
+    localStorage.removeItem('position');
+    localStorage.removeItem('barangay');
+    localStorage.removeItem('role');
+    localStorage.removeItem('phoneNumber');
   };
 
-  checkExistingSession();
-}, [navigate]);
+  const clearSessionStorageAuth = () => {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('adminEmail');
+    sessionStorage.removeItem('name');
+    sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('firstName');
+    sessionStorage.removeItem('lastName');
+    sessionStorage.removeItem('position');
+    sessionStorage.removeItem('barangay');
+    sessionStorage.removeItem('role');
+    sessionStorage.removeItem('phoneNumber');
+  };
+
+  const clearAllAuthStorage = () => {
+    clearLocalStorageAuth();
+    clearSessionStorageAuth();
+  };
+
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        
+        if (token) {
+          try {
+            const decoded = jwtDecode<JwtPayload>(token);
+            const isExpired = Date.now() >= decoded.exp * 1000;
+            
+            if (isExpired) {
+              clearAllAuthStorage();
+            } else {
+              const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+              
+              const userId = storage.getItem('userId');
+              const role = storage.getItem('role');
+              
+              if (userId && role) {
+                navigate(`/account/${role.toLowerCase()}/${userId}`);
+                return;
+              }
+            }
+          } catch (error) {
+            clearAllAuthStorage();
+          }
+        }
+        
+        setIsCheckingSession(false);
+      } catch (error) {
+        clearAllAuthStorage();
+        setIsCheckingSession(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [navigate]);
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     setError("");
+    setIsAccountFrozen(false);
+    
     try {
       const response = await loginUser({
         email: data.email,
@@ -150,11 +151,9 @@ useEffect(() => {
         rememberMe: data.rememberMe
       });
       
-      // Clear both storages first to prevent conflicts
       clearLocalStorageAuth();
       clearSessionStorageAuth();
       
-      // Use localStorage ONLY if rememberMe is true, otherwise use sessionStorage
       const storage = data.rememberMe ? localStorage : sessionStorage;
       
       storage.setItem('token', response.token);
@@ -185,15 +184,27 @@ useEffect(() => {
         navigate(`/account/${response.user.role.toLowerCase()}/${response.user.id}`);
       }
   
-    } catch (err) {
-      const errorMessage = 'Something is wrong with your username or password.';
-      setError(errorMessage);
+    } catch (err: any) {
+      // Handle account freeze specifically
+      if (err.response?.status === 403 && err.response.data?.message) {
+        setError(err.response.data.message);
+        setIsAccountFrozen(true);
+        setValue('password', ''); 
+      } else {
+        const errorMessage = 'Something is wrong with your username or password.';
+        setError(errorMessage);
+        setIsAccountFrozen(false);
+      }
     }
   };
 
   const onSubmitGoogle: SubmitHandler<GoogleFormInput> = (data) => {
     sessionStorage.setItem('googleSignupData', JSON.stringify(data));
     window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+  };
+
+  const isFreezeError = (error: string) => {
+    return error.includes("frozen") || error.includes("freeze");
   };
 
   if (isCheckingSession) {
@@ -341,11 +352,13 @@ useEffect(() => {
                   type={showPassword ? 'text' : 'password'}
                   id="password"
                   placeholder=" "
+                  disabled={isAccountFrozen}
                   autoComplete="current-password"
                   className={`peer w-full px-4 py-4 rounded-xl bg-white/5 border ${
                     errors.password ? 'border-red-400/50' : 'border-white/10'
                   } focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 outline-none transition-all
-                  duration-200 text-white placeholder-transparent pr-14`}
+                  duration-200 text-white placeholder-transparent pr-14
+                  ${isAccountFrozen ? 'opacity-60 cursor-not-allowed' : ''}`}
                 />
                 <label 
                   htmlFor="password" 
@@ -358,9 +371,14 @@ useEffect(() => {
                 </label>
                 <button 
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 text-gray-400 hover:text-cyan-400 transition-colors p-1 rounded-md"
+                  onClick={() => !isAccountFrozen && setShowPassword(!showPassword)}
+                  className={`absolute right-4 top-4 transition-colors p-1 rounded-md ${
+                    isAccountFrozen 
+                      ? 'text-gray-500 cursor-not-allowed' 
+                      : 'text-gray-400 hover:text-cyan-400'
+                  }`}
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  disabled={isAccountFrozen}
                 >
                   {showPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
                 </button>
@@ -384,10 +402,33 @@ useEffect(() => {
                   initial={{ opacity: 0, y: -10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className="text-red-400 text-sm flex items-center gap-3 p-4 rounded-xl bg-red-900/20 border border-red-400/20"
+                  className={`text-sm flex items-start gap-3 p-4 rounded-xl ${
+                    isFreezeError(error) 
+                      ? "bg-amber-900/30 border border-amber-500/30 text-amber-200"
+                      : "bg-red-900/20 border border-red-400/20 text-red-400"
+                  }`}
                 >
-                  <FaExclamationCircle className="flex-shrink-0 w-5 h-5" />
-                  <span>{error}</span>
+                  <div>
+                    {isFreezeError(error) ? (
+                      <FaLock className="flex-shrink-0 w-5 h-5 mt-1 text-amber-400" />
+                    ) : (
+                      <FaExclamationCircle className="flex-shrink-0 w-5 h-5 mt-1" />
+                    )}
+                  </div>
+                  <div>
+                    <p>{error}</p>
+                    {isFreezeError(error) && (
+                      <p className="mt-2 text-sm">
+                        Contact support at{" "}
+                        <a 
+                          href="mailto:support@barangay.gov.ph" 
+                          className="text-cyan-400 hover:underline"
+                        >
+                          support@barangay.gov.ph
+                        </a>
+                      </p>
+                    )}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -398,11 +439,16 @@ useEffect(() => {
                 <Checkbox 
                   id="remember" 
                   {...register("rememberMe")}
-                  className="border-cyan-400/50 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500" 
+                  disabled={isAccountFrozen}
+                  className={`border-cyan-400/50 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500 ${
+                    isAccountFrozen ? 'opacity-60 cursor-not-allowed' : ''
+                  }`} 
                 />
                 <label
                   htmlFor="remember"
-                  className="text-sm text-gray-300 font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  className={`text-sm text-gray-300 font-medium leading-none ${
+                    isAccountFrozen ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                  }`}
                 >
                   Remember me
                 </label>
@@ -411,8 +457,13 @@ useEffect(() => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 type="button"
-                onClick={() => navigate('/account/forgot-password')}
-                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+                onClick={() => !isAccountFrozen && navigate('/account/forgot-password')}
+                className={`text-sm font-medium ${
+                  isAccountFrozen 
+                    ? 'text-gray-500 cursor-not-allowed' 
+                    : 'text-cyan-400 hover:text-cyan-300'
+                } transition-colors`}
+                disabled={isAccountFrozen}
               >
                 Forgot password?
               </motion.button>
@@ -420,15 +471,18 @@ useEffect(() => {
 
             {/* Submit Button */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: isAccountFrozen ? 1 : 1.02 }}
+              whileTap={{ scale: isAccountFrozen ? 1 : 0.98 }}
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 
-                        text-white font-semibold py-4 rounded-xl transition-all duration-200 shadow-lg
-                        hover:shadow-cyan-500/25 disabled:opacity-50 disabled:cursor-not-allowed
-                        flex items-center justify-center gap-2 text-sm relative overflow-hidden
-                        focus:ring-4 focus:ring-cyan-500/30"
+              disabled={isSubmitting || isAccountFrozen}
+              className={`w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-4 rounded-xl 
+                        shadow-lg flex items-center justify-center gap-2 text-sm relative overflow-hidden
+                        focus:ring-4 focus:ring-cyan-500/30
+                        ${
+                          isAccountFrozen 
+                            ? 'opacity-50 cursor-not-allowed from-gray-600 to-gray-700' 
+                            : 'hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/25'
+                        }`}
             >
               {isSubmitting ? (
                 <>
@@ -441,26 +495,17 @@ useEffect(() => {
                   <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   <span>Signing in...</span>
                 </>
+              ) : isAccountFrozen ? (
+                <>
+                  <FaLock className="w-4 h-4" />
+                  <span>Account Restricted</span>
+                </>
               ) : (
                 'Sign In'
               )}
             </motion.button>
           </form>
 
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-gray-400 text-sm">
-              New to our platform?{' '}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                type="button"
-                onClick={() => navigate('/account/register')}
-                className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
-              >
-                Create an account
-              </motion.button>
-            </p>
-          </div>
 
           {/* Background Gradient */}
           <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-white/5 to-transparent" />

@@ -4,6 +4,8 @@ import { FiMenu, FiX, FiBarChart2, FiFileText, FiUsers, FiGlobe, FiSettings, FiC
 import { Megaphone, ChevronRight } from 'lucide-react';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { cn } from '../../lib/utils';
+import { useEffect } from 'react';
+import axios from 'axios';
 
 const sidebarVariants = {
   open: { width: '17rem' },
@@ -17,6 +19,32 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
 }) => {
   const email = localStorage.getItem("adminEmail");
   const name = localStorage.getItem("name");
+
+  
+    useEffect(() => {
+    const interval = setInterval(async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+  
+      try {
+        await axios.get(`${import.meta.env.VITE_API_URL}/admin/verify-session`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch (err: any) {
+        const reason = err.response?.data?.reason;
+  
+        if (reason === 'frozen') {
+          window.location.href = '/account/frozen';
+        } else if (reason === 'deleted') {
+          window.location.href = '/account/delete';
+        } else {
+          window.location.href = '/account/login';
+        }
+      }
+    }, 10_000); 
+  
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -54,14 +82,13 @@ export const Sidebar = ({ isOpen, onToggle, user }: {
           </motion.button>
         </div>
 
-        <div className="space-y-2 mt-4 p-2.5">
+        <div className="space-y-4 mt-4 p-2.5">
           <NavItem icon={<FiBarChart2 />} text="Dashboard" to="" end isOpen={isOpen} />
           <NavItem icon={<FiFileText />} text="Reports" to="reports" isOpen={isOpen} />
           <NavItem icon={<FiUsers />} text="Staff" to="staff" isOpen={isOpen} />
           <NavItem icon={<Megaphone />} text="Announcements" to="announcements" isOpen={isOpen} />
           <NavItem icon={<FiSend />} text="Monitoring & Submissions" to="community" isOpen={isOpen} />
           <NavItem icon={<FiCalendar />} text="Appointments" to="appointments" isOpen={isOpen} />
-          <NavItem icon={<FiSettings />} text="Settings" to="settings" isOpen={isOpen} />
         </div>
 
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-800/50 bg-gradient-to-t from-gray-900/50 to-transparent">

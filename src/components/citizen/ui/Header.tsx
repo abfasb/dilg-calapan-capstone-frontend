@@ -30,6 +30,7 @@ import {
   Menu,
   X
 } from "lucide-react";
+import axios from "axios";
 
 interface INotification {
   _id: string;
@@ -84,7 +85,6 @@ export function Header() {
     return () => clearInterval(interval);
   }, [userId]);
 
-  // Handle user data
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const googleName = queryParams.get("name");
@@ -148,12 +148,37 @@ export function Header() {
       );
     } catch (error) {
       console.error("Error marking all as read:", error);
-      // Revert on error
       const originalNotifications = notifications;
       setNotifications(originalNotifications);
       setUnreadCount(originalNotifications.filter(n => !n.read).length);
     }
   };
+
+  useEffect(() => {
+  const interval = setInterval(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await axios.get(`${import.meta.env.VITE_API_URL}/admin/verify-session`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err: any) {
+      const reason = err.response?.data?.reason;
+
+      if (reason === 'frozen') {
+        window.location.href = '/account/frozen';
+      } else if (reason === 'deleted') {
+        window.location.href = '/account/delete';
+      } else {
+        window.location.href = '/account/login';
+      }
+    }
+  }, 10_000); 
+
+  return () => clearInterval(interval);
+}, []);
+
 
   const handleLogout = () => {
     localStorage.removeItem("name");

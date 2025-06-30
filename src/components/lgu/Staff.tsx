@@ -251,7 +251,6 @@ export default function Staff() {
               {[
                 { key: 'firstName', label: 'Staff Member' },
                 { key: 'position', label: 'Position' },
-                { key: 'barangay', label: 'Barangay' },
                 { key: 'phoneNumber', label: 'Contact' },
                 { key: 'isActive', label: 'Status' },
                 { key: 'lastActivity', label: 'Last Activity' },
@@ -302,12 +301,6 @@ export default function Staff() {
                   {/* Position Cell */}
                   <TableCell className="text-gray-300">{member.position}</TableCell>
 
-                  {/* Barangay Cell */}
-                  <TableCell>
-                    <Badge className="bg-gray-700 text-cyan-400 hover:bg-gray-600 text-sm font-medium">
-                      {member.barangay}
-                    </Badge>
-                  </TableCell>
 
                   {/* Contact Cell */}
                   <TableCell className="text-gray-300">

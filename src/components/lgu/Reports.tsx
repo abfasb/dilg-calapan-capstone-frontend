@@ -98,6 +98,8 @@ export default function Reports() {
   const [rejectionComment, setRejectionComment] = useState('');
   const [currentResponseId, setCurrentResponseId] = useState<string | null>(null);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [autoReload, setAutoReload] = useState(true);
+  const [lastFetchTime, setLastFetchTime] = useState(Date.now());
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -261,6 +263,32 @@ export default function Reports() {
       toast.error('Failed to update status');
     }
   };
+
+  useEffect(() => {
+  if (!selectedForm || !autoReload) return;
+
+  const interval = setInterval(async () => {
+    try {
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/response/${selectedForm._id}`);
+      setResponses(data);
+      setLastFetchTime(Date.now());
+    } catch (error) {
+      console.error('Auto-reload failed:', error);
+    }
+  }, 10000); 
+
+  return () => clearInterval(interval);
+}, [selectedForm, autoReload]);
+
+useEffect(() => {
+  if (!autoReload) return;
+
+  const interval = setInterval(() => {
+    fetchCombinedHistory();
+  }, 15000); 
+
+  return () => clearInterval(interval);
+}, [autoReload]);
 
   const renderResponseValue = (fieldId: string, value: any) => {
     const field = selectedResponse?.formId.fields.find(f => f.id === fieldId);
@@ -518,6 +546,17 @@ const handleSaveSignature = async () => {
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-cyan-400">Report Forms</h1>
               <div className="flex items-center gap-4 ml-auto">
+                <button 
+                  onClick={() => setAutoReload(!autoReload)}
+                  className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg transition-colors ${
+                    autoReload 
+                      ? 'text-green-400 bg-green-500/20 hover:bg-green-500/30' 
+                      : 'text-gray-400 bg-gray-700/50 hover:bg-gray-700/70'
+                  }`}
+                >
+                  <RefreshCw className={`w-4 h-4 ${autoReload ? 'animate-spin' : ''}`} />
+                  Auto-reload {autoReload ? 'ON' : 'OFF'}
+                </button>
                 <button 
                   onClick={() => setShowActivityModal(true)}
                   className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm px-4 py-2 rounded-lg bg-gray-700/50 hover:bg-gray-700/70 transition-colors"

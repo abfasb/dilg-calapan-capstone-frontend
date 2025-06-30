@@ -590,7 +590,7 @@ type Report = {
             </TabsList>
 
                   <TabsContent value="reporting">
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid md:grid-cols-1 gap-6">
                     <Card>
                       <CardHeader>
                         <CardTitle>New Complaint Report</CardTitle>
@@ -648,35 +648,6 @@ type Report = {
                         </Button>
                       </CardFooter>
                     </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>New Incident Report</CardTitle>
-                  <CardDescription>
-                    AI-powered smart form with auto-complete
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input placeholder="Location (auto-detected)" />
-                  <Textarea 
-                    placeholder="Describe the incident..." 
-                    className="min-h-[150px]" 
-                  />
-                  <div className="flex gap-2">
-                    <Input type="file" multiple />
-                    <Button variant="outline">Scan Image</Button>
-                  </div>
-                  <Alert className="dark:bg-gray-800 dark:border-gray-700">
-                    <AlertCircle className="w-4 h-4" />
-                    <AlertTitle>Possible duplicate detected</AlertTitle>
-                    <AlertDescription>
-                      Similar report from 2 hours ago
-                    </AlertDescription>
-                  </Alert>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">Submit Report</Button>
-                </CardFooter>
-              </Card>
 
             
             </div>
@@ -747,16 +718,6 @@ type Report = {
             </div>
           </TabsContent>
         </Tabs>
-
-        <Card className="border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/30">
-          <CardHeader className="flex flex-row items-center gap-4">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
-            <div>
-              <CardTitle>Emergency Alerts</CardTitle>
-              <CardDescription>Storm warning in your area</CardDescription>
-            </div>
-          </CardHeader>
-        </Card>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="h-full">

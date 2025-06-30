@@ -224,7 +224,6 @@ const AdminAnalytics: React.FC = () => {
             title="Total Users"
             value={data.userStats?.totalUsers}
             icon={<Users className="w-6 h-6" />}
-            trend={data.userStats?.growthRate ?? 12.5}
             color="from-blue-500 to-blue-600"
             bgColor="bg-blue-50"
             description="Active registered users"
@@ -233,7 +232,6 @@ const AdminAnalytics: React.FC = () => {
             title="LGU Officials"
             value={data.userStats?.lguUsers}
             icon={<CheckCircle className="w-6 h-6" />}
-            trend={8.2}
             color="from-emerald-500 to-emerald-600"
             bgColor="bg-emerald-50"
             description="Verified officials"
@@ -242,7 +240,6 @@ const AdminAnalytics: React.FC = () => {
             title="Pending Approvals"
             value={data.userStats?.pendingApprovals}
             icon={<Clock className="w-6 h-6" />}
-            trend={-15.3}
             color="from-amber-500 to-amber-600"
             bgColor="bg-amber-50"
             description="Awaiting review"
@@ -251,7 +248,6 @@ const AdminAnalytics: React.FC = () => {
             title="Avg Response Time"
             value={`${data.responseStats?.averageProcessingTime?.toFixed(1) || "2.4"}h`}
             icon={<TrendingUp className="w-6 h-6" />}
-            trend={-8.7}
             color="from-purple-500 to-purple-600"
             bgColor="bg-purple-50"
             description="Processing efficiency"
@@ -357,9 +353,6 @@ const AdminAnalytics: React.FC = () => {
                       className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
                     >
                       Form Responses
-                    </TabsTrigger>
-                    <TabsTrigger value="sectors" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                      Sector Distribution
                     </TabsTrigger>
                   </TabsList>
 
@@ -606,7 +599,6 @@ const EnhancedMetricCard = ({
   title,
   value,
   icon,
-  trend,
   color,
   bgColor,
   description,
@@ -614,7 +606,6 @@ const EnhancedMetricCard = ({
   title: string
   value: any
   icon: React.ReactNode
-  trend: number
   color: string
   bgColor: string
   description: string
@@ -626,18 +617,6 @@ const EnhancedMetricCard = ({
           className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
         >
           {icon}
-        </div>
-        <div className="text-right">
-          <div
-            className={cn(
-              "flex items-center gap-1 text-sm font-semibold",
-              trend >= 0 ? "text-emerald-600" : "text-red-500",
-            )}
-          >
-            {trend >= 0 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
-            {Math.abs(trend).toFixed(1)}%
-          </div>
-          <p className="text-xs text-gray-500">vs last month</p>
         </div>
       </div>
 

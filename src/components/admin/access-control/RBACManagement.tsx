@@ -5,11 +5,11 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from ".
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "../../ui/dialog";
-import { toast } from "react-hot-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Input } from "../../ui/input";
-import { Search, UserCheck, UserCog, UserX, CheckCircle, XCircle, Loader2, ShieldAlert, Trash2 } from "lucide-react";
+import { Search, UserCheck, UserCog, UserX, CheckCircle, XCircle, Loader2, ShieldAlert, Trash2, CheckCircleIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "../../ui/avatar";
+import { toast, Toaster } from 'react-hot-toast';
 import { Skeleton } from "../../ui/skeleton";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../ui/dropdown-menu";
 
@@ -22,7 +22,6 @@ interface User {
   phoneNumber?: string;
   position: string;
   firstname?: string;
-  type: string;
   isActive?: boolean;
   freezeUntil?: string;
 }
@@ -42,8 +41,6 @@ const AdminLguManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("users");
   const [users, setUsers] = useState<User[]>([]);
   const [pendingLgus, setPendingLgus] = useState<PendingLgu[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [newRole, setNewRole] = useState<string>("");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -134,7 +131,6 @@ const AdminLguManagement: React.FC = () => {
             createdAt: new Date().toISOString(),
             phoneNumber: approvedLgu.phoneNumber,
             position: approvedLgu.position || 'N/A',
-            type: "Regular"
           }]);
         }
       }
@@ -152,20 +148,6 @@ const AdminLguManagement: React.FC = () => {
     }
   };
 
-  const handleUpdateRole = async () => {
-    if (!selectedUser || !newRole) return;
-
-    try {
-      toast.success(`Role updated successfully to ${newRole}`);
-      setUsers(users.map(user => 
-        user._id === selectedUser._id ? { ...user, role: newRole } : user
-      ));
-      setSelectedUser(null);
-    } catch (error) {
-      toast.error("Failed to update role");
-    }
-  };
-
   const openConfirmDialog = (id: string, action: 'approved' | 'rejected', name: string) => {
     setConfirmDialog({ isOpen: true, id, action, name });
   };
@@ -175,6 +157,15 @@ const AdminLguManagement: React.FC = () => {
       isOpen: true,
       user,
       action,
+      freezeDuration: '1'
+    });
+  };
+
+  const closeAccountActionDialog = () => {
+    setAccountActionDialog({
+      isOpen: false,
+      user: null,
+      action: null,
       freezeDuration: '1'
     });
   };
@@ -191,7 +182,7 @@ const AdminLguManagement: React.FC = () => {
         const freezeUntil = new Date();
         freezeUntil.setDate(freezeUntil.getDate() + days);
         
-        const response = await fetch(`http://localhost:5000/admin/freeze-account/${user._id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/freeze-account/${user._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -205,11 +196,21 @@ const AdminLguManagement: React.FC = () => {
         setUsers(users.map(u => 
           u._id === user._id ? { ...u, isActive: false, freezeUntil: freezeUntil.toISOString() } : u
         ));
-        
-        toast.success(`Account frozen for ${days} day${days !== 1 ? 's' : ''}`);
+
+        toast.success(`Account frozen for ${days} day${days !== 1 ? 's' : ''}`, {
+                icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
+                style: {
+                  background: '#1a1d24',
+                  color: '#fff',
+                  border: '1px solid #2a2f38',
+                  padding: '16px',
+                },
+                duration: 8000,
+              });
+              window.location.reload(); 
       } 
       else if (action === 'delete') {
-        const response = await fetch(`http://localhost:5000/admin/delete-account/${user._id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/delete-account/${user._id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -219,10 +220,21 @@ const AdminLguManagement: React.FC = () => {
         if (!response.ok) throw new Error('Failed to delete account');
         
         setUsers(users.filter(u => u._id !== user._id));
-        toast.success('Account deleted successfully');
+        toast.success('Account Deleted Successfully!', {
+                icon: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
+                style: {
+                  background: '#1a1d24',
+                  color: '#fff',
+                  border: '1px solid #2a2f38',
+                  padding: '16px',
+                },
+                duration: 4000,
+              });
+
+              window.location.reload(); 
       }
       
-      setAccountActionDialog({ isOpen: false, user: null, action: null, freezeDuration: '1' });
+      closeAccountActionDialog();
     } catch (error: any) {
       toast.error(error.message || 'Action failed');
     } finally {
@@ -252,28 +264,36 @@ const AdminLguManagement: React.FC = () => {
   };
 
   const getStatusBadge = (user: User) => {
-    if (user.type === 'Google') {
-      return <Badge variant="secondary">Active</Badge>;
-    }
-    
     if (user.isActive) {
       return <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>;
     } else {
       if (user.freezeUntil) {
         const freezeDate = new Date(user.freezeUntil);
-        return (
-          <Badge variant="destructive" className="bg-yellow-100 text-yellow-800">
-            Frozen until {freezeDate.toLocaleDateString()}
-          </Badge>
-        );
+        if (freezeDate.getTime() === new Date(0).getTime()) {
+          return <Badge variant="destructive">Permanently Frozen</Badge>;
+        } else {
+          return (
+            <Badge variant="destructive" className="bg-yellow-100 text-yellow-800">
+              Frozen until {freezeDate.toLocaleDateString()}
+            </Badge>
+          );
+        }
       } else {
-        return <Badge variant="destructive">Permanently Frozen</Badge>;
+        return <Badge className=" bg-green-400">Normal</Badge>;
       }
     }
   };
 
   return (
     <div className="p-6 space-y-6">
+       <Toaster
+              position="top-right"
+              gutter={32}
+              containerClassName="!top-4 !right-6"
+              toastOptions={{
+                className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+              }}
+            />
       <Card className="border-0 shadow-md">
         <CardHeader className="bg-slate-50 rounded-t-lg">
           <CardTitle className="text-2xl font-bold text-slate-800">LGU Management</CardTitle>
@@ -347,7 +367,6 @@ const AdminLguManagement: React.FC = () => {
                           <TableHead className="w-[250px]">Name</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
-                          <TableHead>Type</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Created At</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
@@ -356,7 +375,7 @@ const AdminLguManagement: React.FC = () => {
                       <TableBody>
                         {filteredUsers.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                            <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                               No users found matching your search
                             </TableCell>
                           </TableRow>
@@ -385,34 +404,17 @@ const AdminLguManagement: React.FC = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <Badge variant="outline" className="bg-slate-100 text-slate-800">
-                                  {user.type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
                                 {getStatusBadge(user)}
                               </TableCell>
                               <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="font-medium"
-                                    onClick={() => {
-                                      setSelectedUser(user);
-                                      setNewRole(user.role);
-                                    }}
-                                  >
-                                    Manage Role
-                                  </Button>
-                                  
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button 
                                         size="sm" 
                                         variant="outline"
-                                        disabled={user.role === 'admin' || user.type === 'Google'}
+                                        disabled={user.role === 'admin'}
                                       >
                                         Account
                                       </Button>
@@ -420,10 +422,9 @@ const AdminLguManagement: React.FC = () => {
                                     <DropdownMenuContent>
                                       <DropdownMenuItem 
                                         onClick={() => openAccountActionDialog(user, 'freeze')}
-                                        disabled={!user.isActive}
                                       >
                                         <ShieldAlert className="mr-2 h-4 w-4" />
-                                        {user.isActive ? 'Freeze Account' : 'Account Frozen'}
+                                        {'Freeze Account'}
                                       </DropdownMenuItem>
                                       <DropdownMenuItem 
                                         onClick={() => openAccountActionDialog(user, 'delete')}
@@ -446,7 +447,7 @@ const AdminLguManagement: React.FC = () => {
               </Card>
             </TabsContent>
 
-              <TabsContent value="lguRoles" className="mt-0">
+            <TabsContent value="lguRoles" className="mt-0">
               <Card className="border shadow-sm">
                 <CardContent className="p-0">
                   {isLoading ? (
@@ -616,63 +617,14 @@ const AdminLguManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-       <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Update Role for {selectedUser?.name}</DialogTitle>
-            <DialogDescription>
-              Change the user's role in the system. This will affect their permissions.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Select value={newRole} onValueChange={(value) => setNewRole(value)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {['admin', 'lgu', 'user'].map((role) => (
-                  <SelectItem key={role} value={role}>
-                    <div className="flex items-center">
-                      <Badge
-                        className={`mr-2 ${
-                          role === 'admin'
-                            ? 'bg-blue-100 text-blue-800'
-                            : role === 'lgu'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-slate-100 text-slate-800'
-                        }`}
-                      >
-                        {role}
-                      </Badge>
-                      <span className="capitalize">{role}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter className="sm:justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setSelectedUser(null)}
-              className="mt-2 sm:mt-0"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleUpdateRole}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Confirmation Dialog */}
       <Dialog
         open={confirmDialog.isOpen}
-        onOpenChange={(open) => !open && setConfirmDialog({ isOpen: false, id: null, action: null, name: '' })}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmDialog({ isOpen: false, id: null, action: null, name: '' });
+          }
+        }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -725,12 +677,11 @@ const AdminLguManagement: React.FC = () => {
       {/* Account Action Dialog */}
       <Dialog 
         open={accountActionDialog.isOpen} 
-        onOpenChange={(open) => !open && setAccountActionDialog({ 
-          isOpen: false, 
-          user: null, 
-          action: null, 
-          freezeDuration: '1'
-        })}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeAccountActionDialog();
+          }
+        }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -782,12 +733,7 @@ const AdminLguManagement: React.FC = () => {
           <DialogFooter className="sm:justify-between">
             <Button
               variant="outline"
-              onClick={() => setAccountActionDialog({ 
-                isOpen: false, 
-                user: null, 
-                action: null, 
-                freezeDuration: '1'
-              })}
+              onClick={closeAccountActionDialog}
               className="mt-2 sm:mt-0"
             >
               Cancel

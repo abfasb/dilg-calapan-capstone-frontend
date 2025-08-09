@@ -200,6 +200,11 @@ export function Header() {
     setMobileMenuOpen(false);
   }
 
+  const navigateToSupport = () => {
+    navigate('/account/support');
+    setMobileMenuOpen(false);
+   }
+
   const navigateToAppointments = () => {
     navigate(`/account/citizen/appointments/${userId}`);
     setMobileMenuOpen(false);
@@ -343,6 +348,7 @@ export function Header() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
+                  onClick={navigateToSupport}
                   className="gap-2 transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   <HelpCircle className="h-4 w-4" />

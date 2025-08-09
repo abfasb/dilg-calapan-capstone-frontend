@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   FiHome, FiShield, FiUser, FiBarChart, FiMonitor, FiBell,
   FiChevronDown, FiChevronUp, FiSettings, FiDatabase,
-  FiLock, FiUsers, FiFileText, FiActivity, FiAlertCircle 
+  FiLock, FiUsers, FiFileText, FiActivity, FiAlertCircle, 
+  FiMessageSquare
 } from 'react-icons/fi';
 import { NavLink, useLocation } from 'react-router-dom';
 
@@ -54,7 +55,7 @@ export const Sidebar = ({
         { text: "Registration", path: "citizen-management/registration", icon: <FiUser /> },
         { text: "Staff Onboarding", path: "citizen-management/staff-onboarding", icon: <FiUsers /> },
         { text: "Report Oversight", path: "citizen-management/report-oversight", icon: <FiAlertCircle /> },
-        { text: "Verification", path: "citizen-management/verification", icon: <FiShield /> }
+        { text: "Messages", path: "citizen-management/verification", icon: <FiMessageSquare /> }
       ]
     },
     { 
@@ -64,7 +65,7 @@ export const Sidebar = ({
         { text: "Create Reports", path: "analytics/add-reports", icon: <FiFileText /> },
         { text: "Manage Reports", path: "analytics/custom-reports", icon: <FiSettings /> },
         { text: "Resolution Analytics", path: "analytics/resolution", icon: <FiActivity /> },
-        { text: "AI Reports", path: "analytics/ai-reports", icon: <FiDatabase /> }
+        { text: "Approved Reports", path: "analytics/ai-reports", icon: <FiDatabase /> }
       ]
     },
     { 

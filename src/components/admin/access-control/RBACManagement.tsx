@@ -267,11 +267,13 @@ const AdminLguManagement: React.FC = () => {
     if (user.isActive) {
       return <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>;
     } else {
-      if (user.freezeUntil) {
-        const freezeDate = new Date(user.freezeUntil);
-        if (freezeDate.getTime() === new Date(0).getTime()) {
+       if (user.freezeUntil) {
+    const freezeDate = new Date(user.freezeUntil);
+    const now = new Date();
+    
+    if (freezeDate.getTime() === new Date(0).getTime()) {
           return <Badge variant="destructive">Permanently Frozen</Badge>;
-        } else {
+        } else if (freezeDate > now) {
           return (
             <Badge variant="destructive" className="bg-yellow-100 text-yellow-800">
               Frozen until {freezeDate.toLocaleDateString()}

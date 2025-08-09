@@ -33,6 +33,7 @@ import VerificationPage from './pages/citizen/VerificationPage';
 import Community from './components/lgu/Community';
 import FrozenAccountPage from './pages/FrozenAccountPage';
 import DeletedAccountPage from './pages/DeletedAccountPage';
+import SupportPage from './pages/SupportPage';
 
 function App() {
   return (
@@ -92,6 +93,8 @@ function App() {
 
           <Route path='/account/frozen' element={<FrozenAccountPage />} />
           <Route path='/account/delete' element={<DeletedAccountPage />} />
+
+          <Route path='/account/support' element={<SupportPage />} />
 
 
         <Route path='*' element={ <NotFoundPage />}/>

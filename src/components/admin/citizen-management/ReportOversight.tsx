@@ -158,7 +158,7 @@ const ReportOversight: React.FC = () => {
                     <TableCell>{submission.formId?.title || 'N/A'}</TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{submission.userId?.name || 'Unknown'}</p>
+                        <p className="font-medium">{(submission.userId?.firstName + ' ' + submission.userId?.lastName) || 'Unknown'}</p>
                         <p className="text-xs text-gray-500">{submission.userId?.email}</p>
                       </div>
                     </TableCell>

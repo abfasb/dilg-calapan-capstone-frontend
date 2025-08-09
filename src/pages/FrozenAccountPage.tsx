@@ -1,9 +1,28 @@
 import { motion } from 'framer-motion';
-import { Lock, Mail } from 'lucide-react';
+import { ArrowLeft, Lock, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const FrozenAccountPage = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear(); 
+    navigate('/');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900 flex flex-col items-center justify-center p-6 relative">
+      <motion.button
+        onClick={handleLogout}
+        aria-label="Return to Home"
+        className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 text-rose-400 hover:text-rose-300 transition-colors group"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+        <span className="font-medium">Return to Home</span>
+      </motion.button>
+
       <div className="max-w-2xl w-full">
         {/* Animated header */}
         <motion.div
@@ -52,25 +71,28 @@ const FrozenAccountPage = () => {
             </div>
           </div>
 
-          {/* Contact Support */}
+          {/* Contact Support - Improved layout */}
           <div className="bg-gray-700/20 rounded-xl p-6">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="flex-shrink-0 mx-auto md:mx-0">
+                <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center">
                   <Mail className="w-6 h-6 text-blue-400" />
                 </div>
               </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-white mb-2">Contact Support</h3>
-                <p className="text-gray-300 mb-4">
-                  Please reach out to us via email:
+              
+              <div className="flex-1 text-center md:text-left">
+                <h3 className="text-xl font-bold text-white mb-3">Contact Support</h3>
+                <p className="text-gray-300 mb-5">
+                  If you need assistance, feel free to reach out via email:
                 </p>
-                <a 
-                  href="mailto:dilgcalapancity@gmail.com" 
-                  className="inline-flex items-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+
+                <a
+                  href="mailto:dilgcalapancity@gmail.com"
+                  aria-label="Send email to support"
+                  className="inline-flex items-center gap-3 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-blue-500/20"
                 >
-                  <Mail className="w-4 h-4 mr-2" />
-                  dilgcalapancity@gmail.com
+                  <Mail className="w-5 h-5" />
+                  <span>dilgcalapancity@gmail.com</span>
                 </a>
               </div>
             </div>

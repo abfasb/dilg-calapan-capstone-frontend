@@ -178,7 +178,6 @@ export const TopNav = () => {
   const handleLogout = useCallback(() => {
     localStorage.clear();
     navigate('/account/login');
-    setIsLogoutDialogOpen(false);
   }, [navigate]);
 
   return (
@@ -485,7 +484,7 @@ export const TopNav = () => {
               <DropdownMenuSeparator className="bg-gray-700/50 mx-2" />
               <div className="p-2">
                 <DropdownMenuItem
-                  onClick={() => setIsLogoutDialogOpen(true)}
+                  onClick={handleLogout}
                   className="flex items-center gap-3 px-3 py-3 rounded-lg text-red-400 hover:bg-red-500/10 cursor-pointer transition-all group"
                 >
                   <FiLogOut className="w-4 h-4 group-hover:text-red-300" />

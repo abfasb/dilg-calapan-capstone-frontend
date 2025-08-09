@@ -121,7 +121,7 @@ const StatusIndicator = ({ status, report }: { status: Report['status'], report:
                 {status}
               </Badge>
               <span className="text-sm text-muted-foreground">
-                {new Date(report.updatedAt).toLocaleDateString()}
+                {new Date(report.updatedAt || report.createdAt).toLocaleDateString()}
               </span>
             </div>
 
@@ -511,7 +511,7 @@ export default function MyReport() {
                   </Link>
                 </Button>
                 <div className="text-xs text-muted-foreground">
-                Updated {report.updatedAt ? formatDistanceToNow(new Date(report.updatedAt), { addSuffix: true }) : "N/A"}
+                Updated {formatDistanceToNow(new Date(report.updatedAt || report.createdAt), { addSuffix: true })}
                 </div>
               </CardFooter>
             </Card>
@@ -586,3 +586,4 @@ const ReportsSkeleton = () => (
     </div>
   </div>
 );
+

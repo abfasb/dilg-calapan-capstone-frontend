@@ -191,31 +191,6 @@ const AdminAnalytics: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
-              <TabsList className="bg-white/80 backdrop-blur-sm border shadow-sm">
-                <TabsTrigger value="7d" className="text-xs">
-                  7D
-                </TabsTrigger>
-                <TabsTrigger value="30d" className="text-xs">
-                  30D
-                </TabsTrigger>
-                <TabsTrigger value="90d" className="text-xs">
-                  90D
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <Button variant="outline" className="gap-2 bg-white/80 backdrop-blur-sm border shadow-sm hover:bg-white">
-              <Download className="w-4 h-4" />
-              Export
-            </Button>
-
-            <Button className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
-              <Settings className="w-4 h-4" />
-              Settings
-            </Button>
-          </div>
         </div>
 
         {/* Enhanced Key Metrics Grid */}

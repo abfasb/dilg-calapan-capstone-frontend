@@ -121,7 +121,6 @@ export default function ChatBot() {
     
     const systemMessage: Message = {
       id: Date.now().toString(),
-      content: 'Connecting you to a human support agent...',
       sender: 'system',
       timestamp: new Date(),
       status: 'read'

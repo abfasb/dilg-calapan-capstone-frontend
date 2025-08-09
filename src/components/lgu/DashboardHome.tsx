@@ -164,17 +164,14 @@ export const DashboardHome = () => {
     }));
   };
 
-  // Get peak activity data from API response
   const getPeakActivityData = () => {
     if (!stats?.peakActivity) return [];
     return stats.peakActivity;
   };
 
-  // Get department performance data from API response
   const getDepartmentPerformanceData = () => {
     if (!stats?.departmentPerformance?.allBarangays) return [];
     
-    // Map barangay data and assign colors
     const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-red-500', 'bg-indigo-500'];
     return stats.departmentPerformance.allBarangays.map((item, index) => ({
       barangay: item.barangay,
@@ -450,7 +447,6 @@ export const DashboardHome = () => {
             <h3 className="text-xl font-semibold text-white">Peak Activity</h3>
           </div>
           <div className="space-y-4">
-            {/* Use actual peak activity data from API */}
             {getPeakActivityData().map((dayData : any, index : any) => (
               <div key={index} className="flex items-center p-2 gap-3">
                 <div className="w-24 text-sm text-gray-400">{dayData.day}</div>

@@ -854,9 +854,9 @@ const handleSaveSignature = async () => {
                                 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                               }`}
                             >
-                              <option value="pending">Pending</option>
-                              <option value="approved">Approved</option>
-                              <option value="rejected">Rejected</option>
+                              <option value="pending" className='text-black'>Pending</option>
+                              <option value="approved" className='text-black'>Approved</option>
+                              <option value="rejected" className='text-black'>Rejected</option>
                             </select>
                           </td>
                           <td className="px-6 py-4 text-gray-400">
@@ -877,12 +877,6 @@ const handleSaveSignature = async () => {
                                   onClick={() => viewDetails(response._id)}
                                 >
                                   View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="hover:bg-gray-700/50">
-                                  Download PDF
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-400 hover:bg-red-500/20">
-                                  Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>

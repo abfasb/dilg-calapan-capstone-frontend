@@ -719,10 +719,7 @@ type Report = {
           </TabsContent>
         </Tabs>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="h-full">
-            <ChatBot />
-          </div>
+        <div className="grid md:grid-cols-1 lg:grid-cols-1 gap-4">
           <div className="md:col-span-2">
             {id && <AppointmentsCard userId={id} />}
           </div>

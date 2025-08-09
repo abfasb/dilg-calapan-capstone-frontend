@@ -436,7 +436,6 @@ const StaffOnboarding = () => {
                   { id: 'email', label: 'Email' },
                   { id: 'lgu', label: 'Approved By' },
                   { id: 'barangay', label: 'Barangay' },
-                  { id: 'date', label: 'Date Approved' },
                   { id: 'form', label: 'Form' },
                 ].map((header) => (
                   <TableHead key={header.id} className="py-3 text-gray-600 font-medium">
@@ -461,11 +460,6 @@ const StaffOnboarding = () => {
                     <div className="text-xs text-gray-500">{citizen.referenceNumber}</div>
                   </TableCell>
                   <TableCell className="py-3">{citizen.citizen.email}</TableCell>
-                  <TableCell className="py-3">
-                    <div className="flex items-center">
-                      <span className="text-gray-900">{citizen.lgu.name}</span>
-                    </div>
-                  </TableCell>
                   <TableCell className="py-3">
                     <div className="flex items-center">
                       <span className="text-gray-900">{citizen.lgu.name}</span>

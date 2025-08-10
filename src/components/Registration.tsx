@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { toast, Toaster } from 'react-hot-toast'
 import realLogo from '../assets/img/realLogo.png'
 import barangays from '../types/barangays'
-import { registerUser } from "../api/registrationApi"
-import { EyeIcon, EyeSlashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid'
+import { registerUser, sendOTP } from "../api/registrationApi"
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid'
 import { AiOutlineClose } from 'react-icons/ai';
 import { useDebouncedCallback} from 'use-debounce';
 
@@ -34,7 +34,6 @@ const baseSchema = z.object({
   terms: z.boolean().refine(val => val, 'You must accept the terms'),
   newsletter: z.boolean()
 });
-
 
 const passwordMatchSchema = z.object({
   password: z.string(),
@@ -65,13 +64,16 @@ const initialFormState = {
   newsletter: false,
 };
 
-
 function Registration() {
   const [formData, setFormData] = useState(initialFormState);
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [open, setOpen] = useState(false)
+  const [otpModalOpen, setOtpModalOpen] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [otpError, setOtpError] = useState('')
+  const [otpResendTime, setOtpResendTime] = useState(0)
 
   const logos = [
     "https://i.ibb.co/sJcshyZp/images-6.jpg",
@@ -81,6 +83,7 @@ function Registration() {
   ]
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSendingOtp, setIsSendingOtp] = useState(false)
 
   const debouncedValidate = useDebouncedCallback((field: string, value: any) => {
     validateField(field, value)
@@ -92,7 +95,6 @@ function Registration() {
       await fieldSchema.parseAsync({ [field]: value });
       setErrors(prev => ({ ...prev, [field]: '' }));
 
-      // Handle password match validation separately
       if (field === 'password' || field === 'confirmPassword') {
         const password = field === 'password' ? value : formData.password;
         const confirmPassword = field === 'confirmPassword' ? value : formData.confirmPassword;
@@ -140,17 +142,44 @@ function Registration() {
         toast.error('Please fix form errors');
         return;
       }
-  
-      await registerUser(formData);
+      
+      setIsSendingOtp(true);
+      await sendOTP(formData.phoneNumber);
+      toast.success('OTP sent to your phone!');
+      setOtpModalOpen(true);
+      setOtpResendTime(60);
+      
+    } catch (error: any) {
+      if (error.response) {
+        toast.error(error.response.data.message || 'Failed to send OTP');
+      } else {
+        toast.error('Network error. Please check your connection.');
+      }
+    } finally {
+      setIsSubmitting(false);
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp || otp.length !== 6) {
+      setOtpError('Please enter a 6-digit OTP');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      await registerUser({ ...formData, otp });
       toast.success('Registration Successful!');
       setFormData(initialFormState);
       setErrors({});
+      setOtpModalOpen(false);
     } catch (error: any) {
       if (error.response) {
-        if (error.response.status === 409) {
-          toast.error(error.response.data.message);
+        if (error.response.status === 400) {
+          setOtpError(error.response.data.message);
         } else {
-          toast.error('Registration failed. Please try again.');
+          toast.error(error.response.data.message || 'Verification failed');
         }
       } else {
         toast.error('Network error. Please check your connection.');
@@ -159,8 +188,117 @@ function Registration() {
       setIsSubmitting(false);
     }
   };
+
+  const handleResendOTP = async () => {
+    if (otpResendTime > 0) return;
+    
+    setIsSendingOtp(true);
+    try {
+      await sendOTP(formData.phoneNumber);
+      toast.success('New OTP sent!');
+      setOtpResendTime(60);
+    } catch (error) {
+      toast.error('Failed to resend OTP');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (otpResendTime > 0) {
+      timer = setTimeout(() => setOtpResendTime(otpResendTime - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpResendTime]);
+
   return (
     <div className="grid min-h-screen md:grid-cols-2">
+      {otpModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+          <div className="bg-white w-full p-8 rounded-xl shadow-xl max-w-md relative mx-4">
+            <button
+              onClick={() => setOtpModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-700 hover:text-gray-900 text-2xl"
+              disabled={isSubmitting}
+            >
+              <AiOutlineClose />
+            </button>
+            
+            <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">
+              Verify Phone Number
+            </h2>
+            
+            <p className="text-sm text-gray-700 mb-6 text-center">
+              We've sent a 6-digit code to <br />
+              <span className="font-medium">+63{formData.phoneNumber}</span>
+            </p>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm text-gray-700">Enter OTP</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="123456"
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    otpError ? 'border-red-500' : 'border-gray-300'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  value={otp}
+                  onChange={(e) => {
+                    setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                    setOtpError('');
+                  }}
+                  disabled={isSubmitting}
+                />
+                {otpError && <p className="text-red-500 text-sm mt-1">{otpError}</p>}
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleResendOTP}
+                  disabled={otpResendTime > 0 || isSendingOtp}
+                  className={`text-sm ${
+                    otpResendTime > 0 
+                      ? 'text-gray-400' 
+                      : 'text-blue-600 hover:text-blue-800'
+                  }`}
+                >
+                  {isSendingOtp ? (
+                    <span>Sending...</span>
+                  ) : otpResendTime > 0 ? (
+                    `Resend in ${otpResendTime}s`
+                  ) : (
+                    'Resend OTP'
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleVerifyOTP}
+                  disabled={isSubmitting || otp.length !== 6}
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-lg ${
+                    isSubmitting || otp.length !== 6
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
+                      Verifying...
+                    </div>
+                  ) : (
+                    'Verify Account'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex flex-col p-8 bg-[#1a1d24] text-white md:p-12 lg:p-16">
         <div className="max-w-md mx-auto w-full">
           <h1 className="text-2xl font-semibold mb-8">Barangay Official Registration</h1>
@@ -365,7 +503,7 @@ function Registration() {
             </div>
 
             {open && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60">
+              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
                 <div className="bg-white w-full p-8 rounded-xl shadow-xl w-96 relative max-w-lg mx-auto">
                   <button
                     onClick={() => setOpen(false)}
@@ -393,22 +531,22 @@ function Registration() {
               </div>
             )}
             
-        <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full px-4 py-2.5 text-sm font-medium text-white bg-[#3b82f6] rounded-lg transition-all ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
-            }`}
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
-                Registering...
-              </div>
-            ) : (
-              'Register Official Account'
-            )}
-          </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || isSendingOtp}
+              className={`w-full px-4 py-2.5 text-sm font-medium text-white bg-[#3b82f6] rounded-lg transition-all ${
+                isSubmitting || isSendingOtp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
+              }`}
+            >
+              {isSubmitting || isSendingOtp ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
+                  {isSendingOtp ? 'Sending OTP...' : 'Registering...'}
+                </div>
+              ) : (
+                'Register Official Account'
+              )}
+            </button>
           </form>
         </div>
       </div>

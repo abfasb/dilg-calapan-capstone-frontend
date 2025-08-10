@@ -34,3 +34,19 @@ export const loginUser = async (credentials: {
     throw error;
   }
 };
+
+
+export const sendOTP = async (phoneNumber: string) => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/api/send-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phoneNumber })
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to send OTP');
+  }
+  
+  return response.json();
+};

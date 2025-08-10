@@ -35,6 +35,7 @@ const baseSchema = z.object({
   newsletter: z.boolean()
 });
 
+
 const passwordMatchSchema = z.object({
   password: z.string(),
   confirmPassword: z.string(),

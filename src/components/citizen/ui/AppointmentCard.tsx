@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../ui/card';
 import { ScrollArea } from '../../ui/scroll-area';
-import { Avatar } from '../../ui/avatar';
+import { Avatar, AvatarImage } from '../../ui/avatar';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Calendar, Clock, Plus, CheckCircleIcon, EraserIcon } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
-import { AvatarImage } from '../../ui/avatar';
 
 interface Appointment {
   _id: string;
@@ -94,17 +93,17 @@ export function AppointmentsCard({ userId }: AppointmentsCardProps) {
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow rounded-xl w-full border-0 shadow-sm">
-        <Toaster
-              position="top-right"
-              gutter={32}
-              containerClassName="!top-4 !right-6"
-              toastOptions={{
-                className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
-              }}
-            />
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2 text-blue-600">
+    <Card className="hover:shadow-lg transition-shadow rounded-xl w-full border-0 shadow-sm bg-white dark:bg-gray-900">
+      <Toaster
+        position="top-right"
+        gutter={32}
+        containerClassName="!top-4 !right-6"
+        toastOptions={{
+          className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+        }}
+      />
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-700">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2 text-blue-600 dark:text-blue-400">
           <Calendar className="w-5 h-5" />
           <span>Appointments</span>
           <Badge variant="secondary" className="ml-2">
@@ -116,7 +115,7 @@ export function AppointmentsCard({ userId }: AppointmentsCardProps) {
       <CardContent className="p-6">
         <ScrollArea className="h-64 pr-4">
           {appointments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               No upcoming appointments found
             </div>
           ) : (
@@ -124,14 +123,14 @@ export function AppointmentsCard({ userId }: AppointmentsCardProps) {
               {appointments.map((appointment) => (
                 <div
                   key={appointment._id}
-                  className="flex items-start p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
+                  className="flex items-start p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <Avatar className="h-9 w-9 mr-3">
                     <AvatarImage src={`/avatars/${appointment._id}.jpg`} />
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-gray-900">
+                      <h3 className="font-medium text-gray-900 dark:text-gray-100">
                         {appointment.title}
                       </h3>
                       <Badge
@@ -143,7 +142,7 @@ export function AppointmentsCard({ userId }: AppointmentsCardProps) {
                         {appointment.status}
                       </Badge>
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
                         <span>{new Date(appointment.date).toLocaleDateString()}</span>
@@ -159,7 +158,7 @@ export function AppointmentsCard({ userId }: AppointmentsCardProps) {
         </ScrollArea>
       </CardContent>
 
-      <CardFooter className="border-t bg-gray-50">
+      <CardFooter className="border-t bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="w-full" variant="default">
@@ -168,48 +167,48 @@ export function AppointmentsCard({ userId }: AppointmentsCardProps) {
             </Button>
           </DialogTrigger>
 
-          <DialogContent className="sm:max-w-md rounded-xl">
+          <DialogContent className="sm:max-w-md rounded-xl dark:bg-gray-900 dark:text-gray-100">
             <DialogHeader>
-              <DialogTitle className="text-blue-600">
+              <DialogTitle className="text-blue-600 dark:text-blue-400">
                 Schedule New Appointment
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Meeting Title
                 </label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:text-gray-100"
                   placeholder="Enter meeting title"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Preferred Date
                 </label>
                 <input
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:text-gray-100"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Description
                 </label>
                 <textarea
                   rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:text-gray-100"
                   placeholder="Add meeting details..."
                 />
               </div>

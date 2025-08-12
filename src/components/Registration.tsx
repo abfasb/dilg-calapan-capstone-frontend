@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { z } from 'zod'
 import { toast, Toaster } from 'react-hot-toast'
-import realLogo from '../assets/img/realLogo.png'
 import barangays from '../types/barangays'
 import { registerUser, sendOTP } from "../api/registrationApi"
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid'

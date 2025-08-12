@@ -76,23 +76,23 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#fafbfd] to-[#f1f5f9] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
-            <Skeleton className="h-10 w-[300px] mx-auto mb-4" />
-            <Skeleton className="h-6 w-[400px] mx-auto" />
+            <Skeleton className="h-10 w-[300px] mx-auto mb-4 rounded-lg" />
+            <Skeleton className="h-6 w-[400px] mx-auto rounded-lg" />
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[...Array(4)].map((_, i) => (
-              <Card key={i} className="border rounded-xl shadow-sm">
+              <Card key={i} className="border rounded-xl shadow-sm transition-all hover:shadow-md">
                 <CardHeader className="space-y-0 pb-4">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-1/4" />
+                  <Skeleton className="h-5 w-3/4 rounded-lg" />
+                  <Skeleton className="h-4 w-1/4 rounded-lg" />
                 </CardHeader>
                 <CardContent>
-                  <Skeleton className="h-8 w-1/2 mb-2" />
-                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-8 w-1/2 mb-2 rounded-lg" />
+                  <Skeleton className="h-4 w-3/4 rounded-lg" />
                 </CardContent>
               </Card>
             ))}
@@ -100,8 +100,8 @@ const Dashboard = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {[...Array(3)].map((_, i) => (
-              <Card key={i} className="h-[350px]">
-                <Skeleton className="h-full w-full" />
+              <Card key={i} className="h-[350px] rounded-xl overflow-hidden">
+                <Skeleton className="h-full w-full rounded-lg" />
               </Card>
             ))}
           </div>
@@ -112,20 +112,20 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] p-6 flex items-center justify-center">
-        <Card className="w-full max-w-md border-0 shadow-lg">
-          <CardHeader>
+      <div className="min-h-screen bg-gradient-to-br from-[#fafbfd] to-[#f1f5f9] p-6 flex items-center justify-center">
+        <Card className="w-full max-w-md border-0 shadow-xl rounded-xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-red-500 to-red-600 text-white">
             <CardTitle className="flex items-center justify-center gap-2">
-              <AlertCircle className="h-8 w-8 text-red-500" />
+              <AlertCircle className="h-8 w-8 text-white" />
               <span>Error Loading Data</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-red-500 mb-6">{error}</p>
+          <CardContent className="py-8 text-center">
+            <p className="text-red-500 mb-6 font-medium">{error}</p>
             <Button 
               onClick={fetchDashboardData}
-              className="gap-2"
-              variant="outline"
+              className="gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
+              variant="destructive"
             >
               <RefreshCw className="h-4 w-4" />
               Retry
@@ -148,11 +148,11 @@ const Dashboard = () => {
   ];
 
   const StatCard = ({ title, value, icon: Icon, change, changeType, description }) => (
-    <Card className="group transition-all hover:shadow-md border rounded-xl overflow-hidden">
+    <Card className="group transition-all hover:shadow-lg border-0 rounded-2xl shadow-sm overflow-hidden bg-white">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className={`p-2 rounded-lg ${
-          changeType === 'positive' ? 'bg-emerald-100' : 'bg-rose-100'
+        <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
+        <div className={`p-2 rounded-lg transition-all duration-300 ${
+          changeType === 'positive' ? 'bg-emerald-100 group-hover:bg-emerald-200' : 'bg-rose-100 group-hover:bg-rose-200'
         }`}>
           <Icon className={`h-5 w-5 ${
             changeType === 'positive' ? 'text-emerald-600' : 'text-rose-600'
@@ -160,9 +160,9 @@ const Dashboard = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold mb-1">{value?.toLocaleString()}</div>
+        <div className="text-3xl font-bold mb-1 text-gray-800">{value?.toLocaleString()}</div>
         {change !== undefined && (
-          <div className={`flex items-center text-sm ${
+          <div className={`flex items-center text-sm font-medium ${
             changeType === 'positive' ? 'text-emerald-600' : 'text-rose-600'
           }`}>
             {changeType === 'positive' ? 
@@ -172,49 +172,59 @@ const Dashboard = () => {
             {Math.abs(change)}% from last month
           </div>
         )}
-        {description && <p className="text-xs text-muted-foreground mt-2">{description}</p>}
+        {description && <p className="text-xs text-gray-500 mt-2">{description}</p>}
       </CardContent>
     </Card>
   );
 
-  const MetricCard = ({ title, value, unit, icon: Icon, color = "indigo" }) => (
-    <Card className="border rounded-xl">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <div className={`p-2 rounded-lg bg-${color}-100`}>
-            <Icon className={`h-4 w-4 text-${color}-600`} />
+  const MetricCard = ({ title, value, unit, icon: Icon, color = "indigo" }) => {
+    const colorClasses = {
+      indigo: 'bg-indigo-100 text-indigo-600',
+      emerald: 'bg-emerald-100 text-emerald-600',
+      amber: 'bg-amber-100 text-amber-600',
+      violet: 'bg-violet-100 text-violet-600',
+      sky: 'bg-sky-100 text-sky-600',
+    };
+    
+    return (
+      <Card className="border-0 rounded-xl shadow-sm transition-all hover:shadow-md overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
+            <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+              <Icon className="h-4 w-4" />
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}{unit}</div>
-      </CardContent>
-    </Card>
-  );
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-gray-800">{value}{unit}</div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const ActivityItem = ({ title, subtitle, status, statusColor, date }) => (
-    <div className="flex items-start justify-between py-3 border-b last:border-0">
+    <div className="flex items-start justify-between py-3 border-b border-gray-100 last:border-0">
       <div className="flex-1">
-        <p className="font-medium">{title}</p>
-        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-        {date && <p className="text-xs text-muted-foreground mt-1">{date}</p>}
+        <p className="font-medium text-gray-800">{title}</p>
+        {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+        {date && <p className="text-xs text-gray-400 mt-1">{date}</p>}
       </div>
-      <Badge variant={statusColor}>{status}</Badge>
+      <Badge variant={statusColor} className="font-medium">{status}</Badge>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#fafbfd] to-[#f1f5f9] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-            <p className="text-muted-foreground">Comprehensive insights into your system performance</p>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Analytics Dashboard</h1>
+            <p className="text-gray-500 mt-1">Comprehensive insights into your system performance</p>
           </div>
           <div className="flex items-center gap-3">
-            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+            <Badge variant="outline" className="bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border-emerald-200 px-3 py-1.5">
               <Activity className="h-4 w-4 mr-1" />
               System Health: {insights.systemHealth.status} ({insights.systemHealth.score}%)
             </Badge>
@@ -222,6 +232,7 @@ const Dashboard = () => {
               onClick={fetchDashboardData}
               variant="outline"
               size="icon"
+              className="rounded-full shadow-sm hover:shadow-md transition-all"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -234,6 +245,7 @@ const Dashboard = () => {
             title="Total Users"
             value={overview.totalUsers}
             icon={Users}
+            change={Math.abs(growth.userGrowth)}
             changeType={growth.userGrowth >= 0 ? 'positive' : 'negative'}
             description={`${overview.activeUsers} active users`}
           />
@@ -241,6 +253,7 @@ const Dashboard = () => {
             title="Total Complaints"
             value={overview.totalComplaints}
             icon={AlertCircle}
+            change={Math.abs(growth.complaintGrowth)}
             changeType={growth.complaintGrowth >= 0 ? 'positive' : 'negative'}
             description={`${systemMetrics.complaintResolutionRate.toFixed(1)}% resolution rate`}
           />
@@ -248,6 +261,7 @@ const Dashboard = () => {
             title="Appointments"
             value={overview.totalAppointments}
             icon={Calendar}
+            change={Math.abs(growth.appointmentGrowth)}
             changeType={growth.appointmentGrowth >= 0 ? 'positive' : 'negative'}
             description={`${overview.upcomingAppointments} upcoming`}
           />
@@ -255,6 +269,7 @@ const Dashboard = () => {
             title="Form Submissions"
             value={overview.totalSubmissions}
             icon={FileText}
+            change={Math.abs(growth.submissionGrowth)}
             changeType={growth.submissionGrowth >= 0 ? 'positive' : 'negative'}
             description={`${overview.pendingSubmissions} pending`}
           />
@@ -295,67 +310,78 @@ const Dashboard = () => {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* User Registration Trend */}
-          <Card className="col-span-1 lg:col-span-2 border rounded-xl">
-            <CardHeader>
+          <Card className="col-span-1 lg:col-span-2 border-0 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-indigo-600" />
-                <CardTitle>Registration & Activity Trends</CardTitle>
+                <CardTitle className="text-gray-800">Registration & Activity Trends</CardTitle>
               </div>
-              <CardDescription>Monthly trends across all system activities</CardDescription>
+              <CardDescription className="text-gray-500">Monthly trends across all system activities</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="month" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#0f172a', 
                       borderColor: '#1e293b',
-                      borderRadius: '0.5rem'
+                      borderRadius: '0.5rem',
+                      color: '#ffffff'
                     }} 
+                    itemStyle={{ color: '#ffffff' }}
                   />
                   <Legend />
                   <Line 
                     type="monotone" 
                     dataKey="users" 
                     stroke={CHART_COLORS[0]} 
-                    strokeWidth={2}
+                    strokeWidth={3}
                     data={charts.userRegistrationTrend}
                     name="New Users"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 4, strokeWidth: 2, stroke: CHART_COLORS[0], fill: '#ffffff' }}
+                    activeDot={{ r: 6, fill: '#ffffff', stroke: CHART_COLORS[0], strokeWidth: 2 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="complaints" 
                     stroke={CHART_COLORS[1]} 
-                    strokeWidth={2}
+                    strokeWidth={3}
                     data={charts.complaintsTrend}
                     name="Complaints"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 4, strokeWidth: 2, stroke: CHART_COLORS[1], fill: '#ffffff' }}
+                    activeDot={{ r: 6, fill: '#ffffff', stroke: CHART_COLORS[1], strokeWidth: 2 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="appointments" 
                     stroke={CHART_COLORS[2]} 
-                    strokeWidth={2}
+                    strokeWidth={3}
                     data={charts.appointmentsTrend}
                     name="Appointments"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 4, strokeWidth: 2, stroke: CHART_COLORS[2], fill: '#ffffff' }}
+                    activeDot={{ r: 6, fill: '#ffffff', stroke: CHART_COLORS[2], strokeWidth: 2 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="submissions" 
                     stroke={CHART_COLORS[3]} 
-                    strokeWidth={2}
+                    strokeWidth={3}
                     data={charts.submissionsTrend}
                     name="Submissions"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 4, strokeWidth: 2, stroke: CHART_COLORS[3], fill: '#ffffff' }}
+                    activeDot={{ r: 6, fill: '#ffffff', stroke: CHART_COLORS[3], strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -363,11 +389,11 @@ const Dashboard = () => {
           </Card>
 
           {/* Users by Role */}
-          <Card className="border rounded-xl">
-            <CardHeader>
+          <Card className="border-0 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-emerald-600" />
-                <CardTitle>Users by Role</CardTitle>
+                <CardTitle className="text-gray-800">Users by Role</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -385,14 +411,20 @@ const Dashboard = () => {
                     dataKey="count"
                   >
                     {charts.usersByRole.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={CHART_COLORS[index % CHART_COLORS.length]} 
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                      />
                     ))}
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#0f172a', 
                       borderColor: '#1e293b',
-                      borderRadius: '0.5rem'
+                      borderRadius: '0.5rem',
+                      color: '#ffffff'
                     }} 
                   />
                 </PieChart>
@@ -401,29 +433,39 @@ const Dashboard = () => {
           </Card>
 
           {/* Complaints by Status */}
-          <Card className="border rounded-xl">
-            <CardHeader>
+          <Card className="border-0 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-600" />
-                <CardTitle>Complaint Status</CardTitle>
+                <CardTitle className="text-gray-800">Complaint Status</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={charts.complaintsByStatus}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="status" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis 
+                    dataKey="status" 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#0f172a', 
                       borderColor: '#1e293b',
-                      borderRadius: '0.5rem'
+                      borderRadius: '0.5rem',
+                      color: '#ffffff'
                     }} 
                   />
                   <Bar 
                     dataKey="count" 
-                    radius={[4, 4, 0, 0]} 
+                    radius={[8, 8, 0, 0]} 
                     fill={CHART_COLORS[0]} 
                   />
                 </BarChart>
@@ -432,35 +474,43 @@ const Dashboard = () => {
           </Card>
 
           {/* Top Barangays */}
-          <Card className="border rounded-xl">
-            <CardHeader>
+          <Card className="border-0 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-rose-600" />
-                <CardTitle>Most Active Barangays</CardTitle>
+                <CardTitle className="text-gray-800">Most Active Barangays</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={charts.usersByBarangay.slice(0, 5)} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis type="number" stroke="#94a3b8" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis 
+                    type="number" 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
                   <YAxis 
                     dataKey="barangay" 
                     type="category" 
                     width={80} 
                     stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
                   />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#0f172a', 
                       borderColor: '#1e293b',
-                      borderRadius: '0.5rem'
+                      borderRadius: '0.5rem',
+                      color: '#ffffff'
                     }} 
                   />
                   <Bar 
                     dataKey="count" 
                     fill={CHART_COLORS[4]} 
-                    radius={[0, 4, 4, 0]}
+                    radius={[0, 8, 8, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -468,30 +518,40 @@ const Dashboard = () => {
           </Card>
 
           {/* Complaint Categories */}
-          <Card className="border rounded-xl">
-            <CardHeader>
+          <Card className="border-0 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-violet-600" />
-                <CardTitle>Top Complaint Categories</CardTitle>
+                <CardTitle className="text-gray-800">Top Complaint Categories</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={charts.complaintsByCategory.slice(0, 5)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="category" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis 
+                    dataKey="category" 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#0f172a', 
                       borderColor: '#1e293b',
-                      borderRadius: '0.5rem'
+                      borderRadius: '0.5rem',
+                      color: '#ffffff'
                     }} 
                   />
                   <Bar 
                     dataKey="count" 
                     fill={CHART_COLORS[5]} 
-                    radius={[4, 4, 0, 0]}
+                    radius={[8, 8, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -502,14 +562,17 @@ const Dashboard = () => {
         {/* Recent Activities */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Complaints */}
-          <Card className="border rounded-xl p-4">
-            <CardHeader>
+          <Card className="border-0 p-4 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center justify-between">
-                <CardTitle>Recent Complaints</CardTitle>
+                <CardTitle className="text-gray-800">Recent Complaints</CardTitle>
+                <Button variant="ghost" size="sm" className="text-indigo-600">
+                  View All <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y">
+              <div className="divide-y divide-gray-100">
                 {recentActivities.complaints.map((complaint, index) => (
                   <ActivityItem
                     key={index}
@@ -528,14 +591,17 @@ const Dashboard = () => {
           </Card>
 
           {/* Recent Appointments */}
-          <Card className="border rounded-xl p-4">
-            <CardHeader>
+          <Card className="border-0 p-4 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center justify-between">
-                <CardTitle>Recent Appointments</CardTitle>
+                <CardTitle className="text-gray-800">Recent Appointments</CardTitle>
+                <Button variant="ghost" size="sm" className="text-indigo-600">
+                  View All <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y">
+              <div className="divide-y divide-gray-100">
                 {recentActivities.appointments.map((appointment, index) => (
                   <ActivityItem
                     key={index}
@@ -558,14 +624,17 @@ const Dashboard = () => {
           </Card>
 
           {/* Recent Submissions */}
-          <Card className="border rounded-xl p-4">
-            <CardHeader>
+          <Card className="border-0 p-4 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center justify-between">
-                <CardTitle>Recent Submissions</CardTitle>
+                <CardTitle className="text-gray-800">Recent Submissions</CardTitle>
+                <Button variant="ghost" size="sm" className="text-indigo-600">
+                  View All <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y">
+              <div className="divide-y divide-gray-100">
                 {recentActivities.submissions.map((submission, index) => (
                   <ActivityItem
                     key={index}
@@ -585,9 +654,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-          
-
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 rounded-xl">
+          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 rounded-2xl shadow-md">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -600,7 +667,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 rounded-xl">
+          <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 rounded-2xl shadow-md">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-emerald-600" />
@@ -617,25 +684,35 @@ const Dashboard = () => {
         {/* Additional Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Submission Status Breakdown */}
-          <Card className="border rounded-xl">
-            <CardHeader>
+          <Card className="border-0 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-violet-600" />
-                <CardTitle>Form Submission Analysis</CardTitle>
+                <CardTitle className="text-gray-800">Form Submission Analysis</CardTitle>
               </div>
-              <CardDescription>Distribution of submission statuses</CardDescription>
+              <CardDescription className="text-gray-500">Distribution of submission statuses</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={charts.submissionsByStatus}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="status" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis 
+                    dataKey="status" 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8" 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#0f172a', 
                       borderColor: '#1e293b',
-                      borderRadius: '0.5rem'
+                      borderRadius: '0.5rem',
+                      color: '#ffffff'
                     }} 
                   />
                   <Area 
@@ -651,13 +728,13 @@ const Dashboard = () => {
           </Card>
 
           {/* Appointment Status Distribution */}
-          <Card className="border rounded-xl">
-            <CardHeader>
+          <Card className="border-0 rounded-2xl shadow-sm overflow-hidden">
+            <CardHeader className="bg-white">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-sky-600" />
-                <CardTitle>Appointment Status</CardTitle>
+                <CardTitle className="text-gray-800">Appointment Status</CardTitle>
               </div>
-              <CardDescription>Current appointment status breakdown</CardDescription>
+              <CardDescription className="text-gray-500">Current appointment status breakdown</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -673,14 +750,20 @@ const Dashboard = () => {
                     label={({ status, percentage }) => `${status}: ${percentage}%`}
                   >
                     {charts.appointmentsByStatus.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={CHART_COLORS[index % CHART_COLORS.length]} 
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                      />
                     ))}
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#0f172a', 
                       borderColor: '#1e293b',
-                      borderRadius: '0.5rem'
+                      borderRadius: '0.5rem',
+                      color: '#ffffff'
                     }} 
                   />
                 </PieChart>
@@ -690,7 +773,7 @@ const Dashboard = () => {
         </div>
 
         {/* Performance Summary */}
-        <Card className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-xl">
+        <Card className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl shadow-xl overflow-hidden">
           <CardHeader>
             <div className="flex items-center gap-2">
               <BarChart3 className="h-6 w-6" />
@@ -700,7 +783,7 @@ const Dashboard = () => {
               Key performance indicators for system efficiency
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-emerald-400">
@@ -709,7 +792,7 @@ const Dashboard = () => {
                 <p className="text-sm text-gray-300 mt-1">Resolution Rate</p>
                 <div className="w-full bg-gray-700 rounded-full h-2 mt-4">
                   <div 
-                    className="bg-emerald-400 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-emerald-400 to-emerald-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${systemMetrics.complaintResolutionRate}%` }}
                   ></div>
                 </div>
@@ -722,7 +805,7 @@ const Dashboard = () => {
                 <p className="text-sm text-gray-300 mt-1">Approval Rate</p>
                 <div className="w-full bg-gray-700 rounded-full h-2 mt-4">
                   <div 
-                    className="bg-amber-400 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-amber-400 to-amber-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${systemMetrics.formApprovalRate}%` }}
                   ></div>
                 </div>
@@ -735,7 +818,7 @@ const Dashboard = () => {
                 <p className="text-sm text-gray-300 mt-1">Confirmation Rate</p>
                 <div className="w-full bg-gray-700 rounded-full h-2 mt-4">
                   <div 
-                    className="bg-violet-400 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-violet-400 to-violet-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${systemMetrics.appointmentConfirmationRate}%` }}
                   ></div>
                 </div>
@@ -748,7 +831,7 @@ const Dashboard = () => {
                 <p className="text-sm text-gray-300 mt-1">Avg Days to Resolve</p>
                 <div className="w-full bg-gray-700 rounded-full h-2 mt-4">
                   <div 
-                    className="bg-sky-400 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-sky-400 to-sky-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(systemMetrics.avgResolutionTime * 10, 100)}%` }}
                   ></div>
                 </div>
@@ -759,12 +842,13 @@ const Dashboard = () => {
 
         {/* Footer */}
         <div className="text-center py-6">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-gray-500 text-sm">
             Last updated: {new Date().toLocaleString()} | 
             <button 
               onClick={fetchDashboardData}
-              className="ml-2 text-indigo-600 hover:text-indigo-800 font-medium"
+              className="ml-2 text-indigo-600 hover:text-indigo-800 font-medium flex items-center justify-center mx-auto"
             >
+              <RefreshCw className="h-4 w-4 mr-1" />
               Refresh Data
             </button>
           </p>

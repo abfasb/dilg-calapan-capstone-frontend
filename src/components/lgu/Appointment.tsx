@@ -169,65 +169,64 @@ const LGUAppointments = () => {
   };
 
   const handleStatusUpdate = async (
-  id: string,
-  newStatus: 'pending' | 'confirmed' | 'cancelled',
-  time?: string,
-  userId?: string
-) => {
-  try {
-    setUpdatingId(id);
+    id: string,
+    newStatus: 'pending' | 'confirmed' | 'cancelled',
+    time?: string,
+    userId?: string
+  ) => {
+    try {
+      setUpdatingId(id);
 
-    const payload: any = { status: newStatus };
-    if (newStatus === 'confirmed') {
-      payload.time = time;
+      const payload: any = { status: newStatus };
+      if (newStatus === 'confirmed') {
+        payload.time = time;
+      }
+      if (userId) {
+        payload.userId = userId; 
+      }
+
+      const { data } = await api.patch(`/appointments/${id}/status`, payload);
+
+      setAppointments(prev =>
+        prev.map(appt =>
+          appt._id === id ? { ...appt, ...data } : appt
+        )
+      );
+
+      const statusMessages = {
+        confirmed: 'Appointment confirmed successfully!',
+        cancelled: 'Appointment cancelled',
+        pending: 'Appointment marked as pending'
+      };
+
+      const statusIcons = {
+        confirmed: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
+        cancelled: <XCircle className="w-6 h-6 text-red-400" />,
+        pending: <Clock className="w-6 h-6 text-yellow-400" />
+      };
+
+      toast.success(statusMessages[newStatus], {
+        icon: statusIcons[newStatus],
+        style: {
+          background: '#1a1d24',
+          color: '#fff',
+          border: '1px solid #2a2f38',
+          padding: '16px',
+          borderRadius: '10px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        },
+        duration: 4000,
+      });
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setUpdatingId(null);
+      setIsConfirmOpen(false);
+      setDetailsOpen(false);
+      setSelectedTime('');
+      setTimeError('');
     }
-    if (userId) {
-      payload.userId = userId; 
-    }
-
-    const { data } = await api.patch(`/appointments/${id}/status`, payload);
-
-    setAppointments(prev =>
-      prev.map(appt =>
-        appt._id === id ? { ...appt, ...data } : appt
-      )
-    );
-
-    const statusMessages = {
-      confirmed: 'Appointment confirmed successfully!',
-      cancelled: 'Appointment cancelled',
-      pending: 'Appointment marked as pending'
-    };
-
-    const statusIcons = {
-      confirmed: <CheckCircleIcon className="w-6 h-6 text-green-400" />,
-      cancelled: <XCircle className="w-6 h-6 text-red-400" />,
-      pending: <Clock className="w-6 h-6 text-yellow-400" />
-    };
-
-    toast.success(statusMessages[newStatus], {
-      icon: statusIcons[newStatus],
-      style: {
-        background: '#1a1d24',
-        color: '#fff',
-        border: '1px solid #2a2f38',
-        padding: '16px',
-        borderRadius: '10px',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-      },
-      duration: 4000,
-    });
-  } catch (err) {
-    handleError(err);
-  } finally {
-    setUpdatingId(null);
-    setIsConfirmOpen(false);
-    setDetailsOpen(false);
-    setSelectedTime('');
-    setTimeError('');
-  }
-};
-
+  };
 
   const openConfirmationDialog = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -331,6 +330,8 @@ const LGUAppointments = () => {
     );
   }
 
+  const processingAction = updatingId === selectedAppointment?._id;
+
   return (
     <TooltipProvider>
       <Toaster
@@ -418,16 +419,17 @@ const LGUAppointments = () => {
               <Button
                 variant="outline"
                 className="border-gray-700 hover:bg-gray-800 text-gray-100 hover:text-white"
+                disabled={processingAction}
               >
                 Cancel
               </Button>
             </DialogClose>
             <Button
               onClick={handleConfirmation}
-              disabled={!selectedTime || !!timeError}
+              disabled={!selectedTime || !!timeError || processingAction}
               className="bg-green-600 hover:bg-green-700 text-white font-medium"
             >
-              {updatingId === selectedAppointment?._id ? (
+              {processingAction ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -438,11 +440,8 @@ const LGUAppointments = () => {
         </DialogContent>
       </Dialog>
 
-       <Dialog open={detailsOpen} onOpenChange={(open) => {
-        if (!processingAction || !open) {
-          setDetailsOpen(open);
-        }
-      }}>
+      {/* Details Dialog */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 sm:max-w-md rounded-xl">
           <DialogHeader>
             <DialogTitle className="text-gray-100 text-xl">Appointment Details</DialogTitle>
@@ -506,45 +505,50 @@ const LGUAppointments = () => {
             </div>
           </div>
 
-          <DialogFooter className="space-x-2">
+          <DialogFooter className="space-x-2 flex flex-col sm:flex-row gap-2 sm:gap-0">
             <DialogClose asChild>
               <Button
                 variant="outline"
                 className="border-gray-700 hover:bg-black hover:text-white text-black"
+                disabled={processingAction}
               >
                 Close
               </Button>
             </DialogClose>
             
-            {selectedAppointment?.status !== 'confirmed' && (
-              <Button
-                onClick={() => {
-                  setDetailsOpen(false);
-                  openConfirmationDialog(selectedAppointment!);
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Confirm
-              </Button>
-            )}
-            
-            {selectedAppointment?.status !== 'cancelled' && (
-              <Button
-                onClick={() => handleStatusUpdate(selectedAppointment!._id, 'cancelled')}
-                variant="destructive"
-                className="bg-red-600 hover:bg-red-700"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-            )}
+            <div className="flex gap-2 w-full sm:w-auto">
+              {selectedAppointment?.status !== 'confirmed' && (
+                <Button
+                  onClick={() => {
+                    setDetailsOpen(false);
+                    openConfirmationDialog(selectedAppointment!);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white w-full"
+                  disabled={processingAction}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Confirm
+                </Button>
+              )}
+              
+              {selectedAppointment?.status !== 'cancelled' && (
+                <Button
+                  onClick={() => handleStatusUpdate(selectedAppointment!._id, 'cancelled')}
+                  variant="destructive"
+                  className="bg-red-600 hover:bg-red-700 w-full"
+                  disabled={processingAction}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-6 p-6 bg-background text-foreground">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="space-y-6 p-4 sm:p-6 bg-background text-foreground">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight text-gray-100 flex items-center gap-2">
               <Calendar className="h-6 w-6 text-primary" />
@@ -555,7 +559,7 @@ const LGUAppointments = () => {
             </p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button 
               size="sm" 
               variant="outline" 
@@ -567,7 +571,7 @@ const LGUAppointments = () => {
               }}
             >
               <Filter className="h-4 w-4 mr-2" />
-              Reset Filters
+              <span className="sr-only sm:not-sr-only">Reset Filters</span>
             </Button>
             
             <Button 
@@ -575,7 +579,7 @@ const LGUAppointments = () => {
               className="bg-primary hover:bg-primary/90"
             >
               <Clock className="h-4 w-4 mr-2" />
-              Manage Schedule
+              <span className="sr-only sm:not-sr-only">Manage Schedule</span>
             </Button>
           </div>
         </div>
@@ -587,10 +591,10 @@ const LGUAppointments = () => {
             <CardTitle className="text-lg text-gray-100 font-medium">Appointment Requests</CardTitle>
             
             <div className="flex flex-col md:flex-row justify-between gap-4 mt-4">
-              <div className="relative w-full md:max-w-md">
+              <div className="relative w-full">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Search by title, citizen name or email..."
+                  placeholder="Search appointments..."
                   className="pl-10 h-10 bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-400 focus:ring-primary focus:border-primary focus:ring-offset-gray-900"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -602,8 +606,8 @@ const LGUAppointments = () => {
                   value={selectedStatus}
                   onValueChange={setSelectedStatus}
                 >
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-100 w-40 focus:ring-primary focus:ring-offset-gray-900">
-                    <SelectValue placeholder="Filter by status" />
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-100 min-w-[140px] focus:ring-primary focus:ring-offset-gray-900">
+                    <SelectValue placeholder="Filter status" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-900 border-gray-800">
                     {statusOptions.map(option => (
@@ -625,8 +629,8 @@ const LGUAppointments = () => {
                   value={selectedDateFilter}
                   onValueChange={setSelectedDateFilter}
                 >
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-100 w-40 focus:ring-primary focus:ring-offset-gray-900">
-                    <SelectValue placeholder="Filter by date" />
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-100 min-w-[140px] focus:ring-primary focus:ring-offset-gray-900">
+                    <SelectValue placeholder="Filter date" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-900 border-gray-800">
                     {dateFilters.map(option => (
@@ -645,10 +649,11 @@ const LGUAppointments = () => {
           </CardHeader>
 
           <CardContent>
-            <div className="rounded-lg border border-gray-800 overflow-hidden">
-              <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <div className="rounded-lg border border-gray-800 overflow-hidden min-w-full">
                 <Table className="border-collapse w-full">
-                  <TableHeader className="bg-gray-800/80">
+                  <TableHeader className="bg-gray-800/80 sticky top-0 z-10">
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="text-gray-300 font-medium py-4">Citizen</TableHead>
                       <TableHead className="text-gray-300 font-medium">Title</TableHead>
@@ -724,7 +729,7 @@ const LGUAppointments = () => {
                               </TooltipContent>
                             </Tooltip>
                           </TableCell>
-                            <TableCell className="text-right">
+                          <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -741,8 +746,6 @@ const LGUAppointments = () => {
                                   <p className="text-xs">View Details</p>
                                 </TooltipContent>
                               </Tooltip>
-                            
-                              
                             </div>
                           </TableCell>
                         </motion.tr>
@@ -774,9 +777,90 @@ const LGUAppointments = () => {
                 </Table>
               </div>
             </div>
+
+            {/* Mobile Card List */}
+            <div className="md:hidden space-y-4">
+              <AnimatePresence>
+                {filteredAppointments.map((appointment, index) => (
+                  <motion.div
+                    key={appointment._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                    className="bg-gray-800/30 border border-gray-700 rounded-xl p-4"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <h3 className="font-semibold text-gray-100">{appointment.title}</h3>
+                        <p className="text-sm text-gray-400 mt-1">
+                          {appointment.user.firstName} {appointment.user.lastName}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`px-2.5 py-1 text-xs ${getStatusVariant(appointment.status)}`}
+                      >
+                        {getStatusIcon(appointment.status)}
+                        <span className="ml-1">{appointment.status}</span>
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CalendarClock className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-100">
+                          {format(parseISO(appointment.date), 'MMM dd')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-100">
+                          {appointment.time || 'Not set'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mt-3 line-clamp-2">
+                      {appointment.description}
+                    </p>
+
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-gray-700 hover:bg-gray-700 text-gray-100 flex items-center"
+                        onClick={() => openDetailsDialog(appointment)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Details
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {filteredAppointments.length === 0 && !loading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="h-96 flex flex-col items-center justify-center gap-4 text-center p-4"
+                >
+                  <CalendarClock className="h-16 w-16 text-gray-600" />
+                  <div className="space-y-1">
+                    <h3 className="text-gray-200 font-medium text-lg">
+                      No appointments found
+                    </h3>
+                    <p className="text-gray-500 text-sm">
+                      Try adjusting your filters or check back later
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </div>
           </CardContent>
 
-          <CardFooter className="flex justify-between items-center px-6 py-4 border-t border-gray-800">
+          <CardFooter className="flex flex-col md:flex-row justify-between items-center px-4 sm:px-6 py-4 border-t border-gray-800 gap-4">
             <div className="text-sm text-gray-400">
               Showing {filteredAppointments.length} of {appointments.length} results
             </div>

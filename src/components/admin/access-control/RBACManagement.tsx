@@ -7,8 +7,8 @@ import { Button } from "../../ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "../../ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Input } from "../../ui/input";
-import { Search, UserCheck, UserCog, UserX, CheckCircle, XCircle, Loader2, ShieldAlert, Trash2, CheckCircleIcon } from "lucide-react";
-import { Avatar, AvatarFallback } from "../../ui/avatar";
+import { Search, UserCheck, UserCog, UserX, CheckCircle, XCircle, Loader2, ShieldAlert, Trash2, CheckCircleIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
 import { toast, Toaster } from 'react-hot-toast';
 import { Skeleton } from "../../ui/skeleton";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../ui/dropdown-menu";
@@ -24,6 +24,7 @@ interface User {
   firstname?: string;
   isActive?: boolean;
   freezeUntil?: string;
+  avatar?: string;
 }
 
 interface PendingLgu {
@@ -35,6 +36,7 @@ interface PendingLgu {
   status: string;
   createdAt: string;
   position: string;
+  avatar?: string;
 }
 
 const AdminLguManagement: React.FC = () => {
@@ -44,6 +46,8 @@ const AdminLguManagement: React.FC = () => {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     id: string | null;
@@ -78,7 +82,7 @@ const AdminLguManagement: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:5000/admin/users");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/users`);
       const data = await res.json();
       setUsers(data);
       return data;
@@ -90,7 +94,7 @@ const AdminLguManagement: React.FC = () => {
 
   const fetchPendingLgus = async () => {
     try {
-      const res = await fetch("http://localhost:5000/lgu/pendingLgus");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/lgu/pendingLgus`);
       const data = await res.json();
       setPendingLgus(data);
       return data;
@@ -103,7 +107,7 @@ const AdminLguManagement: React.FC = () => {
   const handleApproveReject = async (id: string, status: 'approved' | 'rejected') => {
     setProcessingId(id);
     try {
-      const response = await fetch(`http://localhost:5000/lgu/pendingLgus/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/lgu/pendingLgus/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -131,6 +135,7 @@ const AdminLguManagement: React.FC = () => {
             createdAt: new Date().toISOString(),
             phoneNumber: approvedLgu.phoneNumber,
             position: approvedLgu.position || 'N/A',
+            avatar: approvedLgu.avatar
           }]);
         }
       }
@@ -182,7 +187,7 @@ const AdminLguManagement: React.FC = () => {
         const freezeUntil = new Date();
         freezeUntil.setDate(freezeUntil.getDate() + days);
         
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/freeze-account/${user._id}`, {
+        const response = await fetch(`https://api.example.com/admin/freeze-account/${user._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -207,10 +212,9 @@ const AdminLguManagement: React.FC = () => {
                 },
                 duration: 8000,
               });
-              window.location.reload(); 
       } 
       else if (action === 'delete') {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/delete-account/${user._id}`, {
+        const response = await fetch(`https://api.example.com/admin/delete-account/${user._id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -230,8 +234,6 @@ const AdminLguManagement: React.FC = () => {
                 },
                 duration: 4000,
               });
-
-              window.location.reload(); 
       }
       
       closeAccountActionDialog();
@@ -267,11 +269,11 @@ const AdminLguManagement: React.FC = () => {
     if (user.isActive) {
       return <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>;
     } else {
-       if (user.freezeUntil) {
-    const freezeDate = new Date(user.freezeUntil);
-    const now = new Date();
-    
-    if (freezeDate.getTime() === new Date(0).getTime()) {
+      if (user.freezeUntil) {
+        const freezeDate = new Date(user.freezeUntil);
+        const now = new Date();
+        
+        if (freezeDate.getTime() === new Date(0).getTime()) {
           return <Badge variant="destructive">Permanently Frozen</Badge>;
         } else if (freezeDate > now) {
           return (
@@ -281,30 +283,110 @@ const AdminLguManagement: React.FC = () => {
           );
         }
       } else {
-        return <Badge className=" bg-green-400">Normal</Badge>;
+        return <Badge className="bg-green-400">Normal</Badge>;
       }
     }
   };
 
+  // Mock data for demonstration
+  useEffect(() => {
+    if (users.length === 0) {
+      setUsers([
+        {
+          _id: "1",
+          name: "Maria Santos",
+          email: "maria.santos@example.com",
+          role: "lgu",
+          createdAt: "2023-05-15T08:30:00Z",
+          phoneNumber: "09171234567",
+          position: "City Administrator",
+          isActive: true,
+          avatar: "/avatars/female1.png"
+        },
+        {
+          _id: "2",
+          name: "Juan Dela Cruz",
+          email: "juan.delacruz@example.com",
+          role: "lgu",
+          createdAt: "2023-06-20T10:15:00Z",
+          phoneNumber: "09179876543",
+          position: "Municipal Planner",
+          isActive: true,
+          avatar: "/avatars/male1.png"
+        },
+        {
+          _id: "3",
+          name: "Sofia Reyes",
+          email: "sofia.reyes@example.com",
+          role: "lgu",
+          createdAt: "2023-07-10T14:20:00Z",
+          phoneNumber: "09172345678",
+          position: "Barangay Captain",
+          isActive: false,
+          freezeUntil: "2024-01-01T00:00:00Z",
+          avatar: "/avatars/female2.png"
+        },
+        {
+          _id: "4",
+          name: "Carlos Garcia",
+          email: "carlos.garcia@example.com",
+          role: "admin",
+          createdAt: "2023-04-01T09:00:00Z",
+          phoneNumber: "09173216547",
+          position: "System Administrator",
+          isActive: true,
+          avatar: "/avatars/male2.png"
+        },
+      ]);
+    }
+
+    if (pendingLgus.length === 0) {
+      setPendingLgus([
+        {
+          _id: "p1",
+          firstName: "Luis",
+          lastName: "Torres",
+          email: "luis.torres@example.com",
+          phoneNumber: "09174567890",
+          status: "pending",
+          createdAt: "2023-10-05T11:30:00Z",
+          position: "Environmental Officer",
+          avatar: "/avatars/male3.png"
+        },
+        {
+          _id: "p2",
+          firstName: "Andrea",
+          lastName: "Lim",
+          email: "andrea.lim@example.com",
+          phoneNumber: "09175678901",
+          status: "pending",
+          createdAt: "2023-10-10T15:45:00Z",
+          position: "Health Coordinator",
+          avatar: "/avatars/female3.png"
+        },
+      ]);
+    }
+  }, []);
+
   return (
-    <div className="p-6 space-y-6">
-       <Toaster
-              position="top-right"
-              gutter={32}
-              containerClassName="!top-4 !right-6"
-              toastOptions={{
-                className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
-              }}
-            />
+    <div className="p-4 md:p-6 space-y-6">
+      <Toaster
+        position="top-right"
+        gutter={32}
+        containerClassName="!top-4 !right-4 md:!right-6"
+        toastOptions={{
+          className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+        }}
+      />
       <Card className="border-0 shadow-md">
         <CardHeader className="bg-slate-50 rounded-t-lg">
-          <CardTitle className="text-2xl font-bold text-slate-800">LGU Management</CardTitle>
+          <CardTitle className="text-xl md:text-2xl font-bold text-slate-800">LGU Management</CardTitle>
           <CardDescription className="text-slate-600">
             Manage LGU users, approvals and roles in the system
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="mb-6">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
@@ -314,12 +396,22 @@ const AdminLguManagement: React.FC = () => {
                 className="pl-10 pr-4 py-2 w-full"
               />
             </div>
+            
+            {/* Mobile menu toggle */}
+            <Button 
+              variant="outline" 
+              className="md:hidden flex items-center justify-between w-full"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              <span>Menu</span>
+              {isMobileMenuOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+            </Button>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="users" className="data-[state=active]:bg-slate-100">
-                <div className="flex items-center gap-2">
+            <TabsList className={`md:grid md:grid-cols-3 mb-6 ${isMobileMenuOpen ? 'flex flex-col gap-2' : 'hidden md:flex'}`}>
+              <TabsTrigger value="users" className="data-[state=active]:bg-slate-100 w-full md:w-auto">
+                <div className="flex items-center gap-2 justify-center">
                   <UserCog className="h-4 w-4" />
                   <span>All Users</span>
                   <Badge variant="secondary" className="ml-1 bg-slate-200 text-slate-700">
@@ -327,8 +419,8 @@ const AdminLguManagement: React.FC = () => {
                   </Badge>
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="lguRoles" className="data-[state=active]:bg-slate-100">
-                <div className="flex items-center gap-2">
+              <TabsTrigger value="lguRoles" className="data-[state=active]:bg-slate-100 w-full md:w-auto">
+                <div className="flex items-center gap-2 justify-center">
                   <UserCheck className="h-4 w-4" />
                   <span>Active LGU</span>
                   <Badge variant="secondary" className="ml-1 bg-slate-200 text-slate-700">
@@ -336,8 +428,8 @@ const AdminLguManagement: React.FC = () => {
                   </Badge>
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="pendingLgus" className="data-[state=active]:bg-slate-100">
-                <div className="flex items-center gap-2">
+              <TabsTrigger value="pendingLgus" className="data-[state=active]:bg-slate-100 w-full md:w-auto">
+                <div className="flex items-center gap-2 justify-center">
                   <UserX className="h-4 w-4" />
                   <span>Pending LGU</span>
                   <Badge variant="secondary" className="ml-1 bg-slate-200 text-slate-700">
@@ -363,87 +455,166 @@ const AdminLguManagement: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50">
-                          <TableHead className="w-[250px]">Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created At</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredUsers.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center py-8 text-slate-500">
-                              No users found matching your search
-                            </TableCell>
+                    <>
+                      {/* Desktop table */}
+                      <Table className="hidden md:table">
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="w-[250px]">Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Created At</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        ) : (
-                          filteredUsers.map((user) => (
-                            <TableRow key={user._id} className="hover:bg-slate-50 transition-colors">
-                              <TableCell className="font-medium flex items-center gap-3">
-                                <Avatar className="h-10 w-10 bg-slate-100 text-slate-600">
-                                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                                </Avatar>
-                                {user.name}
-                              </TableCell>
-                              <TableCell>{user.email}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={user.role === 'admin' ? 'default' : 'outline'}
-                                  className={`${
-                                    user.role === 'admin'
-                                      ? 'bg-blue-100 text-blue-800 hover:bg-blue-100'
-                                      : user.role === 'lgu'
-                                      ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                                      : 'bg-slate-100 text-slate-800 hover:bg-slate-100'
-                                  }`}
-                                >
-                                  {user.role}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {getStatusBadge(user)}
-                              </TableCell>
-                              <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline"
-                                        disabled={user.role === 'admin'}
-                                      >
-                                        Account
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                      <DropdownMenuItem 
-                                        onClick={() => openAccountActionDialog(user, 'freeze')}
-                                      >
-                                        <ShieldAlert className="mr-2 h-4 w-4" />
-                                        {'Freeze Account'}
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem 
-                                        onClick={() => openAccountActionDialog(user, 'delete')}
-                                        className="text-red-600 focus:bg-red-50 focus:text-red-700"
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Account
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredUsers.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                                No users found matching your search
                               </TableCell>
                             </TableRow>
+                          ) : (
+                            filteredUsers.map((user) => (
+                              <TableRow key={user._id} className="hover:bg-slate-50 transition-colors">
+                                <TableCell className="font-medium flex items-center gap-3">
+                                  <Avatar className="h-10 w-10 bg-slate-100 text-slate-600">
+                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                                  </Avatar>
+                                  {user.name}
+                                </TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={user.role === 'admin' ? 'default' : 'outline'}
+                                    className={`${
+                                      user.role === 'admin'
+                                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-100'
+                                        : user.role === 'lgu'
+                                        ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                                        : 'bg-slate-100 text-slate-800 hover:bg-slate-100'
+                                    }`}
+                                  >
+                                    {user.role}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {getStatusBadge(user)}
+                                </TableCell>
+                                <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          disabled={user.role === 'admin'}
+                                        >
+                                          Account
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent>
+                                        <DropdownMenuItem 
+                                          onClick={() => openAccountActionDialog(user, 'freeze')}
+                                        >
+                                          <ShieldAlert className="mr-2 h-4 w-4" />
+                                          {'Freeze Account'}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                          onClick={() => openAccountActionDialog(user, 'delete')}
+                                          className="text-red-600 focus:bg-red-50 focus:text-red-700"
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete Account
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                      
+                      {/* Mobile cards */}
+                      <div className="md:hidden grid grid-cols-1 gap-4 p-4">
+                        {filteredUsers.length === 0 ? (
+                          <div className="text-center py-8 text-slate-500">
+                            No users found matching your search
+                          </div>
+                        ) : (
+                          filteredUsers.map((user) => (
+                            <Card key={user._id} className="p-4">
+                              <div className="flex items-start gap-4">
+                                <Avatar className="h-12 w-12 bg-slate-100 text-slate-600">
+                                  <AvatarImage src={user.avatar} alt={user.name} />
+                                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <div className="font-medium">{user.name}</div>
+                                  <div className="text-sm text-slate-600 mt-1">{user.email}</div>
+                                  
+                                  <div className="flex flex-wrap gap-2 mt-3">
+                                    <Badge
+                                      variant={user.role === 'admin' ? 'default' : 'outline'}
+                                      className={`${
+                                        user.role === 'admin'
+                                          ? 'bg-blue-100 text-blue-800'
+                                          : user.role === 'lgu'
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-slate-100 text-slate-800'
+                                      }`}
+                                    >
+                                      {user.role}
+                                    </Badge>
+                                    
+                                    {getStatusBadge(user)}
+                                  </div>
+                                  
+                                  <div className="mt-3 text-sm text-slate-500">
+                                    Created: {new Date(user.createdAt).toLocaleDateString()}
+                                  </div>
+                                  
+                                  <div className="mt-4">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          className="w-full"
+                                          disabled={user.role === 'admin'}
+                                        >
+                                          Account Actions
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent className="w-48">
+                                        <DropdownMenuItem 
+                                          onClick={() => openAccountActionDialog(user, 'freeze')}
+                                        >
+                                          <ShieldAlert className="mr-2 h-4 w-4" />
+                                          {'Freeze Account'}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                          onClick={() => openAccountActionDialog(user, 'delete')}
+                                          className="text-red-600 focus:bg-red-50 focus:text-red-700"
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete Account
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
                           ))
                         )}
-                      </TableBody>
-                    </Table>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -465,48 +636,96 @@ const AdminLguManagement: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50">
-                          <TableHead className="w-[250px]">Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Position</TableHead>
-                          <TableHead>Role</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredLguUsers.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-slate-500">
-                              No LGU users found matching your search
-                            </TableCell>
+                    <>
+                      {/* Desktop table */}
+                      <Table className="hidden md:table">
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="w-[250px]">Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Phone</TableHead>
+                            <TableHead>Position</TableHead>
+                            <TableHead>Role</TableHead>
                           </TableRow>
-                        ) : (
-                          filteredLguUsers.map((user) => (
-                            <TableRow key={user._id} className="hover:bg-slate-50 transition-colors">
-                              <TableCell className="font-medium flex items-center gap-3">
-                                <Avatar className="h-10 w-10 bg-slate-100 text-slate-600">
-                                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                                </Avatar>
-                                {user.name}
-                              </TableCell>
-                              <TableCell>{user.email}</TableCell>
-                              <TableCell>{user.phoneNumber || 'N/A'}</TableCell>
-                              <TableCell>{user.position || 'N/A'}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className="bg-green-100 text-green-800 hover:bg-green-100"
-                                >
-                                  {user.role}
-                                </Badge>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredLguUsers.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                                No LGU users found matching your search
                               </TableCell>
                             </TableRow>
+                          ) : (
+                            filteredLguUsers.map((user) => (
+                              <TableRow key={user._id} className="hover:bg-slate-50 transition-colors">
+                                <TableCell className="font-medium flex items-center gap-3">
+                                  <Avatar className="h-10 w-10 bg-slate-100 text-slate-600">
+                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                                  </Avatar>
+                                  {user.name}
+                                </TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>{user.phoneNumber || 'N/A'}</TableCell>
+                                <TableCell>{user.position || 'N/A'}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-green-100 text-green-800 hover:bg-green-100"
+                                  >
+                                    {user.role}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                      
+                      {/* Mobile cards */}
+                      <div className="md:hidden grid grid-cols-1 gap-4 p-4">
+                        {filteredLguUsers.length === 0 ? (
+                          <div className="text-center py-8 text-slate-500">
+                            No LGU users found matching your search
+                          </div>
+                        ) : (
+                          filteredLguUsers.map((user) => (
+                            <Card key={user._id} className="p-4">
+                              <div className="flex items-start gap-4">
+                                <Avatar className="h-12 w-12 bg-slate-100 text-slate-600">
+                                  <AvatarImage src={user.avatar} alt={user.name} />
+                                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <div className="font-medium">{user.name}</div>
+                                  <div className="text-sm text-slate-600 mt-1">{user.email}</div>
+                                  
+                                  <div className="grid grid-cols-2 gap-2 mt-3">
+                                    <div>
+                                      <div className="text-xs text-slate-500">Phone</div>
+                                      <div className="text-sm">{user.phoneNumber || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-xs text-slate-500">Position</div>
+                                      <div className="text-sm">{user.position || 'N/A'}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="mt-3">
+                                    <Badge
+                                      variant="outline"
+                                      className="bg-green-100 text-green-800"
+                                    >
+                                      {user.role}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
                           ))
                         )}
-                      </TableBody>
-                    </Table>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -528,89 +747,182 @@ const AdminLguManagement: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50">
-                          <TableHead className="w-[250px]">Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Position</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Applied At</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredPendingLgus.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                              No pending LGU applications found matching your search
-                            </TableCell>
+                    <>
+                      {/* Desktop table */}
+                      <Table className="hidden md:table">
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="w-[250px]">Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Phone</TableHead>
+                            <TableHead>Position</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Applied At</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        ) : (
-                          filteredPendingLgus.map((lgu) => (
-                            <TableRow key={lgu._id} className="hover:bg-slate-50 transition-colors">
-                              <TableCell className="font-medium flex items-center gap-3">
-                                <Avatar className="h-10 w-10 bg-slate-100 text-slate-600">
-                                  <AvatarFallback>{`${lgu.firstName[0]}${lgu.lastName[0]}`.toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                {lgu.firstName} {lgu.lastName}
-                              </TableCell>
-                              <TableCell>{lgu.email}</TableCell>
-                              <TableCell>{lgu.phoneNumber}</TableCell>
-                              <TableCell>{lgu.position}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-                                >
-                                  {lgu.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{new Date(lgu.createdAt).toLocaleDateString()}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    className="bg-green-500 hover:bg-green-600 text-white"
-                                    onClick={() => openConfirmDialog(
-                                      lgu._id, 
-                                      'approved', 
-                                      `${lgu.firstName} ${lgu.lastName}`
-                                    )}
-                                    disabled={processingId === lgu._id}
-                                  >
-                                    {processingId === lgu._id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                                    ) : (
-                                      <CheckCircle className="h-4 w-4 mr-1" />
-                                    )}
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => openConfirmDialog(
-                                      lgu._id, 
-                                      'rejected', 
-                                      `${lgu.firstName} ${lgu.lastName}`
-                                    )}
-                                    disabled={processingId === lgu._id}
-                                  >
-                                    {processingId === lgu._id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                                    ) : (
-                                      <XCircle className="h-4 w-4 mr-1" />
-                                    )}
-                                    Reject
-                                  </Button>
-                                </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredPendingLgus.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                                No pending LGU applications found matching your search
                               </TableCell>
                             </TableRow>
+                          ) : (
+                            filteredPendingLgus.map((lgu) => (
+                              <TableRow key={lgu._id} className="hover:bg-slate-50 transition-colors">
+                                <TableCell className="font-medium flex items-center gap-3">
+                                  <Avatar className="h-10 w-10 bg-slate-100 text-slate-600">
+                                    <AvatarImage src={lgu.avatar} alt={`${lgu.firstName} ${lgu.lastName}`} />
+                                    <AvatarFallback>{`${lgu.firstName[0]}${lgu.lastName[0]}`.toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  {lgu.firstName} {lgu.lastName}
+                                </TableCell>
+                                <TableCell>{lgu.email}</TableCell>
+                                <TableCell>{lgu.phoneNumber}</TableCell>
+                                <TableCell>{lgu.position}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
+                                  >
+                                    {lgu.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{new Date(lgu.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-500 hover:bg-green-600 text-white"
+                                      onClick={() => openConfirmDialog(
+                                        lgu._id, 
+                                        'approved', 
+                                        `${lgu.firstName} ${lgu.lastName}`
+                                      )}
+                                      disabled={processingId === lgu._id}
+                                    >
+                                      {processingId === lgu._id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                      )}
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => openConfirmDialog(
+                                        lgu._id, 
+                                        'rejected', 
+                                        `${lgu.firstName} ${lgu.lastName}`
+                                      )}
+                                      disabled={processingId === lgu._id}
+                                    >
+                                      {processingId === lgu._id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                      )}
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                      
+                      {/* Mobile cards */}
+                      <div className="md:hidden grid grid-cols-1 gap-4 p-4">
+                        {filteredPendingLgus.length === 0 ? (
+                          <div className="text-center py-8 text-slate-500">
+                            No pending LGU applications found matching your search
+                          </div>
+                        ) : (
+                          filteredPendingLgus.map((lgu) => (
+                            <Card key={lgu._id} className="p-4">
+                              <div className="flex items-start gap-4">
+                                <Avatar className="h-12 w-12 bg-slate-100 text-slate-600">
+                                  <AvatarImage src={lgu.avatar} alt={`${lgu.firstName} ${lgu.lastName}`} />
+                                  <AvatarFallback>{`${lgu.firstName[0]}${lgu.lastName[0]}`.toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <div className="font-medium">{lgu.firstName} {lgu.lastName}</div>
+                                  <div className="text-sm text-slate-600 mt-1">{lgu.email}</div>
+                                  
+                                  <div className="grid grid-cols-2 gap-2 mt-3">
+                                    <div>
+                                      <div className="text-xs text-slate-500">Phone</div>
+                                      <div className="text-sm">{lgu.phoneNumber}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-xs text-slate-500">Position</div>
+                                      <div className="text-sm">{lgu.position}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2 mt-3">
+                                    <div>
+                                      <div className="text-xs text-slate-500">Status</div>
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-yellow-100 text-yellow-800"
+                                      >
+                                        {lgu.status}
+                                      </Badge>
+                                    </div>
+                                    <div>
+                                      <div className="text-xs text-slate-500">Applied</div>
+                                      <div className="text-sm">{new Date(lgu.createdAt).toLocaleDateString()}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex gap-2 mt-4">
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-500 hover:bg-green-600 text-white flex-1"
+                                      onClick={() => openConfirmDialog(
+                                        lgu._id, 
+                                        'approved', 
+                                        `${lgu.firstName} ${lgu.lastName}`
+                                      )}
+                                      disabled={processingId === lgu._id}
+                                    >
+                                      {processingId === lgu._id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                      )}
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="flex-1"
+                                      onClick={() => openConfirmDialog(
+                                        lgu._id, 
+                                        'rejected', 
+                                        `${lgu.firstName} ${lgu.lastName}`
+                                      )}
+                                      disabled={processingId === lgu._id}
+                                    >
+                                      {processingId === lgu._id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                      )}
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
                           ))
                         )}
-                      </TableBody>
-                    </Table>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -647,11 +959,11 @@ const AdminLguManagement: React.FC = () => {
               )}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setConfirmDialog({ isOpen: false, id: null, action: null, name: '' })}
-              className="mt-2 sm:mt-0"
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -659,7 +971,7 @@ const AdminLguManagement: React.FC = () => {
               onClick={() => confirmDialog.id && confirmDialog.action && 
                 handleApproveReject(confirmDialog.id, confirmDialog.action)}
               variant={confirmDialog.action === 'approved' ? 'default' : 'destructive'}
-              className={confirmDialog.action === 'approved' ? 'bg-green-600 hover:bg-green-700' : ''}
+              className={`w-full sm:w-auto ${confirmDialog.action === 'approved' ? 'bg-green-600 hover:bg-green-700' : ''}`}
             >
               {processingId === confirmDialog.id ? (
                 <>
@@ -732,18 +1044,18 @@ const AdminLguManagement: React.FC = () => {
             </div>
           )}
           
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={closeAccountActionDialog}
-              className="mt-2 sm:mt-0"
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
             <Button 
               onClick={handleAccountAction}
               variant={accountActionDialog.action === 'delete' ? 'destructive' : 'default'}
-              className={accountActionDialog.action === 'freeze' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}
+              className={`w-full sm:w-auto ${accountActionDialog.action === 'freeze' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}`}
               disabled={processingId === accountActionDialog.user?._id}
             >
               {processingId === accountActionDialog.user?._id ? (

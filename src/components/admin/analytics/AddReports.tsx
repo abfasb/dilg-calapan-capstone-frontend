@@ -4,7 +4,7 @@ import { DndContext, DragOverlay, closestCorners, pointerWithin, useSensor, useS
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDropzone } from 'react-dropzone';
-import { Plus, GripVertical, Trash2, Text, List, CheckSquare, Image, Radio, UploadCloud } from 'lucide-react';
+import { Plus, GripVertical, Trash2, Text, List, CheckSquare, Image, Radio, UploadCloud, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
@@ -20,6 +20,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../../
 import { Badge } from '../../ui/badge';
 import { Separator } from '../../ui/separator';
 import { Progress } from '../../ui/progress';
+import { Sheet, SheetContent, SheetTrigger } from '../../ui/sheet';
 
 type FormField = {
   id: string;
@@ -61,7 +62,7 @@ const SortableItem = ({ field, children, ...props }: any) => {
       className="relative group"
       {...attributes}
     >
-      <div className="absolute -left-6 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute -left-6 top-4 opacity-0 group-hover:opacity-100 transition-opacity max-lg:-left-2 max-lg:top-2">
         <Button
           variant="ghost"
           size="icon"
@@ -87,6 +88,8 @@ const AddReports: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [templateUploadProgress, setTemplateUploadProgress] = useState(0);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
 
   const activeField = fields.find(field => field.id === activeFieldId) || null;
 
@@ -153,6 +156,9 @@ const AddReports: React.FC = () => {
     };
     setFields(prev => [...prev, newField]);
     setActiveFieldId(newField.id);
+    
+    // Close sidebar on mobile after adding
+    setMobileSidebarOpen(false);
   }, []);
 
   const handleDragStart = useCallback((event: any) => {
@@ -253,42 +259,205 @@ const AddReports: React.FC = () => {
     }
   };
 
+  // Mobile sidebar content
+  const mobileSidebarContent = (
+    <Card className="h-full overflow-hidden">
+      <CardHeader className="pb-4 flex flex-row items-center justify-between">
+        <CardTitle className="text-lg">Form Elements</CardTitle>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="lg:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <ScrollArea className="h-[calc(100%-57px)]">
+        <div className="grid grid-cols-2 gap-2 p-4">
+          {FIELD_TYPES.map((item) => (
+            <Button
+              key={item.type}
+              variant="outline"
+              className="h-24 flex-col gap-2 hover:bg-accent/50 transition-colors"
+              onClick={() => addField(item.type as FormField['type'])}
+            >
+              {item.icon}
+              <span className="text-sm font-medium">{item.label}</span>
+            </Button>
+          ))}
+        </div>
+      </ScrollArea>
+    </Card>
+  );
+
+  // Mobile settings content
+  const mobileSettingsContent = (
+    <Card className="h-full overflow-hidden">
+      <CardHeader className="pb-4 flex flex-row items-center justify-between">
+        <CardTitle className="text-lg">Form Settings</CardTitle>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="lg:hidden"
+          onClick={() => setMobileSettingsOpen(false)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <ScrollArea className="h-[calc(100%-57px)] p-4">
+        <div className="space-y-4 mb-8">
+          <div className="space-y-2">
+            <Label>Upload Template (Optional)</Label>
+            <div
+              {...getTemplateRootProps()}
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/30 transition-colors"
+            >
+              <input {...getTemplateInputProps()} />
+              {templateFile ? (
+                <div className="space-y-2">
+                  <p className="text-sm">{templateFile.name}</p>
+                  {templateUploadProgress > 0 && (
+                    <Progress value={templateUploadProgress} className="h-2" />
+                  )}
+                </div>
+              ) : (
+                <>
+                  <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Drag & drop or click to upload template
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    Supported formats: PDF, DOC, DOCX, XLS, XLSX
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <p>Citizens can use this template or fill the form below</p>
+          </div>
+        </div>
+
+        {/* Field Settings */}
+        {activeField ? (
+          <div className="space-y-6 border-t pt-6">
+            <div className="space-y-2">
+              <Label>Field Label</Label>
+              <Input
+                value={activeField.label}
+                onChange={(e) => updateField(activeField.id, { label: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={activeField.description || ''}
+                onChange={(e) => updateField(activeField.id, { description: e.target.value })}
+                placeholder="Help text for this field"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Required Field</Label>
+                <Switch
+                  checked={activeField.required}
+                  onCheckedChange={(checked) => updateField(activeField.id, { required: checked })}
+                />
+              </div>
+            </div>
+            {['radio', 'checkbox', 'dropdown'].includes(activeField.type) && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Options</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAddOption(activeField.id)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Option
+                  </Button>
+                </div>
+                {activeField.options?.map((option, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={option}
+                      onChange={(e) => handleOptionChange(activeField.id, index, e.target.value)}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteOption(activeField.id, index)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-32 text-muted-foreground">
+            Select a field to configure properties
+          </div>
+        )}
+      </ScrollArea>
+    </Card>
+  );
+
   return (
     <>
       <Toaster position="top-right" gutter={32} />
       <TooltipProvider>
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-6 h-[calc(100vh-64px)] p-2 bg-muted/40">
-          {/* Left Sidebar */}
-          <Card className="h-full overflow-hidden">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Form Elements</CardTitle>
-            </CardHeader>
-            <ScrollArea className="h-[calc(100%-57px)]">
-              <div className="grid grid-cols-2 gap-2 p-4">
-                {FIELD_TYPES.map((item) => (
-                  <Button
-                    key={item.type}
-                    variant="outline"
-                    className="h-24 flex-col gap-2 hover:bg-accent/50 transition-colors"
-                    onClick={() => addField(item.type as FormField['type'])}
-                  >
-                    {item.icon}
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </Button>
-                ))}
-              </div>
-            </ScrollArea>
-          </Card>
+          {/* Mobile Top Bar */}
+          <div className="lg:hidden flex items-center justify-between p-2 bg-background border-b">
+            <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 p-0">
+                {mobileSidebarContent}
+              </SheetContent>
+            </Sheet>
+            
+            <div className="text-lg font-bold truncate max-w-[50vw]">
+              {formTitle}
+            </div>
+            
+            <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <span className="sr-only">Settings</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80 p-0">
+                {mobileSettingsContent}
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          {/* Left Sidebar - Desktop */}
+          <div className="hidden lg:block">
+            {mobileSidebarContent}
+          </div>
 
           {/* Main Content */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 lg:col-span-1">
             <Card className="h-full">
               <CardHeader className="pb-0">
                 <div className="flex items-center justify-between">
                   <Input
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
-                    className="text-2xl font-bold border-none px-0 focus-visible:ring-0"
+                    className="text-2xl font-bold border-none px-0 focus-visible:ring-0 max-lg:text-lg"
                     placeholder="Form Title"
                   />
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -302,7 +471,7 @@ const AddReports: React.FC = () => {
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="Form description (optional)"
-                  className="text-muted-foreground border-none px-0 focus-visible:ring-0"
+                  className="text-muted-foreground border-none px-0 focus-visible:ring-0 max-lg:text-sm"
                 />
               </CardHeader>
               
@@ -314,7 +483,7 @@ const AddReports: React.FC = () => {
                   onDragEnd={handleDragEnd}
                 >
                   <SortableContext items={fields}>
-                    <ScrollArea className="h-[calc(100vh-220px)] px-6">
+                    <ScrollArea className="h-[calc(100vh-220px)] lg:h-[calc(100vh-220px)] px-6 max-lg:px-4 max-lg:h-[calc(100vh-180px)]">
                       <AnimatePresence mode="popLayout">
                         {fields.length === 0 && (
                           <motion.div
@@ -324,6 +493,12 @@ const AddReports: React.FC = () => {
                           >
                             <UploadCloud className="h-12 w-12" />
                             <p>Drag and drop fields here or click buttons on the left</p>
+                            <Button 
+                              className="lg:hidden mt-4"
+                              onClick={() => setMobileSidebarOpen(true)}
+                            >
+                              Add Field
+                            </Button>
                           </motion.div>
                         )}
                         {fields.map((field) => (
@@ -332,19 +507,19 @@ const AddReports: React.FC = () => {
                               className="mb-4 group cursor-pointer hover:border-primary/30 transition-colors"
                               onClick={() => setActiveFieldId(field.id)}
                             >
-                              <CardHeader className="flex flex-row items-start justify-between p-4 pb-0">
+                              <CardHeader className="flex flex-row items-start justify-between p-4 pb-0 max-lg:p-3 max-lg:pb-0">
                                 <div className="space-y-1 flex-1">
                                   <Input
                                     value={field.label}
                                     onChange={(e) => updateField(field.id, { label: e.target.value })}
-                                    className="font-medium border-none px-0 focus-visible:ring-0"
+                                    className="font-medium border-none px-0 focus-visible:ring-0 max-lg:text-base"
                                     placeholder="Field label"
                                   />
                                   <Input
                                     value={field.description || ''}
                                     onChange={(e) => updateField(field.id, { description: e.target.value })}
                                     placeholder="Field description (optional)"
-                                    className="text-sm text-muted-foreground border-none px-0 focus-visible:ring-0"
+                                    className="text-sm text-muted-foreground border-none px-0 focus-visible:ring-0 max-lg:text-xs"
                                   />
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -354,6 +529,7 @@ const AddReports: React.FC = () => {
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => deleteField(field.id)}
+                                        className="max-lg:h-8 max-lg:w-8"
                                       >
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                       </Button>
@@ -362,7 +538,7 @@ const AddReports: React.FC = () => {
                                   </Tooltip>
                                 </div>
                               </CardHeader>
-                              <CardContent className="p-4 pt-0">
+                              <CardContent className="p-4 pt-0 max-lg:p-3 max-lg:pt-0">
                                 {field.type === 'text' && <Input placeholder="Text input" disabled />}
                                 {field.type === 'number' && <Input type="number" placeholder="Number input" disabled />}
                                 {(field.type === 'radio' || field.type === 'checkbox') && (
@@ -377,11 +553,13 @@ const AddReports: React.FC = () => {
                                         <Input
                                           value={option}
                                           onChange={(e) => handleOptionChange(field.id, index, e.target.value)}
+                                          className="max-lg:text-sm"
                                         />
                                         <Button
                                           variant="ghost"
                                           size="icon"
                                           onClick={() => handleDeleteOption(field.id, index)}
+                                          className="max-lg:h-8 max-lg:w-8"
                                         >
                                           <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
@@ -390,7 +568,7 @@ const AddReports: React.FC = () => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="mt-2"
+                                      className="mt-2 max-lg:text-xs"
                                       onClick={() => handleAddOption(field.id)}
                                     >
                                       <Plus className="mr-2 h-4 w-4" />
@@ -401,7 +579,7 @@ const AddReports: React.FC = () => {
                                 {field.type === 'image' && (
                                   <div
                                     {...getImageRootProps()}
-                                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors max-lg:p-4 ${
                                       isDragActive ? 'border-primary bg-primary/10' : 'border-muted-foreground/30'
                                     }`}
                                   >
@@ -428,11 +606,11 @@ const AddReports: React.FC = () => {
                                           </div>
                                         ) : (
                                           <>
-                                            <Image className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                                            <p className="text-sm text-muted-foreground">
+                                            <Image className="mx-auto h-12 w-12 text-muted-foreground mb-2 max-lg:h-8 max-lg:w-8" />
+                                            <p className="text-sm text-muted-foreground max-lg:text-xs">
                                               Drag & drop or click to upload
                                             </p>
-                                            <p className="text-xs text-muted-foreground/60 mt-1">
+                                            <p className="text-xs text-muted-foreground/60 mt-1 max-lg:text-[0.7rem]">
                                               Recommended size: 800x400px
                                             </p>
                                           </>
@@ -442,15 +620,16 @@ const AddReports: React.FC = () => {
                                   </div>
                                 )}
                               </CardContent>
-                              <CardFooter className="flex items-center justify-between px-4 py-3 border-t">
-                                <Label className="flex items-center gap-2 text-sm">
+                              <CardFooter className="flex items-center justify-between px-4 py-3 border-t max-lg:px-3 max-lg:py-2">
+                                <Label className="flex items-center gap-2 text-sm max-lg:text-xs">
                                   <Switch
                                     checked={field.required}
                                     onCheckedChange={(checked) => updateField(field.id, { required: checked })}
+                                    className="max-lg:w-8 max-lg:h-4"
                                   />
                                   Required
                                 </Label>
-                                <Badge variant="outline" className="uppercase">
+                                <Badge variant="outline" className="uppercase max-lg:text-xs">
                                   {field.type}
                                 </Badge>
                               </CardFooter>
@@ -471,35 +650,35 @@ const AddReports: React.FC = () => {
                   </DragOverlay>
                 </DndContext>
               ) : (
-                <div className="p-6">
+                <div className="p-6 max-lg:p-4">
                   <div className="max-w-2xl mx-auto space-y-6">
                     <div className="space-y-2">
-                      <h1 className="text-3xl font-bold">{formTitle}</h1>
+                      <h1 className="text-3xl font-bold max-lg:text-xl">{formTitle}</h1>
                       {formDescription && (
-                        <p className="text-muted-foreground">{formDescription}</p>
+                        <p className="text-muted-foreground max-lg:text-sm">{formDescription}</p>
                       )}
                     </div>
                     <Separator />
                     {fields.map((field) => (
                       <div key={field.id} className="space-y-2">
-                        <Label className="flex items-center gap-2">
+                        <Label className="flex items-center gap-2 max-lg:text-sm">
                           {field.label}
                           {field.required && (
                             <span className="text-destructive">*</span>
                           )}
                         </Label>
                         {field.description && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground max-lg:text-xs">
                             {field.description}
                           </p>
                         )}
-                        {field.type === 'text' && <Input />}
-                        {field.type === 'number' && <Input type="number" />}
+                        {field.type === 'text' && <Input className="max-lg:text-sm" />}
+                        {field.type === 'number' && <Input type="number" className="max-lg:text-sm" />}
                         {field.type === 'radio' && (
                           <div className="space-y-2">
                             {field.options?.map((option, index) => (
-                              <Label key={index} className="flex items-center gap-2">
-                                <Radio />
+                              <Label key={index} className="flex items-center gap-2 max-lg:text-sm">
+                                <Radio className="max-lg:h-4 max-lg:w-4" />
                                 {option}
                               </Label>
                             ))}
@@ -508,17 +687,17 @@ const AddReports: React.FC = () => {
                         {field.type === 'checkbox' && (
                           <div className="space-y-2">
                             {field.options?.map((option, index) => (
-                              <Label key={index} className="flex items-center gap-2">
-                                <CheckSquare />
+                              <Label key={index} className="flex items-center gap-2 max-lg:text-sm">
+                                <CheckSquare className="max-lg:h-4 max-lg:w-4" />
                                 {option}
                               </Label>
                             ))}
                           </div>
                         )}
                         {field.type === 'image' && (
-                          <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                            <Image className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">
+                          <div className="border-2 border-dashed rounded-lg p-6 text-center max-lg:p-4">
+                            <Image className="mx-auto h-12 w-12 text-muted-foreground mb-2 max-lg:h-8 max-lg:w-8" />
+                            <p className="text-sm text-muted-foreground max-lg:text-xs">
                               Click to upload image
                             </p>
                           </div>
@@ -527,7 +706,7 @@ const AddReports: React.FC = () => {
                     ))}
                     <Button 
                       onClick={submitForm} 
-                      className="w-full" 
+                      className="w-full max-lg:text-sm" 
                       size="lg"
                       disabled={isSubmitting}
                     >
@@ -539,109 +718,9 @@ const AddReports: React.FC = () => {
             </Card>
           </div>
 
-          <Card className="h-full overflow-hidden">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Form Settings</CardTitle>
-            </CardHeader>
-            <ScrollArea className="h-[calc(100%-57px)] p-4">
-              <div className="space-y-4 mb-8">
-                <div className="space-y-2">
-                  <Label>Upload Template (Optional)</Label>
-                  <div
-                    {...getTemplateRootProps()}
-                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/30 transition-colors"
-                  >
-                    <input {...getTemplateInputProps()} />
-                    {templateFile ? (
-                      <div className="space-y-2">
-                        <p className="text-sm">{templateFile.name}</p>
-                        {templateUploadProgress > 0 && (
-                          <Progress value={templateUploadProgress} className="h-2" />
-                        )}
-                      </div>
-                    ) : (
-                      <>
-                        <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          Drag & drop or click to upload template
-                        </p>
-                        <p className="text-xs text-muted-foreground/60 mt-1">
-                          Supported formats: PDF, DOC, DOCX, XLS, XLSX
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  <p>Citizens can use this template or fill the form below</p>
-                </div>
-              </div>
-
-              {/* Field Settings */}
-              {activeField ? (
-                <div className="space-y-6 border-t pt-6">
-                  <div className="space-y-2">
-                    <Label>Field Label</Label>
-                    <Input
-                      value={activeField.label}
-                      onChange={(e) => updateField(activeField.id, { label: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Input
-                      value={activeField.description || ''}
-                      onChange={(e) => updateField(activeField.id, { description: e.target.value })}
-                      placeholder="Help text for this field"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Required Field</Label>
-                      <Switch
-                        checked={activeField.required}
-                        onCheckedChange={(checked) => updateField(activeField.id, { required: checked })}
-                      />
-                    </div>
-                  </div>
-                  {['radio', 'checkbox', 'dropdown'].includes(activeField.type) && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label>Options</Label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleAddOption(activeField.id)}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Option
-                        </Button>
-                      </div>
-                      {activeField.options?.map((option, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <Input
-                            value={option}
-                            onChange={(e) => handleOptionChange(activeField.id, index, e.target.value)}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteOption(activeField.id, index)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-32 text-muted-foreground">
-                  Select a field to configure properties
-                </div>
-              )}
-            </ScrollArea>
-          </Card>
+          <div className="hidden lg:block">
+            {mobileSettingsContent}
+          </div>
         </div>
       </TooltipProvider>
     </>

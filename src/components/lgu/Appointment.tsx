@@ -829,7 +829,7 @@ const LGUAppointments = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-gray-700 hover:bg-gray-700 text-gray-100 flex items-center"
+                        className="border-gray-700 hover:bg-gray-700 text-gray-100 bg-black flex items-center"
                         onClick={() => openDetailsDialog(appointment)}
                       >
                         <Eye className="h-4 w-4 mr-1" />

@@ -303,9 +303,13 @@ const Login: React.FC = () => {
                     errors.email ? 'border-red-400/50' : 'border-white/10'
                   } focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 outline-none transition-all
                   duration-200 text-white placeholder-transparent
-                  autofill:bg-white/5 autofill:text-white
-                  [&:-webkit-autofill]:bg-white/5 [&:-webkit-autofill]:text-white
-                  [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_rgba(255,255,255,0.05)]`}
+                  autofill:bg-transparent autofill:text-white
+                  [&:-webkit-autofill]:bg-transparent 
+                  [&:-webkit-autofill]:text-white 
+                  [&:-webkit-autofill]:[caret-color:white]
+                  [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_rgba(255,255,255,0.05)]
+                  [&:-webkit-autofill]:transition-colors 
+                  [&:-webkit-autofill]:duration-[99999s]`}
                 />
                 <label 
                   htmlFor="email" 
@@ -358,7 +362,14 @@ const Login: React.FC = () => {
                     errors.password ? 'border-red-400/50' : 'border-white/10'
                   } focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 outline-none transition-all
                   duration-200 text-white placeholder-transparent pr-14
-                  ${isAccountFrozen ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  ${isAccountFrozen ? 'opacity-60 cursor-not-allowed' : ''}
+                  autofill:bg-transparent autofill:text-white
+                  [&:-webkit-autofill]:bg-transparent 
+                  [&:-webkit-autofill]:text-white 
+                  [&:-webkit-autofill]:[caret-color:white]
+                  [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_rgba(255,255,255,0.05)]
+                  [&:-webkit-autofill]:transition-colors 
+                  [&:-webkit-autofill]:duration-[99999s]`}
                 />
                 <label 
                   htmlFor="password" 
@@ -459,9 +470,9 @@ const Login: React.FC = () => {
                 type="button"
                 onClick={() => !isAccountFrozen && navigate('/account/forgot-password')}
                 className={`text-sm font-medium ${
-                  isAccountFrozen 
-                    ? 'text-gray-500 cursor-not-allowed' 
-                    : 'text-cyan-400 hover:text-cyan-300'
+                    isAccountFrozen 
+                      ? 'text-gray-500 cursor-not-allowed' 
+                      : 'text-cyan-400 hover:text-cyan-300'
                 } transition-colors`}
                 disabled={isAccountFrozen}
               >

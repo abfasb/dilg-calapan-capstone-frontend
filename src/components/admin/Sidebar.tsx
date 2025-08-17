@@ -107,15 +107,13 @@
 
     return (
       <>
-        {/* Mobile Toggle Button */}
         <button
           onClick={() => onToggle(!isOpen)}
-          className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-gray-900 text-white shadow-lg"
+          className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg  text-black shadow-lg"
         >
-          {isOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
+          {isOpen ? <FiX className="w-6 h-6 text-white ml-[220px]" /> : <FiMenu className="w-6 h-6" />}
         </button>
 
-        {/* Sidebar */}
         <div
           className={`fixed top-0 left-0 h-full bg-gray-950 text-white flex flex-col border-r border-gray-800/50 shadow-2xl transition-transform duration-300 z-40
           w-72 

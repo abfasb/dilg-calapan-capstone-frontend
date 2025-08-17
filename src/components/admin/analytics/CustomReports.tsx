@@ -448,15 +448,15 @@ const CustomReports: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <Button 
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setRemoveTemplate(true)}
-                            className="bg-red-500/10 hover:bg-red-500/20 text-red-600 border-red-200/50 rounded-lg"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove
-                          </Button>
+                        <Button 
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setRemoveTemplate(true)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-600 border-red-200/50 rounded-lg flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4 sm:mr-2 mr-0" />
+                          <span className="hidden sm:inline">Remove</span> 
+                        </Button>
                         </div>
                       </div>
                     )}

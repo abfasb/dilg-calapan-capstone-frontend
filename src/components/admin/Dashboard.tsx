@@ -6,7 +6,7 @@ import {
   CardHeader, 
   CardTitle,
   CardFooter
-} from '@/components/ui/card';
+} from '../ui/card';
 import { 
   LineChart, 
   Line, 
@@ -40,14 +40,48 @@ import {
   RefreshCw,
   ChevronRight
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Skeleton } from '../ui/skeleton';
+
+interface MetricCardProps {
+  title: string;
+  value: number | string;
+  unit?: string;
+  icon: React.ElementType; 
+  color?: keyof typeof colorClasses;
+}
+
+const colorClasses = {
+  indigo: "bg-indigo-100 text-indigo-700",
+  green: "bg-green-100 text-green-700",
+  red: "bg-red-100 text-red-700",
+  yellow: "bg-yellow-100 text-yellow-700",
+};
+
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: React.ElementType; 
+  change?: number; 
+  changeType?: "positive" | "negative";
+  description?: string;
+}
+
+
+
+interface ActivityItemProps {
+  title: string;
+  subtitle?: string;
+  status: string;
+  statusColor?: "default" | "secondary" | "destructive" | "outline";
+  date?: string;
+}
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -66,7 +100,7 @@ const Dashboard = () => {
       } else {
         setError(result.message || 'Failed to fetch dashboard data');
       }
-    } catch (err) {
+    } catch (err : any) {
       setError('Network error. Please try again.');
       console.error('Dashboard fetch error:', err);
     } finally {
@@ -147,7 +181,7 @@ const Dashboard = () => {
     '#0ea5e9'  // Sky
   ];
 
-  const StatCard = ({ title, value, icon: Icon, change, changeType, description }) => (
+  const StatCard: React.FC<StatCardProps>  = ({ title, value, icon: Icon, change, changeType, description }) => (
     <Card className="group transition-all hover:shadow-lg border-0 rounded-2xl shadow-sm overflow-hidden bg-white">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
@@ -177,7 +211,7 @@ const Dashboard = () => {
     </Card>
   );
 
-  const MetricCard = ({ title, value, unit, icon: Icon, color = "indigo" }) => {
+  const MetricCard : React.FC<MetricCardProps> = ({ title, value, unit, icon: Icon, color = "indigo" }) => {
     const colorClasses = {
       indigo: 'bg-indigo-100 text-indigo-600',
       emerald: 'bg-emerald-100 text-emerald-600',
@@ -203,7 +237,7 @@ const Dashboard = () => {
     );
   };
 
-  const ActivityItem = ({ title, subtitle, status, statusColor, date }) => (
+  const ActivityItem : React.FC<ActivityItemProps> = ({ title, subtitle, status, statusColor, date }) => (
     <div className="flex items-start justify-between py-3 border-b border-gray-100 last:border-0">
       <div className="flex-1">
         <p className="font-medium text-gray-800">{title}</p>

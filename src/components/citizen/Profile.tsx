@@ -6,7 +6,6 @@ import {
   Mail, Building
 } from 'lucide-react';
 
-// Form validation schema (mimicking your zod schema)
 const validateProfileForm = (data) => {
   const errors = {};
   
@@ -149,7 +148,6 @@ const Profile = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
           {/* Profile Header Card */}

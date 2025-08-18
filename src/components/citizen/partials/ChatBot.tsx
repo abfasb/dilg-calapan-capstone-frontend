@@ -119,12 +119,14 @@ export default function ChatBot() {
     console.log('Requesting human agent for user:', userId.current);
     socketRef.current.emit('request_human', userId.current);
     
-    const systemMessage: Message = {
-      id: Date.now().toString(),
-      sender: 'system',
-      timestamp: new Date(),
-      status: 'read'
-    };
+   const systemMessage: Message = {
+    id: Date.now().toString(),
+    content: "You are now connected to a human agent.",
+    sender: 'system',
+    timestamp: new Date(),
+    status: 'read'
+  };
+
     
     setMessages(prev => [...prev, systemMessage]);
     setCurrentAgent('human');

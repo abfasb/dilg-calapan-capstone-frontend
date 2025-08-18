@@ -132,7 +132,8 @@ const Community = () => {
 
       positions.forEach(position => {
         if (barangay.positions[position]) {
-          positionCompletion[position]++;
+          (positionCompletion as any)[position]++;
+
         }
       });
     });

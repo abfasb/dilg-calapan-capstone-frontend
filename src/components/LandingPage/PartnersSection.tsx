@@ -126,7 +126,7 @@ const PartnersSection = () => {
                 <div
                   key={index}
                   className="group relative"
-                  onMouseEnter={() => setHoveredPartner(index)}
+                  onMouseEnter={() => setHoveredPartner(index as any)}
                   onMouseLeave={() => setHoveredPartner(null)}
                 >
                   <div className="relative h-full p-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl border border-white/60 dark:border-gray-700/60 shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer hover:scale-105 hover:-translate-y-2">

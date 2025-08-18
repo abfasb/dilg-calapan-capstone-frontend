@@ -44,20 +44,14 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
 
+// Define all types
 interface MetricCardProps {
   title: string;
   value: number | string;
   unit?: string;
   icon: React.ElementType; 
-  color?: keyof typeof colorClasses;
+  color?: "indigo" | "emerald" | "amber" | "violet" | "sky";
 }
-
-const colorClasses = {
-  indigo: "bg-indigo-100 text-indigo-700",
-  green: "bg-green-100 text-green-700",
-  red: "bg-red-100 text-red-700",
-  yellow: "bg-yellow-100 text-yellow-700",
-};
 
 interface StatCardProps {
   title: string;
@@ -68,18 +62,102 @@ interface StatCardProps {
   description?: string;
 }
 
-
-
 interface ActivityItemProps {
   title: string;
   subtitle?: string;
   status: string;
-  statusColor?: "default" | "secondary" | "destructive" | "outline";
+  statusColor?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning";
   date?: string;
 }
 
+interface ChartDataItem {
+  month?: string;
+  users?: number;
+  complaints?: number;
+  appointments?: number;
+  submissions?: number;
+  role?: string;
+  count?: number;
+  percentage?: number;
+  status?: string;
+  category?: string;
+  barangay?: string;
+}
+
+interface OverviewData {
+  totalUsers: number;
+  activeUsers: number;
+  totalComplaints: number;
+  totalAppointments: number;
+  upcomingAppointments: number;
+  totalSubmissions: number;
+  pendingSubmissions: number;
+}
+
+interface GrowthData {
+  userGrowth: number;
+  complaintGrowth: number;
+  appointmentGrowth: number;
+  submissionGrowth: number;
+}
+
+interface SystemMetrics {
+  complaintResolutionRate: number;
+  formApprovalRate: number;
+  appointmentConfirmationRate: number;
+  avgResolutionTime: number;
+}
+
+interface ChartsData {
+  userRegistrationTrend: ChartDataItem[];
+  complaintsTrend: ChartDataItem[];
+  appointmentsTrend: ChartDataItem[];
+  submissionsTrend: ChartDataItem[];
+  usersByRole: ChartDataItem[];
+  complaintsByStatus: ChartDataItem[];
+  usersByBarangay: ChartDataItem[];
+  complaintsByCategory: ChartDataItem[];
+  submissionsByStatus: ChartDataItem[];
+  appointmentsByStatus: ChartDataItem[];
+}
+
+interface RecentActivityItem {
+  title: string;
+  location?: string;
+  status: string;
+  date: string;
+  referenceNumber?: string;
+  formId?: { title: string };
+  user?: { firstName: string; lastName: string };
+}
+
+interface RecentActivities {
+  complaints: RecentActivityItem[];
+  appointments: RecentActivityItem[];
+  submissions: RecentActivityItem[];
+}
+
+interface SystemHealth {
+  status: string;
+  score: number;
+}
+
+interface Insights {
+  topComplaintCategory: string;
+  systemHealth: SystemHealth;
+}
+
+interface DashboardData {
+  overview: OverviewData;
+  growth: GrowthData;
+  charts: ChartsData;
+  systemMetrics: SystemMetrics;
+  recentActivities: RecentActivities;
+  insights: Insights;
+}
+
 const Dashboard = () => {
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,7 +178,7 @@ const Dashboard = () => {
       } else {
         setError(result.message || 'Failed to fetch dashboard data');
       }
-    } catch (err : any) {
+    } catch (err) {
       setError('Network error. Please try again.');
       console.error('Dashboard fetch error:', err);
     } finally {
@@ -169,19 +247,76 @@ const Dashboard = () => {
       </div>
     );
   }
+  
+  // Default data structure to prevent runtime errors
+  const defaultDashboardData: DashboardData = {
+    overview: {
+      totalUsers: 0,
+      activeUsers: 0,
+      totalComplaints: 0,
+      totalAppointments: 0,
+      upcomingAppointments: 0,
+      totalSubmissions: 0,
+      pendingSubmissions: 0
+    },
+    growth: {
+      userGrowth: 0,
+      complaintGrowth: 0,
+      appointmentGrowth: 0,
+      submissionGrowth: 0
+    },
+    charts: {
+      userRegistrationTrend: [],
+      complaintsTrend: [],
+      appointmentsTrend: [],
+      submissionsTrend: [],
+      usersByRole: [],
+      complaintsByStatus: [],
+      usersByBarangay: [],
+      complaintsByCategory: [],
+      submissionsByStatus: [],
+      appointmentsByStatus: []
+    },
+    systemMetrics: {
+      complaintResolutionRate: 0,
+      formApprovalRate: 0,
+      appointmentConfirmationRate: 0,
+      avgResolutionTime: 0
+    },
+    recentActivities: {
+      complaints: [],
+      appointments: [],
+      submissions: []
+    },
+    insights: {
+      topComplaintCategory: "",
+      systemHealth: {
+        status: "Good",
+        score: 0
+      }
+    }
+  };
 
-  const { overview, growth, charts, systemMetrics, recentActivities, insights } = dashboardData;
+  const data = dashboardData || defaultDashboardData;
+  const {
+    overview,
+    growth,
+    charts,
+    systemMetrics,
+    recentActivities,
+    insights
+  } = data;
 
   const CHART_COLORS = [
-    '#6366f1', // Indigo
-    '#10b981', // Emerald
-    '#f59e0b', // Amber
-    '#ef4444', // Red
-    '#8b5cf6', // Violet
-    '#0ea5e9'  // Sky
+    '#6366f1',
+    '#10b981',
+    '#f59e0b',
+    '#ef4444',
+    '#8b5cf6',
+    '#0ea5e9'
   ];
 
-  const StatCard: React.FC<StatCardProps>  = ({ title, value, icon: Icon, change, changeType, description }) => (
+  const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, change, changeType, description }) => (
     <Card className="group transition-all hover:shadow-lg border-0 rounded-2xl shadow-sm overflow-hidden bg-white">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
@@ -194,7 +329,7 @@ const Dashboard = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold mb-1 text-gray-800">{value?.toLocaleString()}</div>
+        <div className="text-3xl font-bold mb-1 text-gray-800">{value.toLocaleString()}</div>
         {change !== undefined && (
           <div className={`flex items-center text-sm font-medium ${
             changeType === 'positive' ? 'text-emerald-600' : 'text-rose-600'
@@ -211,7 +346,7 @@ const Dashboard = () => {
     </Card>
   );
 
-  const MetricCard : React.FC<MetricCardProps> = ({ title, value, unit, icon: Icon, color = "indigo" }) => {
+  const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, icon: Icon, color = "indigo" }) => {
     const colorClasses = {
       indigo: 'bg-indigo-100 text-indigo-600',
       emerald: 'bg-emerald-100 text-emerald-600',
@@ -237,14 +372,14 @@ const Dashboard = () => {
     );
   };
 
-  const ActivityItem : React.FC<ActivityItemProps> = ({ title, subtitle, status, statusColor, date }) => (
+  const ActivityItem: React.FC<ActivityItemProps> = ({ title, subtitle, status, statusColor, date }) => (
     <div className="flex items-start justify-between py-3 border-b border-gray-100 last:border-0">
       <div className="flex-1">
         <p className="font-medium text-gray-800">{title}</p>
         {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
         {date && <p className="text-xs text-gray-400 mt-1">{date}</p>}
       </div>
-      <Badge variant={statusColor} className="font-medium">{status}</Badge>
+      <Badge variant={statusColor as any} className="font-medium">{status}</Badge>
     </div>
   );
 
@@ -354,7 +489,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart>
+                <LineChart data={charts.userRegistrationTrend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis 
                     dataKey="month" 
@@ -382,7 +517,6 @@ const Dashboard = () => {
                     dataKey="users" 
                     stroke={CHART_COLORS[0]} 
                     strokeWidth={3}
-                    data={charts.userRegistrationTrend}
                     name="New Users"
                     dot={{ r: 4, strokeWidth: 2, stroke: CHART_COLORS[0], fill: '#ffffff' }}
                     activeDot={{ r: 6, fill: '#ffffff', stroke: CHART_COLORS[0], strokeWidth: 2 }}
@@ -593,7 +727,6 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Recent Activities */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Complaints */}
           <Card className="border-0 p-4 rounded-2xl shadow-sm overflow-hidden">
@@ -624,7 +757,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Recent Appointments */}
           <Card className="border-0 p-4 rounded-2xl shadow-sm overflow-hidden">
             <CardHeader className="bg-white">
               <div className="flex items-center justify-between">

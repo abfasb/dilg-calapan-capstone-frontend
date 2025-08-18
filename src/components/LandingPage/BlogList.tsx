@@ -314,7 +314,6 @@ const BlogList = () => {
         )}
       </div>
       
-      {/* Scroll to top button */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         className={`fixed bottom-8 right-8 p-4 rounded-full ${
@@ -328,6 +327,7 @@ const BlogList = () => {
         </svg>
       </button>
 
+        {/* @ts-ignore */}
       <style jsx>{`
         @keyframes fadeInUp {
           from {

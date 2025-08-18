@@ -48,7 +48,7 @@ const TestimonialSection = () => {
   }, [isAutoPlay]);
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e : any) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
     
@@ -72,7 +72,7 @@ const TestimonialSection = () => {
     setTimeout(() => setIsAnimating(false), 600);
   };
 
-  const goToTestimonial = (index) => {
+  const goToTestimonial = (index : any) => {
     if (isAnimating || index === current) return;
     setIsAnimating(true);
     setCurrent(index);
@@ -83,9 +83,7 @@ const TestimonialSection = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
       <section className="relative py-24 overflow-hidden bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950">
-        {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Floating Orbs with Mouse Interaction */}
           <div 
             className="absolute w-96 h-96 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 dark:from-blue-400/10 dark:to-purple-400/10 blur-3xl animate-pulse"
             style={{

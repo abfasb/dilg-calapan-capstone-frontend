@@ -93,7 +93,7 @@ function Registration() {
 
   const validateField = useCallback(async (field: string, value: any) => {
     try {
-      const fieldSchema = baseSchema.pick({ [field]: true });
+      const fieldSchema = (baseSchema as any).pick({ [field]: true });
       await fieldSchema.parseAsync({ [field]: value }); 
       setErrors(prev => ({ ...prev, [field]: '' }));
 

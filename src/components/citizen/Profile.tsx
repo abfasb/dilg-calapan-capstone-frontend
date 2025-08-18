@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { 
   User, Phone, MapPin, Briefcase, 
   Shield, Camera, Loader2, Check, RefreshCw,
@@ -6,8 +6,27 @@ import {
   Mail, Building
 } from 'lucide-react';
 
-const validateProfileForm = (data) => {
-  const errors = {};
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+}
+
+interface ValidationErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationErrors;
+}
+
+const validateProfileForm = (data: FormData): ValidationResult => {
+  const errors: ValidationErrors = {};
   
   if (!data.firstName || data.firstName.length < 2) {
     errors.firstName = "First name must be at least 2 characters";
@@ -30,47 +49,45 @@ const validateProfileForm = (data) => {
 
 const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [formData, setFormData] = useState({
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [formData, setFormData] = useState<FormData>({
     firstName: localStorage.getItem("firstName") || "",
     lastName: localStorage.getItem("lastName") || "",
     email: localStorage.getItem("adminEmail") || "", 
     phoneNumber: localStorage.getItem("phoneNumber") || "",
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
-  const userId = localStorage.getItem('userId');
+  const userId = localStorage.getItem('userId') || '';
 
-  // Your original API setup (simulated for demo)
+  // API simulation
   const api = {
-    put: async (url, data) => {
-      // Simulate API call
-      return new Promise((resolve) => {
+    put: async (url: string, data: FormData) => {
+      return new Promise<{ data: FormData }>((resolve) => {
         setTimeout(() => {
-          resolve({ data: data });
+          resolve({ data });
         }, 2000);
       });
     }
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setAvatarPreview(reader.result);
+      reader.onloadend = () => setAvatarPreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     const validation = validateProfileForm(formData);
@@ -82,22 +99,18 @@ const Profile = () => {
     setIsLoading(true);
     try {
       const response = await api.put(`/account/profile/${userId}`, formData);
-      
       const updatedUser = response.data;
       
       localStorage.setItem("firstName", updatedUser.firstName);
       localStorage.setItem("lastName", updatedUser.lastName);
       localStorage.setItem("phoneNumber", updatedUser.phoneNumber);
 
-      // Show success toast (you'd integrate with react-hot-toast here)
       console.log('Profile updated successfully!');
-
-      // Reset form with updated data
       setFormData(updatedUser);
 
     } catch (error) {
       console.error('Update error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to update profile';
+      const errorMessage = (error as any).response?.data?.message || 'Failed to update profile';
       console.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -148,6 +161,7 @@ const Profile = () => {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
           {/* Profile Header Card */}
@@ -256,7 +270,7 @@ const Profile = () => {
             </div>
 
             <div className="p-8">
-              <div onSubmit={onSubmit} className="space-y-8">
+              <form onSubmit={onSubmit} className="space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* First Name */}
                   <div className="space-y-2">
@@ -347,7 +361,6 @@ const Profile = () => {
                   
                   <button
                     type="submit"
-                    onClick={onSubmit}
                     disabled={isLoading}
                     className="flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-600/50 disabled:to-indigo-600/50 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-blue-500/25 disabled:cursor-not-allowed"
                   >
@@ -364,7 +377,7 @@ const Profile = () => {
                     )}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>

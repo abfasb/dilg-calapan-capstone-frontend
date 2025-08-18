@@ -118,7 +118,7 @@ const FeaturesSection = () => {
               <div
                 key={index}
                 className="group relative"
-                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseEnter={() => setHoveredIndex(index as any)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >
                 {/* Card */}

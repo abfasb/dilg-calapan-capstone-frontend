@@ -52,7 +52,7 @@ function LGURegistration() {
 
   const validateField = useCallback(async (field: string, value: any) => {
     try {
-      const fieldSchema = lguSchema.pick({ [field]: true });
+      const fieldSchema = (lguSchema as any).pick({ [field]: true });
       await fieldSchema.parseAsync({ [field]: value });
       setErrors(prev => ({ ...prev, [field]: '' }));
     } catch (err) {

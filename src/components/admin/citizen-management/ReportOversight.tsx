@@ -170,7 +170,7 @@ const ReportOversight: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div className="max-h-24 overflow-y-auto">
-                        {submission.history.map((entry, idx) => (
+                        {submission.history.map((entry : any, idx : any) => (
                           <div key={idx} className="py-1 border-b last:border-b-0">
                             <div className="flex items-center gap-2">
                               <History className="h-4 w-4 text-gray-400" />

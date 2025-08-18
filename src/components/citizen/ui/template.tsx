@@ -29,7 +29,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   table: {
-    display: 'table',
+    display: 'flex',
+    flexDirection: 'column',
     width: 'auto',
     borderStyle: 'solid',
     borderWidth: 1,
@@ -123,7 +124,6 @@ const styles = StyleSheet.create({
 const ReportDocument = () => (
   <Document>
     <Page size="A4" style={styles.page}>
-      {/* Header Section */}
       <View style={styles.header}>
         <Text style={styles.title}>SK MONTHLY ACCOMPLISHMENT REPORT</Text>
         <Text style={styles.subtitle}>For the Month of JANUARY 2025</Text>

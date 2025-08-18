@@ -52,7 +52,7 @@ interface INotification {
   createdAt: Date;
 }
 
-export const TopNav = () => {
+export const TopNav = ({user} : any) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
@@ -67,6 +67,9 @@ export const TopNav = () => {
     avatar: localStorage.getItem('avatar') || undefined,
     role: localStorage.getItem('userRole') || 'LGU',
   };
+
+
+  console.log(user);
 
   useEffect(() => {
     const fetchNotifications = async () => {

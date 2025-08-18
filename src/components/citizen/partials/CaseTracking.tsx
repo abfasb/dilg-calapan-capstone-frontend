@@ -10,7 +10,9 @@ import {
   ExclamationTriangleIcon, 
   ArrowPathIcon, 
   DocumentMagnifyingGlassIcon,
-  CalendarIcon
+  CalendarIcon,
+  ChevronUpIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { Input } from '../../ui/input';
 import { 
@@ -23,6 +25,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '../../ui/drawer';
+import { useMediaQuery } from 'react-responsive';
 
 interface CaseHistory {
   status: string;
@@ -55,6 +58,9 @@ const CaseTracking = ({ userId }: { userId: string }) => {
   const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // Status options with colors and descriptions
   const statusOptions = [
@@ -109,7 +115,7 @@ const CaseTracking = ({ userId }: { userId: string }) => {
         ? prev.filter(s => s !== status) 
         : [...prev, status]
     );
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
   };
 
   const handleRetry = () => {
@@ -177,7 +183,7 @@ const CaseTracking = ({ userId }: { userId: string }) => {
   const renderStatusBadge = (status: string) => (
     <Badge 
       variant={getBadgeVariant(status) as any}
-      className="capitalize font-medium"
+      className="capitalize font-medium whitespace-nowrap"
     >
       {status.replace('_', ' ')}
     </Badge>
@@ -185,19 +191,14 @@ const CaseTracking = ({ userId }: { userId: string }) => {
 
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return null;
-    
-    return (
-      <span className="ml-1 inline-block">
-        {sortOrder === 'asc' ? '↑' : '↓'}
-      </span>
-    );
+    return sortOrder === 'asc' ? <ChevronUpIcon className="h-4 w-4 ml-1 inline-block" /> : <ChevronDownIcon className="h-4 w-4 ml-1 inline-block" />;
   };
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+      {/* Stats Cards - Mobile shows 2 per row */}
+      <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${isMobile ? '' : 'md:grid-cols-4'}`}>
+        <Card className="h-full">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Cases</CardTitle>
           </CardHeader>
@@ -209,10 +210,10 @@ const CaseTracking = ({ userId }: { userId: string }) => {
         </Card>
 
         {statusOptions.slice(0, 3).map(status => (
-          <Card key={status.value} className="relative overflow-hidden">
+          <Card key={status.value} className="h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Badge variant={status.variant as any} className="w-2 h-2 p-0 rounded-full" />
+                <span className={`w-2 h-2 rounded-full bg-${status.variant}-500`} />
                 {status.label}
               </CardTitle>
             </CardHeader>
@@ -228,7 +229,7 @@ const CaseTracking = ({ userId }: { userId: string }) => {
       {/* Main Content */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <div className="flex flex-col justify-between gap-4">
             <div>
               <CardTitle className="text-xl font-bold">Case Tracking</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
@@ -236,77 +237,78 @@ const CaseTracking = ({ userId }: { userId: string }) => {
               </p>
             </div>
             
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleRetry}
-                className="h-9"
-              >
-                <ArrowPathIcon className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="Search by reference or comments"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="pl-9"
+                  />
+                  <DocumentMagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Select
+                    value={sortBy}
+                    onValueChange={(value) => {
+                      setSortBy(value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="min-w-[140px] h-10">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="lastUpdate">Last Update</SelectItem>
+                      <SelectItem value="submittedDate">Submission Date</SelectItem>
+                      <SelectItem value="referenceNumber">Reference Number</SelectItem>
+                      <SelectItem value="status">Status</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  >
+                    {sortOrder === 'asc' ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="h-10 w-10 md:hidden"
+                    onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                  >
+                    <ArrowPathIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
               
-              <Select
-                value={sortBy}
-                onValueChange={(value) => {
-                  setSortBy(value);
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[180px] h-9">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lastUpdate">Last Update</SelectItem>
-                  <SelectItem value="submittedDate">Submission Date</SelectItem>
-                  <SelectItem value="referenceNumber">Reference Number</SelectItem>
-                  <SelectItem value="status">Status</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 px-2"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              >
-                {sortOrder === 'asc' ? '↑' : '↓'}
-              </Button>
-            </div>
-          </div>
-          
-          <div className="mt-4 flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Search by reference number or comments"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="pl-8"
-              />
-              <DocumentMagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={selectedStatus.length === 0 ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => {
-                  setSelectedStatus([]);
-                  setCurrentPage(1);
-                }}
-              >
-                All
-              </Button>
-              
-              {statusOptions.map((status) => (
-                <TooltipProvider key={status.value}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+              {/* Mobile filters dropdown */}
+              {isMobile && isFiltersOpen && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={selectedStatus.length === 0 ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedStatus([]);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      All
+                    </Button>
+                    
+                    {statusOptions.map((status) => (
                       <Button
+                        key={status.value}
                         variant={selectedStatus.includes(status.value) ? 'default' : 'outline'}
                         size="sm"
                         className="capitalize"
@@ -314,19 +316,51 @@ const CaseTracking = ({ userId }: { userId: string }) => {
                       >
                         <span className={`w-2 h-2 rounded-full mr-1.5 bg-${status.variant}-500`} />
                         {status.label}
-                        {statusCounts[status.value] > 0 && (
-                          <span className="ml-1.5 text-xs font-normal bg-background/20 px-1.5 py-0.5 rounded-full">
-                            {statusCounts[status.value] || 0}
-                          </span>
-                        )}
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p>{status.description}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Desktop filter bar */}
+              <div className={`hidden md:flex flex-wrap gap-2 ${isMobile ? 'hidden' : ''}`}>
+                <Button
+                  variant={selectedStatus.length === 0 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedStatus([]);
+                    setCurrentPage(1);
+                  }}
+                >
+                  All
+                </Button>
+                
+                {statusOptions.map((status) => (
+                  <TooltipProvider key={status.value}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={selectedStatus.includes(status.value) ? 'default' : 'outline'}
+                          size="sm"
+                          className="capitalize"
+                          onClick={() => handleStatusToggle(status.value)}
+                        >
+                          <span className={`w-2 h-2 rounded-full mr-1.5 bg-${status.variant}-500`} />
+                          {status.label}
+                          {statusCounts[status.value] > 0 && (
+                            <span className="ml-1.5 text-xs font-normal bg-background/20 px-1.5 py-0.5 rounded-full">
+                              {statusCounts[status.value] || 0}
+                            </span>
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{status.description}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -345,33 +379,45 @@ const CaseTracking = ({ userId }: { userId: string }) => {
             </Alert>
           )}
 
-          <div className="rounded-md border dark:border-gray-700 overflow-hidden">
-            <Table>
+          <div className="rounded-md border dark:border-gray-700 overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead 
                     className="w-[140px] cursor-pointer"
                     onClick={() => handleSort('referenceNumber')}
                   >
-                    Reference #{renderSortIcon('referenceNumber')}
+                    <div className="flex items-center">
+                      Reference
+                      {renderSortIcon('referenceNumber')}
+                    </div>
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer"
                     onClick={() => handleSort('status')}
                   >
-                    Status {renderSortIcon('status')}
+                    <div className="flex items-center">
+                      Status
+                      {renderSortIcon('status')}
+                    </div>
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer"
                     onClick={() => handleSort('submittedDate')}
                   >
-                    Submitted {renderSortIcon('submittedDate')}
+                    <div className="flex items-center">
+                      Submitted
+                      {renderSortIcon('submittedDate')}
+                    </div>
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer"
                     onClick={() => handleSort('lastUpdate')}
                   >
-                    Last Update {renderSortIcon('lastUpdate')}
+                    <div className="flex items-center">
+                      Last Update
+                      {renderSortIcon('lastUpdate')}
+                    </div>
                   </TableHead>
                   <TableHead>Comments</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -402,7 +448,7 @@ const CaseTracking = ({ userId }: { userId: string }) => {
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         <div className="flex items-center">
-                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground flex-shrink-0" />
                           {formatDate(caseItem.submittedDate || caseItem.lastUpdate)}
                         </div>
                       </TableCell>
@@ -423,8 +469,9 @@ const CaseTracking = ({ userId }: { userId: string }) => {
                           variant="ghost" 
                           size="sm"
                           onClick={() => handleViewDetails(caseItem)}
+                          className="px-2"
                         >
-                          View Details
+                          {isMobile ? 'View' : 'Details'}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -458,13 +505,13 @@ const CaseTracking = ({ userId }: { userId: string }) => {
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
-                    size="sm"
+                    size={isMobile ? "icon" : "default"}
                     className={`${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                     onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
                   />
                 </PaginationItem>
                 
-                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                {Array.from({ length: Math.min(isMobile ? 3 : 5, totalPages) }).map((_, i) => {
                   // Logic to show pages around current page
                   let pageNumber;
                   
@@ -473,9 +520,9 @@ const CaseTracking = ({ userId }: { userId: string }) => {
                   } else if (currentPage <= 3) {
                     pageNumber = i + 1;
                   } else if (currentPage >= totalPages - 2) {
-                    pageNumber = totalPages - 4 + i;
+                    pageNumber = totalPages - (isMobile ? 2 : 4) + i;
                   } else {
-                    pageNumber = currentPage - 2 + i;
+                    pageNumber = currentPage - (isMobile ? 1 : 2) + i;
                   }
                   
                   if (pageNumber > totalPages) return null;
@@ -483,7 +530,7 @@ const CaseTracking = ({ userId }: { userId: string }) => {
                   return (
                     <PaginationItem key={pageNumber}>
                       <PaginationLink
-                        size="sm"
+                        size={isMobile ? "icon" : "default"}
                         isActive={pageNumber === currentPage}
                         onClick={() => setCurrentPage(pageNumber)}
                       >
@@ -495,7 +542,7 @@ const CaseTracking = ({ userId }: { userId: string }) => {
 
                 <PaginationItem>
                   <PaginationNext
-                    size="sm"
+                    size={isMobile ? "icon" : "default"}
                     className={`${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                     onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
                   />
@@ -507,9 +554,9 @@ const CaseTracking = ({ userId }: { userId: string }) => {
       </Card>
 
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="max-h-[90%]">
-          <DrawerHeader>
-            <DrawerTitle className="text-xl flex items-center justify-between">
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="text-left">
+            <DrawerTitle className="text-xl flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span>Case #{selectedCase?.referenceNumber}</span>
               {selectedCase?.status && renderStatusBadge(selectedCase.status)}
             </DrawerTitle>
@@ -518,13 +565,13 @@ const CaseTracking = ({ userId }: { userId: string }) => {
             </DrawerDescription>
           </DrawerHeader>
           
-          <div className="px-4 py-2">
+          <div className="px-4 py-2 overflow-y-auto max-h-[60vh]">
             <div className="border-b pb-4 mb-4">
               <h4 className="font-medium mb-2">Case Information</h4>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Reference Number</p>
-                  <p>#{selectedCase?.referenceNumber}</p>
+                  <p className="font-medium">#{selectedCase?.referenceNumber}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Current Status</p>
@@ -536,7 +583,7 @@ const CaseTracking = ({ userId }: { userId: string }) => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Last Updated</p>
-                  <p>{selectedCase?.lastUpdate ? formatDate(selectedCase.lastUpdate) : 'Unknown'}</p>
+                  <p>{selectedCase?.lastUpdate ? formatDateTime(selectedCase.lastUpdate) : 'Unknown'}</p>
                 </div>
                 {selectedCase?.priority && (
                   <div>
@@ -556,34 +603,40 @@ const CaseTracking = ({ userId }: { userId: string }) => {
             {selectedCase?.comments && (
               <div className="border-b pb-4 mb-4">
                 <h4 className="font-medium mb-2">Comments</h4>
-                <p className="text-sm whitespace-pre-line">{selectedCase.comments}</p>
+                <p className="text-sm whitespace-pre-line bg-muted/30 p-3 rounded-lg">{selectedCase.comments}</p>
               </div>
             )}
             
             <div>
               <h4 className="font-medium mb-2">Status History</h4>
               <div className="space-y-4">
-                {selectedCase?.history?.map((event, index) => (
+                {selectedCase?.history?.length ? selectedCase.history.map((event, index) => (
                   <div key={index} className="relative pl-5 pb-4 border-l border-muted-foreground/30">
                     <div className="absolute left-0 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-muted-foreground/70"></div>
-                    <p className="text-sm font-medium flex items-center">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       {renderStatusBadge(event.status)}
-                      <span className="ml-auto text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground sm:ml-auto">
                         {formatDateTime(event.timestamp)}
                       </span>
-                    </p>
+                    </div>
                     {event.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">{event.notes}</p>
+                      <p className="text-sm text-muted-foreground mt-2 bg-muted/20 p-2 rounded-lg">
+                        {event.notes}
+                      </p>
                     )}
                   </div>
-                ))}
+                )) : (
+                  <p className="text-sm text-muted-foreground italic">No history available</p>
+                )}
               </div>
             </div>
 
           </div>
           
-          <DrawerFooter>
-            <Button onClick={handleCloseDrawer}>Close</Button>
+          <DrawerFooter className="pt-4">
+            <DrawerClose asChild>
+              <Button variant="outline">Close</Button>
+            </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

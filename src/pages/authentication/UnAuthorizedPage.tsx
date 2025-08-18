@@ -1,4 +1,3 @@
-import React from 'react'
 import Unauthorized from '../../components/UnAuthorized'
 
 const UnAuthorizedPage = () => {

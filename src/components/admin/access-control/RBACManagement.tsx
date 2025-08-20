@@ -288,85 +288,6 @@ const AdminLguManagement: React.FC = () => {
     }
   };
 
-  // Mock data for demonstration
-  useEffect(() => {
-    if (users.length === 0) {
-      setUsers([
-        {
-          _id: "1",
-          name: "Maria Santos",
-          email: "maria.santos@example.com",
-          role: "lgu",
-          createdAt: "2023-05-15T08:30:00Z",
-          phoneNumber: "09171234567",
-          position: "City Administrator",
-          isActive: true,
-          avatar: "/avatars/female1.png"
-        },
-        {
-          _id: "2",
-          name: "Juan Dela Cruz",
-          email: "juan.delacruz@example.com",
-          role: "lgu",
-          createdAt: "2023-06-20T10:15:00Z",
-          phoneNumber: "09179876543",
-          position: "Municipal Planner",
-          isActive: true,
-          avatar: "/avatars/male1.png"
-        },
-        {
-          _id: "3",
-          name: "Sofia Reyes",
-          email: "sofia.reyes@example.com",
-          role: "lgu",
-          createdAt: "2023-07-10T14:20:00Z",
-          phoneNumber: "09172345678",
-          position: "Barangay Captain",
-          isActive: false,
-          freezeUntil: "2024-01-01T00:00:00Z",
-          avatar: "/avatars/female2.png"
-        },
-        {
-          _id: "4",
-          name: "Carlos Garcia",
-          email: "carlos.garcia@example.com",
-          role: "admin",
-          createdAt: "2023-04-01T09:00:00Z",
-          phoneNumber: "09173216547",
-          position: "System Administrator",
-          isActive: true,
-          avatar: "/avatars/male2.png"
-        },
-      ]);
-    }
-
-    if (pendingLgus.length === 0) {
-      setPendingLgus([
-        {
-          _id: "p1",
-          firstName: "Luis",
-          lastName: "Torres",
-          email: "luis.torres@example.com",
-          phoneNumber: "09174567890",
-          status: "pending",
-          createdAt: "2023-10-05T11:30:00Z",
-          position: "Environmental Officer",
-          avatar: "/avatars/male3.png"
-        },
-        {
-          _id: "p2",
-          firstName: "Andrea",
-          lastName: "Lim",
-          email: "andrea.lim@example.com",
-          phoneNumber: "09175678901",
-          status: "pending",
-          createdAt: "2023-10-10T15:45:00Z",
-          position: "Health Coordinator",
-          avatar: "/avatars/female3.png"
-        },
-      ]);
-    }
-  }, []);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -409,7 +330,7 @@ const AdminLguManagement: React.FC = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`md:grid md:grid-cols-3 mb-6 ${isMobileMenuOpen ? 'flex flex-col gap-2' : 'hidden md:flex'}`}>
+            <TabsList className={`md:grid md:grid-cols-3 gap-12 mb-6 ${isMobileMenuOpen ? 'flex flex-col gap-2' : 'hidden md:flex'}`}>
               <TabsTrigger value="users" className="data-[state=active]:bg-slate-100 w-full md:w-auto">
                 <div className="flex items-center gap-2 justify-center">
                   <UserCog className="h-4 w-4" />

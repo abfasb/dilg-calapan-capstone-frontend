@@ -564,7 +564,7 @@ const CustomReports: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;

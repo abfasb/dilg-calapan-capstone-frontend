@@ -187,7 +187,7 @@ const AdminLguManagement: React.FC = () => {
         const freezeUntil = new Date();
         freezeUntil.setDate(freezeUntil.getDate() + days);
         
-        const response = await fetch(`https://api.example.com/admin/freeze-account/${user._id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/freeze-account/${user._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

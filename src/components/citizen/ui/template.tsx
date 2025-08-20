@@ -133,11 +133,9 @@ const ReportDocument = () => (
         <Text style={styles.subtitle}>MINAROPA REGION</Text>
       </View>
 
-     {/* Part I: PPAs Undertaken */}
      <View style={styles.section}>
         <Text style={styles.title}>PART I: PROGRAMS/PROJECTS, ACTIVITIES (PPAs) UNDERTAKEN</Text>
         <View style={styles.table}>
-          {/* Table Header */}
           <View style={styles.tableRow}>
             <View style={[styles.tableColHeader, { width: '25%' }]}>
               <Text>PPA TITLE PER CENTER OF PARTICIPATION</Text>

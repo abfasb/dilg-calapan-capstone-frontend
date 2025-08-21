@@ -717,7 +717,6 @@ const PerformanceMetrics = () => {
           </CardContent>
         </Card>
 
-        {/* System Info Card */}
         <Card className="md:col-span-2 lg:col-span-12 bg-white dark:bg-[#023430] dark:border-gray-700">
           <CardHeader className="border-b dark:border-gray-700">
             <CardTitle className="flex items-center space-x-2 text-lg">

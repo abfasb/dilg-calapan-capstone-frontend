@@ -28,7 +28,7 @@ export default function AdminPanelPage() {
   }, [navigate, id, location]);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar 
         adminId={id!}
         isOpen={isSidebarOpen}

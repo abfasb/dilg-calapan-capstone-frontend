@@ -387,10 +387,9 @@ const PerformanceMetrics = () => {
                     <span>{storagePercentage.toFixed(1)}% used</span>
                     <span>{(100 - storagePercentage).toFixed(1)}% free</span>
                   </div>
-                  <Progress 
+                 <Progress 
                     value={storagePercentage}
-                    className="h-2"
-                    indicatorClassName="bg-[#10aa50]"
+                    className="h-2 [&>div]:bg-[#10aa50]"
                   />
                 </div>
               </div>
@@ -699,11 +698,13 @@ const PerformanceMetrics = () => {
                     </div>
                     <Progress 
                       value={shard.usage}
-                      className="h-2"
-                      indicatorClassName={
-                        shard.usage < 60 ? "bg-green-500" : 
-                        shard.usage < 85 ? "bg-yellow-500" : "bg-red-500"
-                      }
+                      className={`h-2 ${
+                        shard.usage < 60 
+                          ? "[&>div]:bg-green-500" 
+                          : shard.usage < 85 
+                            ? "[&>div]:bg-yellow-500" 
+                            : "[&>div]:bg-red-500"
+                      }`}
                     />
                   </div>
                   <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">

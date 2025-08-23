@@ -42,7 +42,7 @@ export default function AdminPanelPage() {
         
         <main className="flex-1 p-6 pt-20 lg:pt-6">
           <div className="max-w-7xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 transition-all duration-300">
               <div className="p-6 sm:p-8">
                 <Outlet />
               </div>
@@ -50,7 +50,7 @@ export default function AdminPanelPage() {
           </div>
         </main>
 
-        <footer className="border-t border-gray-100 dark:border-gray-800 mt-auto">
+        <footer className="border-t border-gray-100  mt-auto">
           <div className="max-w-7xl mx-auto py-4 px-6">
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
               © {new Date().getFullYear()} DILG Calapan. All rights reserved.

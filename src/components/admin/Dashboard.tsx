@@ -321,12 +321,12 @@ const Dashboard = () => {
   } = data;
 
   const CHART_COLORS = [
-    '#4f46e5', // indigo-600
-    '#10b981', // emerald-500
-    '#f59e0b', // amber-500
-    '#ef4444', // red-500
-    '#8b5cf6', // violet-500
-    '#0ea5e9'  // sky-500
+    '#4f46e5',
+    '#10b981',
+    '#f59e0b',
+    '#ef4444',
+    '#8b5cf6', 
+    '#0ea5e9'  
   ];
 
   const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, change, changeType, description }) => (
@@ -1216,7 +1216,6 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Footer */}
         <div className="text-center py-6 border-t border-gray-200">
           <p className="text-gray-500 text-sm">
             Last updated: {new Date().toLocaleString()} | 

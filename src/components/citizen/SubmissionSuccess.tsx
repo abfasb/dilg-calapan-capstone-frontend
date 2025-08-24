@@ -52,6 +52,7 @@ interface SubmissionResponse {
 
 export default function SubmissionSuccess(): JSX.Element {
   const navigate = useNavigate();
+  const { userId } = useParams()
   const location = useLocation();
   const { referenceNumber } = useParams();
   const { state } = location as { state: SubmissionState };
@@ -80,7 +81,7 @@ export default function SubmissionSuccess(): JSX.Element {
     if (state) {
       setSubmission({
         referenceNumber: state.referenceNumber,
-        createdAt: state.createdAt, // Use passed createdAt
+        createdAt: state.createdAt, 
         submissionData: state.submissionData,
         userData: state.userData,
         formFields: state.formFields
@@ -134,6 +135,10 @@ export default function SubmissionSuccess(): JSX.Element {
       setDownloadingPdf(false);
     }
   };
+
+  const navigateToHome = () => {
+    navigate(`/account/citizen/${userId}`);
+   }
 
   if (loading) {
     return (
@@ -391,12 +396,12 @@ export default function SubmissionSuccess(): JSX.Element {
         <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8 print-hidden">
           <Button 
             size="lg"
-            onClick={() => navigate('/')}
+            onClick={navigateToHome}
             className="gap-2 shadow-lg bg-white hover:bg-gray-100 text-blue-900 border-2 border-blue-200"
             variant="outline"
           >
             <FileText className="h-5 w-5" />
-            New Submission
+            Back to Home
           </Button>
           <Button 
             size="lg"

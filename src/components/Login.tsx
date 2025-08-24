@@ -185,7 +185,6 @@ const Login: React.FC = () => {
       }
   
     } catch (err: any) {
-      // Handle account freeze specifically
       if (err.response?.status === 403 && err.response.data?.message) {
         setError(err.response.data.message);
         setIsAccountFrozen(true);
@@ -253,7 +252,6 @@ const Login: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Google Sign In Button */}
           <div className="mb-8">
             <motion.button
               whileHover={{ y: -2, scale: 1.02 }}
@@ -270,7 +268,6 @@ const Login: React.FC = () => {
             </motion.button>
           </div>
 
-          {/* Divider */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/10"></div>
@@ -432,10 +429,10 @@ const Login: React.FC = () => {
                       <p className="mt-2 text-sm">
                         Contact support at{" "}
                         <a 
-                          href="mailto:support@barangay.gov.ph" 
+                          href="mailto:dilgcalapancity@gmail.com" 
                           className="text-cyan-400 hover:underline"
                         >
-                          support@barangay.gov.ph
+                          dilgcalapancity@gmail.com
                         </a>
                       </p>
                     )}
@@ -556,7 +553,6 @@ const Login: React.FC = () => {
                 </p>
                 
                 <form onSubmit={handleSubmitGoogle(onSubmitGoogle)} className="space-y-4">
-                  {/* First Name */}
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
                       First Name <span className="text-red-500">*</span>

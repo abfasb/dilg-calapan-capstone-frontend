@@ -205,6 +205,10 @@ export function Header() {
     setMobileMenuOpen(false);
    }
 
+   const navigateToHome = () => {
+    navigate(`/account/citizen/${userId}`);
+    }
+
   const navigateToAppointments = () => {
     navigate(`/account/citizen/appointments/${userId}`);
     setMobileMenuOpen(false);
@@ -279,7 +283,7 @@ export function Header() {
             
             <div 
               className="flex items-center gap-2 cursor-pointer group" 
-              onClick={() => navigate('/')}
+              onClick={navigateToHome}
             >
               <div className="relative">
                 <Shield className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
@@ -290,7 +294,6 @@ export function Header() {
             </div>
           </div>
 
-          {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -361,7 +364,6 @@ export function Header() {
             </Tooltip>
           </nav>
 
-          {/* Search Bar */}
           <div className="flex-1 max-w-lg mx-4 hidden md:block">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -374,9 +376,7 @@ export function Header() {
             </div>
           </div>
 
-          {/* Right Section */}
           <div className="flex items-center gap-2">
-            {/* Notifications */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -461,7 +461,6 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Theme Toggle */}
             <Button 
               variant="ghost" 
               size="icon" 
@@ -475,7 +474,6 @@ export function Header() {
               )}
             </Button>
 
-            {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -557,11 +555,9 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background">
             <div className="p-4 space-y-4">
-              {/* Mobile Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -570,7 +566,6 @@ export function Header() {
                 />
               </div>
               
-              {/* Mobile Navigation */}
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   variant="ghost" 

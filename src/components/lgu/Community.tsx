@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { toast, Toaster } from 'react-hot-toast'
 import { 
   BarChart, 
   Bar, 
@@ -94,13 +95,12 @@ const Community = () => {
         
         const dataWithTotal = data.map(barangay => ({
           ...barangay,
-          // FIX: Calculate completed positions based on actual true values
           completedPositions: Object.values(barangay.positions).filter(val => val).length,
           totalPositions: Object.keys(barangay.positions).length
         }));
         
         setBarangayStatuses(dataWithTotal as any);
-        setCurrentPage(1); // Reset to first page when data changes
+        setCurrentPage(1); 
       } catch (error) {
         console.error('Error fetching submission status:', error);
       } finally {
@@ -111,7 +111,6 @@ const Community = () => {
     fetchSubmissionStatus();
   }, [selectedForm]);
 
-  // Analytics data calculations
   const analyticsData = useMemo(() => {
     const statusCounts = {
       high: 0,
@@ -144,7 +143,6 @@ const Community = () => {
       ? (completedBarangays / totalBarangays) * 100 
       : 0;
 
-    // FIX: Use completedPositions instead of submittedCount
     const topBarangays = [...barangayStatuses]
       .sort((a, b) => (b as any).completedPositions - (a as any).completedPositions)
       .slice(0, 5);
@@ -180,7 +178,7 @@ const Community = () => {
           message: notificationMessage
         })
       });
-      alert('Notification sent successfully!');
+      toast.success('Notification sent successfully!')
       setNotificationMessage('');
     } catch (error) {
       console.error('Error sending notification:', error);
@@ -268,6 +266,14 @@ const Community = () => {
 
   return (
     <div className="space-y-8">
+      <Toaster
+              position="top-right"
+              gutter={32}
+              containerClassName="!top-4 !right-6"
+              toastOptions={{
+                className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+              }}
+            />
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-cyan-400">Monitoring and Submissions</h1>
         <div className="flex space-x-2">

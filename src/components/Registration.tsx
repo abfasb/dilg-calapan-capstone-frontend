@@ -27,7 +27,6 @@ const baseSchema = z.object({
     .regex(/[0-9]/, 'Must contain at least one number'),
   confirmPassword: z.string(),
   barangay: z.string().min(1, 'Please select your barangay'),
-  position: z.string().min(1, 'Please select your position'),
   phoneNumber: z.string()
     .min(10, 'Invalid phone number')
     .regex(/^9\d{9}$/, 'Must start with 9 and have 10 digits'),
@@ -58,7 +57,6 @@ const initialFormState = {
   password: "",
   confirmPassword: "",
   barangay: "",
-  position: "",
   phoneNumber: "",
   terms: false,
   newsletter: false,
@@ -419,44 +417,23 @@ function Registration() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm text-gray-400">Barangay</label>
-                <select
-                  className={`w-full px-3 py-2 rounded-lg bg-[#2a2f38] text-white focus:outline-none focus:ring-2 ${
-                    errors.barangay ? 'focus:ring-red-500' : 'focus:ring-blue-500'
-                  }`}
-                  value={formData.barangay}
-                  onChange={(e) => handleChange('barangay', e.target.value)}
-                >
-                  <option value="">Select Barangay</option>
-                  {barangays.map((barangay) => (
-                    <option key={barangay.id} value={barangay.name}>
-                      {barangay.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.barangay && <p className="text-red-400 text-sm mt-1">{errors.barangay}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm text-gray-400">Position</label>
-                <select
-                  className={`w-full px-3 py-2 rounded-lg bg-[#2a2f38] text-white focus:outline-none focus:ring-2 ${
-                    errors.position ? 'focus:ring-red-500' : 'focus:ring-blue-500'
-                  }`}
-                  value={formData.position}
-                  onChange={(e) => handleChange('position', e.target.value)}
-                >
-                  <option value="">Select Position</option>
-                  <option value="Captain">Barangay Captain</option>
-                  <option value="Secretary">Barangay Secretary</option>
-                  <option value="Treasurer">Barangay Treasurer</option>
-                  <option value="SK Chairman">SK Chairman</option>
-                  <option value="Councilor">Barangay Councilor</option>
-                </select>
-                {errors.position && <p className="text-red-400 text-sm mt-1">{errors.position}</p>}
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Barangay</label>
+              <select
+                className={`w-full px-3 py-2 rounded-lg bg-[#2a2f38] text-white focus:outline-none focus:ring-2 ${
+                  errors.barangay ? 'focus:ring-red-500' : 'focus:ring-blue-500'
+                }`}
+                value={formData.barangay}
+                onChange={(e) => handleChange('barangay', e.target.value)}
+              >
+                <option value="">Select Barangay</option>
+                {barangays.map((barangay) => (
+                  <option key={barangay.id} value={barangay.name}>
+                    {barangay.name}
+                  </option>
+                ))}
+              </select>
+              {errors.barangay && <p className="text-red-400 text-sm mt-1">{errors.barangay}</p>}
             </div>
 
             <div className="space-y-2">

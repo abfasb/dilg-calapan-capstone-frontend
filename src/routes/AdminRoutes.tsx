@@ -18,6 +18,7 @@ import SystemAnnouncements from "../components/admin/communications/SystemAnnoun
 import PublicNotices from "../components/admin/communications/PublicNotices";
 import AlertHistory from "../components/admin/communications/AlertHistory";
 import { Navigate } from 'react-router-dom';
+import DocumentTracker from '../components/admin/analytics/DocumentTracker';
 
 export const AdminRoutes = () => {
   return (
@@ -39,6 +40,7 @@ export const AdminRoutes = () => {
         <Route path="custom-reports" element={<CustomReports />} />
         <Route path="resolution" element={<ResolutionAnalytics />} />
         <Route path="ai-reports" element={<AISummaryReports />} />
+        <Route path="document-tracker" element={<DocumentTracker />} />
       </Route>
       <Route path="system-health">
         <Route path="workflows" element={<WorkflowAutomation />} />

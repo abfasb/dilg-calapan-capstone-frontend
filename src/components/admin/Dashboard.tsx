@@ -694,7 +694,6 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Top Barangays */}
               <Card className="border-0 rounded-xl shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -744,7 +743,6 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Complaint Categories */}
               <Card className="border-0 rounded-xl shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b border-gray-100">
                   <div className="flex items-center justify-between">

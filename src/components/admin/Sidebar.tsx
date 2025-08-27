@@ -76,6 +76,7 @@
           { text: "Manage Reports", path: "analytics/custom-reports", icon: <FiSettings /> },
           { text: "Resolution Analytics", path: "analytics/resolution", icon: <FiActivity /> },
           { text: "Approved Reports", path: "analytics/ai-reports", icon: <FiDatabase /> },
+          { text: "Document Tracker", path: "analytics/document-tracker", icon: <FiFileText /> },
         ],
       },
       {

@@ -154,7 +154,7 @@ const Profile = () => {
                 <p className="text-sm font-semibold text-white">
                   {localStorage.getItem('firstName')} {localStorage.getItem('lastName')}
                 </p>
-                <p className="text-xs text-gray-400">{localStorage.getItem('position')}</p>
+                <p className="text-xs text-gray-400">Secretary</p>
               </div>
             </div>
           </div>
@@ -191,12 +191,11 @@ const Profile = () => {
                 </label>
               </div>
               
-              {/* User Info */}
               <div className="text-center lg:text-left flex-1">
                 <h1 className="text-4xl font-bold text-white mb-2">
                   {localStorage.getItem('firstName')} {localStorage.getItem('lastName')}
                 </h1>
-                <p className="text-xl text-blue-400 mb-4">{localStorage.getItem('position') || "Resident"}</p>
+                <p className="text-xl text-blue-400 mb-4">Secretary</p>
                 <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-sm text-gray-300">
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4" />
@@ -209,7 +208,6 @@ const Profile = () => {
                 </div>
               </div>
               
-              {/* Quick Actions */}
               <div className="flex gap-3">
                 <button className="p-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-xl transition-colors">
                   <Settings className="w-5 h-5 text-gray-300" />
@@ -234,7 +232,7 @@ const Profile = () => {
                       Position
                     </p>
                     <p className="text-lg font-semibold text-white">
-                      {localStorage.getItem("position") || "Resident"}
+                      Secretary
                     </p>
                   </div>
                 </div>

@@ -29,7 +29,6 @@ const formSchema = z.object({
   confirmPassword: z.string().min(6, "Confirm Password must be at least 6 characters"),
   role: z.string().default("citizen"),
   barangay: z.string().min(2, "Minimum 2 characters"),
-  position: z.string().min(2, "Minimum 2 characters"),
 })
 .refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
@@ -144,33 +143,6 @@ const CitizenRegistration = () => {
                     </FormItem>
                   )}
                 />
-
-              <FormField
-                control={form.control}
-                name="position"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" />
-                      Position
-                    </FormLabel>
-                    <FormControl>
-                      <select
-                        className="border p-2 rounded w-full"
-                        {...field}
-                      >
-                        <option value="" disabled>Select a position</option>
-                        <option value="Captain">Barangay Captain</option>
-                        <option value="Secretary">Barangay Secretary</option>
-                        <option value="Treasurer">Barangay Treasurer</option>
-                        <option value="SK Chairman">SK Chairman</option>
-                        <option value="Councilor">Barangay Councilor</option>
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
 
               {/* Email */}

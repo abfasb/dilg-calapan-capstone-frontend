@@ -4,10 +4,11 @@ import { DndContext, DragOverlay, closestCorners, pointerWithin, useSensor, useS
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDropzone } from 'react-dropzone';
-import { Plus, GripVertical, Trash2, Text, List, CheckSquare, Image, Radio, UploadCloud, Menu, X } from 'lucide-react';
+import { Plus, GripVertical, Trash2, Text, List, CheckSquare, Image, Radio, UploadCloud, Menu, X, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
+import { format } from 'date-fns';
 
 import { Button } from '../..//ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../..//ui/card';
@@ -21,6 +22,8 @@ import { Badge } from '../../ui/badge';
 import { Separator } from '../../ui/separator';
 import { Progress } from '../../ui/progress';
 import { Sheet, SheetContent, SheetTrigger } from '../../ui/sheet';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { Calendar as CalendarComponent } from '../../ui/calendar';
 
 type FormField = {
   id: string;
@@ -84,6 +87,7 @@ const AddReports: React.FC = () => {
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState('Untitled Form');
   const [formDescription, setFormDescription] = useState('');
+  const [deadline, setDeadline] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState('build');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
@@ -230,9 +234,21 @@ const AddReports: React.FC = () => {
       formData.append('description', formDescription);
       formData.append('fields', JSON.stringify(fields));
       
+      if (deadline) {
+      console.log('Adding deadline:', deadline.toISOString()); // Debug log
+      formData.append('deadline', deadline.toISOString());
+    } else {
+      console.log('No deadline set'); // Debug log
+    }
+      
       if (templateFile) {
         formData.append('template', templateFile);
       }
+
+       // Debug: Log all form data entries
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
 
       const config = {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -244,15 +260,17 @@ const AddReports: React.FC = () => {
         }
       };
 
-      await axios.post("http://localhost:5000/form/create-report", formData, config);
+      await axios.post(`${import.meta.env.VITE_API_URL}/form/create-report`, formData, config);
       
       toast.success("Form submitted successfully!");
       setFields([]);
       setFormTitle('Untitled Form');
       setFormDescription('');
+      setDeadline(null);
       setTemplateFile(null);
       setTemplateUploadProgress(0);
     } catch (error) {
+      console.error('Form submission error:', error);
       toast.error("Error submitting form. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -334,6 +352,41 @@ const AddReports: React.FC = () => {
               )}
             </div>
           </div>
+          
+          {/* Deadline Picker */}
+          <div className="space-y-2">
+            <Label>Submission Deadline (Optional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {deadline ? format(deadline, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={deadline || undefined}
+                  onSelect={(date: Date | undefined) => setDeadline(date || null)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {deadline && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeadline(null)}
+                className="text-destructive hover:text-destructive/90"
+              >
+                Remove deadline
+              </Button>
+            )}
+          </div>
+          
           <div className="text-sm text-muted-foreground">
             <p>Citizens can use this template or fill the form below</p>
           </div>
@@ -473,6 +526,12 @@ const AddReports: React.FC = () => {
                   placeholder="Form description (optional)"
                   className="text-muted-foreground border-none px-0 focus-visible:ring-0 max-lg:text-sm"
                 />
+                {deadline && (
+                  <div className="flex items-center text-sm text-muted-foreground mt-2">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>Deadline: {format(deadline, "PPP")}</span>
+                  </div>
+                )}
               </CardHeader>
               
               {activeTab === 'build' ? (
@@ -657,6 +716,12 @@ const AddReports: React.FC = () => {
                       {formDescription && (
                         <p className="text-muted-foreground max-lg:text-sm">{formDescription}</p>
                       )}
+                      {deadline && (
+                        <div className="flex items-center text-muted-foreground text-sm">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          <span>Deadline: {format(deadline, "PPP")}</span>
+                        </div>
+                      )}
                     </div>
                     <Separator />
                     {fields.map((field) => (
@@ -708,9 +773,10 @@ const AddReports: React.FC = () => {
                       onClick={submitForm} 
                       className="w-full max-lg:text-sm" 
                       size="lg"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || (!!deadline && new Date() > deadline)}
                     >
-                      {isSubmitting ? 'Submitting...' : 'Submit Form'}
+                      {isSubmitting ? 'Submitting...' : 
+                       (deadline && new Date() > deadline) ? 'Submission Closed' : 'Submit Form'}
                     </Button>
                   </div>
                 </div>

@@ -1,9 +1,951 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Button } from '../../ui/button';
+import { Badge } from '../../ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { toast, Toaster } from 'react-hot-toast';
+import {
+  FileText,
+  Download,
+  Upload,
+  Calendar,
+  User,
+  MapPin,
+  BarChart3,
+  Filter,
+  Search,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  FileCheck,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  CalendarClock,
+  AlertTriangle
+} from 'lucide-react';
+import barangays from '../../../types/barangays';
 
-const DocumentTracker : React.FC= () => {
-  return (
-    <div>DocumentTracker</div>
-  )
+interface Form {
+  _id: string;
+  title: string;
+  deadline: string;
 }
 
-export default DocumentTracker
+interface BarangaySubmission {
+  barangay: string;
+  hasSubmission: boolean;
+  submissionCount: number;
+  latestSubmission: any;
+}
+
+interface SubmissionDetail {
+  _id: string;
+  referenceNumber: string;
+  status: string;
+  data: Record<string, any>;
+  files: Array<{
+    filename: string;
+    url: string;
+    mimetype: string;
+  }>;
+  bulkFile: {
+    fileName: string;
+    fileUrl: string;
+  };
+  userId: {
+    firstName: string;
+    lastName: string;
+    barangay: string;
+  };
+  formId: {
+    title: string;
+    fields: Array<any>;
+    deadline: string;
+  };
+  createdAt: string;
+  comments: string;
+  history: Array<{
+    status: string;
+    updatedBy: string;
+    lguName: string;
+    document: string;
+    timestamp: Date;
+    assignedLgu: any;
+    currentStatus: string;
+  }>;
+}
+
+const DocumentTracker: React.FC = () => {
+  const [forms, setForms] = useState<Form[]>([]);
+  const [selectedForm, setSelectedForm] = useState<string>('');
+  const [selectedFormDeadline, setSelectedFormDeadline] = useState<Date | null>(null);
+  const [barangaySubmissions, setBarangaySubmissions] = useState<BarangaySubmission[]>([]);
+  const [selectedSubmission, setSelectedSubmission] = useState<SubmissionDetail | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [fileIndexToUpdate, setFileIndexToUpdate] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
+  const [activeStatusFilter, setActiveStatusFilter] = useState<string>('all');
+  const [deadlineStatusFilter, setDeadlineStatusFilter] = useState<string>('all');
+
+  const API_BASE = import.meta.env.VITE_API_URL || '';
+
+  useEffect(() => {
+    fetchForms();
+  }, []);
+
+  useEffect(() => {
+    if (selectedForm) {
+      const form = forms.find(f => f._id === selectedForm);
+      if (form) {
+        setSelectedFormDeadline(new Date(form.deadline));
+      }
+      fetchSubmissionsByBarangay();
+    }
+  }, [selectedForm]);
+
+  const fetchForms = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/document-tracker/forms`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Expected JSON but received: ${contentType}. Response: ${text.substring(0, 100)}`);
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setForms(data);
+    } catch (error) {
+      console.error('Error fetching forms:', error);
+      toast.error('Error fetching forms: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  const fetchSubmissionsByBarangay = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/document-tracker/submissions/${selectedForm}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Expected JSON but received: ${contentType}. Response: ${text.substring(0, 100)}`);
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      const mergedData = barangays.map(barangay => {
+        const submission = data.find((sub: BarangaySubmission) => sub.barangay === barangay.name);
+        return submission || {
+          barangay: barangay.name,
+          hasSubmission: false,
+          submissionCount: 0,
+          latestSubmission: null
+        };
+      });
+      
+      setBarangaySubmissions(mergedData);
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+      toast.error("Failed to fetch submissions: " + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  const fetchSubmissionDetails = async (submissionId: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/document-tracker/submission/${submissionId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Expected JSON but received: ${contentType}. Response: ${text.substring(0, 100)}`);
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setSelectedSubmission(data);
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching submission details:', error);
+      toast.error('Error fetching submission details: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  const handleFileUpdate = async (submissionId: string, index?: number) => {
+    if (!newFile) return;
+
+    const formData = new FormData();
+    formData.append('file', newFile);
+    
+    if (index !== undefined) {
+      formData.append('fileIndex', index.toString());
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/document-tracker/submission/${submissionId}/file`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        toast.success('File updated successfully');
+        setNewFile(null);
+        setFileIndexToUpdate(null);
+        if (selectedSubmission) {
+          fetchSubmissionDetails(selectedSubmission._id);
+        }
+        fetchSubmissionsByBarangay();
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || 'Failed to update file');
+      }
+    } catch (error) {
+      console.error('Error updating file:', error);
+      toast.error('Error updating file: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchSubmissionsByBarangay();
+  };
+
+  const handleSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getStatusIndicator = (hasSubmission: boolean) => {
+    return (
+      <div className="flex items-center gap-2">
+        <div className={`h-3 w-3 rounded-full ${hasSubmission ? 'bg-green-500' : 'bg-red-500'}`} />
+        <span>{hasSubmission ? 'Submitted' : 'Not Submitted'}</span>
+      </div>
+    );
+  };
+
+  const getDeadlineStatus = (submissionDate: string | null) => {
+    if (!submissionDate || !selectedFormDeadline) return { status: 'No Submission', color: 'gray' };
+    
+    const submittedDate = new Date(submissionDate);
+    const deadlineDate = new Date(selectedFormDeadline);
+    
+    if (submittedDate <= deadlineDate) {
+      return { status: 'On Time', color: 'green' };
+    } else {
+      const daysLate = Math.floor((submittedDate.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysLate <= 3) {
+        return { status: 'Slightly Late', color: 'yellow' };
+      } else if (daysLate <= 7) {
+        return { status: 'Late', color: 'orange' };
+      } else {
+        return { status: 'Very Late', color: 'red' };
+      }
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewFile(e.target.files[0]);
+      if (index !== undefined) {
+        setFileIndexToUpdate(index);
+      }
+    }
+  };
+
+  const filteredAndSortedSubmissions = () => {
+    let filtered = barangaySubmissions;
+    
+    // Apply status filter
+    if (activeStatusFilter !== 'all') {
+      filtered = filtered.filter(item => {
+        if (activeStatusFilter === 'submitted') return item.hasSubmission;
+        return !item.hasSubmission;
+      });
+    }
+    
+    // Apply deadline status filter
+    if (deadlineStatusFilter !== 'all' && selectedFormDeadline) {
+      filtered = filtered.filter(item => {
+        if (!item.hasSubmission) return deadlineStatusFilter === 'no-submission';
+        
+        const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt);
+        return deadlineStatus.status.toLowerCase().replace(' ', '-') === deadlineStatusFilter;
+      });
+    }
+    
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(item => 
+        item.barangay.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Apply sorting
+    if (sortConfig) {
+      filtered = [...filtered].sort((a, b) => {
+        // Handle deadline status sorting
+        if (sortConfig.key === 'deadlineStatus') {
+          const aStatus = getDeadlineStatus(a.latestSubmission?.createdAt).status;
+          const bStatus = getDeadlineStatus(b.latestSubmission?.createdAt).status;
+          
+          if (aStatus < bStatus) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+          }
+          if (aStatus > bStatus) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+          }
+          return 0;
+        }
+
+        switch (sortConfig.key) {
+          case 'barangay':
+            return sortConfig.direction === 'ascending' 
+              ? a.barangay.localeCompare(b.barangay)
+              : b.barangay.localeCompare(a.barangay);
+          case 'submissionCount':
+            return sortConfig.direction === 'ascending'
+              ? a.submissionCount - b.submissionCount
+              : b.submissionCount - a.submissionCount;
+          case 'latestSubmission.createdAt':
+            const aDate = a.latestSubmission?.createdAt || '';
+            const bDate = b.latestSubmission?.createdAt || '';
+            return sortConfig.direction === 'ascending'
+              ? aDate.localeCompare(bDate)
+              : bDate.localeCompare(aDate);
+          default:
+            return 0;
+        }
+      });
+    }
+    
+    return filtered;
+  };
+
+  const statusFilters = [
+    { id: 'all', label: 'All Statuses', icon: <BarChart3 size={16} /> },
+    { id: 'submitted', label: 'Submitted', icon: <CheckCircle size={16} /> },
+    { id: 'not-submitted', label: 'Not Submitted', icon: <XCircle size={16} /> },
+  ];
+
+  const deadlineStatusFilters = [
+    { id: 'all', label: 'All Deadline Statuses', icon: <CalendarClock size={16} /> },
+    { id: 'on-time', label: 'On Time', icon: <CheckCircle size={16} /> },
+    { id: 'slightly-late', label: 'Slightly Late', icon: <AlertCircle size={16} /> },
+    { id: 'late', label: 'Late', icon: <AlertTriangle size={16} /> },
+    { id: 'very-late', label: 'Very Late', icon: <XCircle size={16} /> },
+    { id: 'no-submission', label: 'No Submission', icon: <Clock size={16} /> },
+  ];
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <Toaster
+        position="top-right"
+        gutter={32}
+        containerClassName="!top-4 !right-6"
+        toastOptions={{
+          className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+        }}
+      />
+      
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Document Tracker</h1>
+          <p className="text-muted-foreground">Track all submitted reports by barangay</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedFormDeadline && (
+            <Badge variant="outline" className="flex items-center gap-1 py-1">
+              <CalendarClock size={14} />
+              Deadline: {selectedFormDeadline.toLocaleDateString()}
+            </Badge>
+          )}
+          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing || !selectedForm}>
+            <RefreshCw size={16} className={`mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Report Overview</CardTitle>
+          <CardDescription>
+            Select a report form to view submission status across barangays
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <Label htmlFor="form-select" className="text-sm font-medium mb-2 block">Select Report Form</Label>
+              <Select value={selectedForm} onValueChange={setSelectedForm}>
+                <SelectTrigger id="form-select" className="w-full">
+                  <SelectValue placeholder="Select a report form" />
+                </SelectTrigger>
+                <SelectContent>
+                  {forms.map((form) => (
+                    <SelectItem key={form._id} value={form._id}>
+                      <div className="flex flex-col">
+                        <span>{form.title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Deadline: {new Date(form.deadline).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex-1">
+              <Label htmlFor="search" className="text-sm font-medium mb-2 block">Search Barangay</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Search barangay..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Filter by Submission Status</Label>
+              <div className="flex flex-wrap gap-2">
+                {statusFilters.map((filter) => (
+                  <Button
+                    key={filter.id}
+                    variant={activeStatusFilter === filter.id ? "default" : "outline"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => setActiveStatusFilter(filter.id)}
+                  >
+                    {filter.icon}
+                    {filter.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Filter by Deadline Status</Label>
+              <div className="flex flex-wrap gap-2">
+                {deadlineStatusFilters.map((filter) => (
+                  <Button
+                    key={filter.id}
+                    variant={deadlineStatusFilter === filter.id ? "default" : "outline"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => setDeadlineStatusFilter(filter.id)}
+                  >
+                    {filter.icon}
+                    {filter.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : !selectedForm ? (
+            <div className="text-center py-12 border rounded-lg bg-muted/20">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Form Selected</h3>
+              <p className="text-muted-foreground">Select a report form to view submissions</p>
+            </div>
+          ) : filteredAndSortedSubmissions().length === 0 ? (
+            <div className="text-center py-12 border rounded-lg bg-muted/20">
+              <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Submissions Found</h3>
+              <p className="text-muted-foreground">No submissions match your search criteria</p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead 
+                      className="w-[200px] cursor-pointer"
+                      onClick={() => handleSort('barangay')}
+                    >
+                      <div className="flex items-center">
+                        Barangay
+                        {sortConfig?.key === 'barangay' && (
+                          sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="ml-1 h-4 w-4" /> : 
+                            <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                      </div>
+                    </TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead 
+                      className="cursor-pointer"
+                      onClick={() => handleSort('deadlineStatus')}
+                    >
+                      <div className="flex items-center">
+                        Deadline Status
+                        {sortConfig?.key === 'deadlineStatus' && (
+                          sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="ml-1 h-4 w-4" /> : 
+                            <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer text-right"
+                      onClick={() => handleSort('submissionCount')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Submissions
+                        {sortConfig?.key === 'submissionCount' && (
+                          sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="ml-1 h-4 w-4" /> : 
+                            <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer"
+                      onClick={() => handleSort('latestSubmission.createdAt')}
+                    >
+                      <div className="flex items-center">
+                        Last Submission
+                        {sortConfig?.key === 'latestSubmission.createdAt' && (
+                          sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="ml-1 h-4 w-4" /> : 
+                            <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedSubmissions().map((item) => {
+                    const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt);
+                    
+                    return (
+                      <TableRow key={item.barangay}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                            {item.barangay}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusIndicator(item.hasSubmission)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline" 
+                            className={
+                              deadlineStatus.color === 'green' ? 'bg-green-100 text-green-800 hover:bg-green-100' :
+                              deadlineStatus.color === 'yellow' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' :
+                              deadlineStatus.color === 'orange' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100' :
+                              deadlineStatus.color === 'red' ? 'bg-red-100 text-red-800 hover:bg-red-100' :
+                              'bg-gray-100 text-gray-800 hover:bg-gray-100'
+                            }
+                          >
+                            {deadlineStatus.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{item.submissionCount}</TableCell>
+                        <TableCell>
+                          {item.latestSubmission ? (
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                              {new Date(item.latestSubmission.createdAt).toLocaleDateString()}
+                            </div>
+                          ) : (
+                            'N/A'
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.hasSubmission && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => fetchSubmissionDetails(item.latestSubmission._id)}
+                              className="flex items-center gap-1"
+                            >
+                              <FileText size={14} />
+                              Details
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          {selectedSubmission && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Submission Details
+                </DialogTitle>
+                <DialogDescription>
+                  Reference: {selectedSubmission.referenceNumber}
+                </DialogDescription>
+              </DialogHeader>
+
+              <Tabs defaultValue="details" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="details" className="flex items-center gap-2">
+                    <FileText size={16} />
+                    Details
+                  </TabsTrigger>
+                  <TabsTrigger value="files" className="flex items-center gap-2">
+                    <Download size={16} />
+                    Files
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="flex items-center gap-2">
+                    <Clock size={16} />
+                    History
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="details">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Submission Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Submitted By</Label>
+                          <div className="flex items-center p-3 rounded-lg bg-muted/50">
+                            <User className="h-5 w-5 mr-2 text-muted-foreground" />
+                            <span>{selectedSubmission.userId.firstName} {selectedSubmission.userId.lastName}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Barangay</Label>
+                          <div className="flex items-center p-3 rounded-lg bg-muted/50">
+                            <MapPin className="h-5 w-5 mr-2 text-muted-foreground" />
+                            <span>{selectedSubmission.userId.barangay}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                          <div className="p-3">
+                            {selectedSubmission.status === 'approved' ? (
+                              <Badge className="bg-green-100 text-green-800 hover:bg-green-100 flex items-center gap-1">
+                                <CheckCircle size={14} /> Approved
+                              </Badge>
+                            ) : selectedSubmission.status === 'rejected' ? (
+                              <Badge className="bg-red-100 text-red-800 hover:bg-red-100 flex items-center gap-1">
+                                <XCircle size={14} /> Rejected
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 flex items-center gap-1">
+                                <Clock size={14} /> Pending
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Submitted On</Label>
+                          <div className="flex items-center p-3 rounded-lg bg-muted/50">
+                            <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
+                            <span>{new Date(selectedSubmission.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        {selectedSubmission.formId.deadline && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-muted-foreground">Form Deadline</Label>
+                            <div className="flex items-center p-3 rounded-lg bg-muted/50">
+                              <CalendarClock className="h-5 w-5 mr-2 text-muted-foreground" />
+                              <span>{new Date(selectedSubmission.formId.deadline).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Deadline Status</Label>
+                          <div className="p-3">
+                            {(() => {
+                              const deadlineStatus = getDeadlineStatus(selectedSubmission.createdAt);
+                              return (
+                                <Badge 
+                                  variant="outline" 
+                                  className={
+                                    deadlineStatus.color === 'green' ? 'bg-green-100 text-green-800 hover:bg-green-100' :
+                                    deadlineStatus.color === 'yellow' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' :
+                                    deadlineStatus.color === 'orange' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100' :
+                                    deadlineStatus.color === 'red' ? 'bg-red-100 text-red-800 hover:bg-red-100' :
+                                    'bg-gray-100 text-gray-800 hover:bg-gray-100'
+                                  }
+                                >
+                                  {deadlineStatus.status}
+                                </Badge>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {selectedSubmission.comments && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Comments</Label>
+                          <div className="p-3 rounded-lg bg-muted/50 border-l-4 border-yellow-500">
+                            <p className="text-sm">{selectedSubmission.comments}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-4">
+                        <Label className="text-lg font-semibold">Form Data</Label>
+                        <div className="border rounded-lg p-4 space-y-4">
+                          {selectedSubmission.formId.fields.map((field: any, index: number) => (
+                            <div key={index} className="space-y-2">
+                              <Label className="font-medium text-muted-foreground">{field.label}</Label>
+                              <p className="p-2 bg-muted/30 rounded-md">
+                                {selectedSubmission.data[field.label] || 'N/A'}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="files">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Submitted Files</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {selectedSubmission.files && selectedSubmission.files.length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="font-semibold text-lg flex items-center gap-2">
+                            <FileCheck size={18} />
+                            Individual Files
+                          </h3>
+                          <div className="grid gap-4">
+                            {selectedSubmission.files.map((file, index) => (
+                              <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
+                                <div className="flex items-start gap-3">
+                                  <FileText className="h-6 w-6 text-blue-500 mt-1 flex-shrink-0" />
+                                  <div>
+                                    <p className="font-medium">{file.filename}</p>
+                                    <p className="text-sm text-muted-foreground">{file.mimetype}</p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                  <Button size="sm" asChild className="flex items-center gap-2">
+                                    <a href={file.url} target="_blank" rel="noopener noreferrer">
+                                      <Download size={14} />
+                                      Download
+                                    </a>
+                                  </Button>
+                                  <div className="flex flex-col gap-2">
+                                    <Input
+                                      type="file"
+                                      className="hidden"
+                                      id={`file-${index}`}
+                                      onChange={(e) => handleFileInputChange(e, index)}
+                                    />
+                                    <Label htmlFor={`file-${index}`} className="cursor-pointer">
+                                      <Button size="sm" variant="outline" className="flex items-center gap-2 w-full">
+                                        <Upload size={14} />
+                                        Replace
+                                      </Button>
+                                    </Label>
+                                    {newFile && fileIndexToUpdate === index && (
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => handleFileUpdate(selectedSubmission._id, index)}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Upload size={14} />
+                                        Upload New File
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedSubmission.bulkFile && selectedSubmission.bulkFile.fileName && (
+                        <div className="space-y-4">
+                          <h3 className="font-semibold text-lg flex items-center gap-2">
+                            <FileCheck size={18} />
+                            Bulk File
+                          </h3>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
+                            <div className="flex items-start gap-3">
+                              <FileText className="h-6 w-6 text-green-500 mt-1 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium">{selectedSubmission.bulkFile.fileName}</p>
+                                <p className="text-sm text-muted-foreground">Bulk submission file</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Button size="sm" asChild className="flex items-center gap-2">
+                                <a href={selectedSubmission.bulkFile.fileUrl} target="_blank" rel="noopener noreferrer">
+                                  <Download size={14} />
+                                  Download
+                                </a>
+                              </Button>
+                              <div className="flex flex-col gap-2">
+                                <Input
+                                  type="file"
+                                  className="hidden"
+                                  id="bulk-file"
+                                  onChange={(e) => handleFileInputChange(e)}
+                                />
+                                <Label htmlFor="bulk-file" className="cursor-pointer">
+                                  <Button size="sm" variant="outline" className="flex items-center gap-2 w-full">
+                                    <Upload size={14} />
+                                    Replace
+                                  </Button>
+                                </Label>
+                                {newFile && fileIndexToUpdate === null && (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleFileUpdate(selectedSubmission._id)}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Upload size={14} />
+                                    Upload New File
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="history">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Submission History</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {selectedSubmission.history && selectedSubmission.history.length > 0 ? (
+                        <div className="space-y-4">
+                          {selectedSubmission.history.map((event, index) => (
+                            <div key={index} className="flex gap-4">
+                              <div className="flex flex-col items-center">
+                                <div className={`h-4 w-4 rounded-full ${index === 0 ? 'bg-primary' : 'bg-muted-foreground'}`}></div>
+                                {index < selectedSubmission.history.length - 1 && (
+                                  <div className="w-0.5 h-16 bg-muted my-1"></div>
+                                )}
+                              </div>
+                              <div className="flex-1 pb-6">
+                                <p className="font-medium">{event.document}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  By {event.lguName} on {new Date(event.timestamp).toLocaleString()}
+                                </p>
+                                <div className="mt-2">
+                                  {event.status === 'approved' ? (
+                                    <Badge className="bg-green-100 text-green-800 hover:bg-green-100 flex items-center gap-1">
+                                      <CheckCircle size={14} /> Approved
+                                    </Badge>
+                                  ) : event.status === 'rejected' ? (
+                                    <Badge className="bg-red-100 text-red-800 hover:bg-red-100 flex items-center gap-1">
+                                      <XCircle size={14} /> Rejected
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 flex items-center gap-1">
+                                      <Clock size={14} /> Pending
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Clock className="mx-auto h-12 w-12 mb-4" />
+                          <p>No history available for this submission</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default DocumentTracker;

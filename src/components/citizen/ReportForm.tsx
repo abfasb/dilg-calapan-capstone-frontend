@@ -18,11 +18,14 @@ import {
   Check,
   AlertCircle,
   FileText,
-  ClipboardList
+  ClipboardList,
+  Clock,
+  AlertTriangle
 } from "lucide-react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { useDropzone } from "react-dropzone";
+import { format, isAfter, isBefore } from "date-fns";
 
 interface ReportField {
   id: string;
@@ -38,6 +41,7 @@ interface ReportData {
   title: string;
   description: string;
   fields: ReportField[];
+  deadline: string | null;
   template?: {
     fileName: string;
     fileUrl: string;
@@ -58,12 +62,20 @@ export default function ReportForm() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
 
   useEffect(() => {
     const fetchReport = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/form/${id}`);
         setReport(response.data);
+        
+        // Check if deadline has passed
+        if (response.data.deadline) {
+          const deadlineDate = new Date(response.data.deadline);
+          const now = new Date();
+          setIsDeadlinePassed(isBefore(deadlineDate, now));
+        }
         
         const initialData: Record<string, any> = {};
         response.data.fields.forEach((field: ReportField) => {
@@ -354,16 +366,38 @@ export default function ReportForm() {
                 <CardTitle className="text-3xl font-bold tracking-tight">
                   {report?.title}
                 </CardTitle>
-                <Badge variant="secondary" className="text-sm py-1.5 px-3">
-                  {submissionMode === 'form' 
-                    ? `${report?.fields.filter(f => f.required).length} Required Fields`
-                    : 'File Upload'}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {report?.deadline && (
+                    <Badge 
+                      variant={isDeadlinePassed ? "destructive" : "default"} 
+                      className="text-sm py-1.5 px-3 flex items-center gap-1"
+                    >
+                      <Clock className="h-3.5 w-3.5" />
+                      {isDeadlinePassed ? "Deadline Passed" : `Due: ${format(new Date(report.deadline), "MMM dd, yyyy")}`}
+                    </Badge>
+                  )}
+                  <Badge variant="secondary" className="text-sm py-1.5 px-3">
+                    {submissionMode === 'form' 
+                      ? `${report?.fields.filter(f => f.required).length} Required Fields`
+                      : 'File Upload'}
+                  </Badge>
+                </div>
               </div>
               <p className="text-lg text-muted-foreground">{report?.description}</p>
             </CardHeader>
 
             <CardContent className="pt-8">
+
+            {isDeadlinePassed && (
+              <Alert className="bg-yellow-50 border-yellow-200 mb-6">
+                <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                <AlertTitle>Deadline Passed</AlertTitle>
+                <AlertDescription>
+                  The submission deadline for this report has passed. You can still submit, 
+                  but it may be marked as late.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {report?.template && (
               <div className="mb-8 p-6 border rounded-xl bg-muted/20">
@@ -442,6 +476,7 @@ export default function ReportForm() {
                       <AlertTitle>Form Submission Mode</AlertTitle>
                       <AlertDescription>
                         Please fill out all required fields in the form below.
+                        {isDeadlinePassed && " Note: The deadline has passed, but you can still submit."}
                       </AlertDescription>
                     </Alert>
 
@@ -525,6 +560,7 @@ export default function ReportForm() {
                       <AlertDescription>
                         Upload complete documents (PDF, Word, Excel). Ensure all required
                         information is included in the file.
+                        {isDeadlinePassed && " Note: The deadline has passed, but you can still submit."}
                       </AlertDescription>
                     </Alert>
                   </>
@@ -545,7 +581,7 @@ export default function ReportForm() {
                     ) : (
                       <>
                         <Check className="h-5 w-5" />
-                        {submissionMode === 'form' ? 'Submit Form' : 'Upload File'}
+                        {isDeadlinePassed ? 'Submit Late' : submissionMode === 'form' ? 'Submit Form' : 'Upload File'}
                       </>
                     )}
                   </Button>

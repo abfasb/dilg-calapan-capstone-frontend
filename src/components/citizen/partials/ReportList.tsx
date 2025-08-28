@@ -36,6 +36,8 @@ import {
   CheckCircleIcon,
   EyeIcon,
   FilterIcon,
+  ClockIcon,
+  AlertTriangleIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -46,12 +48,14 @@ import {
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
 import { Skeleton } from "../../ui/skeleton";
+import { format, isAfter, isBefore } from "date-fns";
 
 type Report = {
   _id: string;
   title: string;
   fields: any[];
   createdAt: string;
+  deadline: string | null;
   hasSubmitted: boolean;
 };
 
@@ -76,6 +80,7 @@ export const ReportList = ({
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<"all" | "submitted" | "pending">("all");
+  const [deadlineFilter, setDeadlineFilter] = useState<"all" | "active" | "expired">("all");
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -125,6 +130,45 @@ export const ReportList = ({
     }
     
     return result;
+  };
+
+  // Filter reports based on deadline status
+  const filteredReports = currentReport.filter(report => {
+    // Apply search filter
+    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Apply status filter
+    let matchesStatus = true;
+    if (statusFilter === "submitted") {
+      matchesStatus = report.hasSubmitted;
+    } else if (statusFilter === "pending") {
+      matchesStatus = !report.hasSubmitted;
+    }
+    
+    // Apply deadline filter
+    let matchesDeadline = true;
+    if (deadlineFilter === "active") {
+      matchesDeadline = !report.deadline || isAfter(new Date(report.deadline), new Date());
+    } else if (deadlineFilter === "expired") {
+      //@ts-ignore
+      matchesDeadline = report.deadline && isBefore(new Date(report.deadline), new Date());
+    }
+    
+    return matchesSearch && matchesStatus && matchesDeadline;
+  });
+
+  // Get deadline status for a report
+  const getDeadlineStatus = (deadline: string | null) => {
+    if (!deadline) return { status: "no-deadline", text: "No deadline", variant: "outline" as const };
+    
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    
+    if (isBefore(deadlineDate, now)) {
+      return { status: "expired", text: "Expired", variant: "destructive" as const };
+    } else {
+      return { status: "active", text: "Active", variant: "default" as const };
+    }
   };
 
   return (
@@ -182,6 +226,31 @@ export const ReportList = ({
                   <span className="w-4 h-4 mr-2">{statusFilter === "pending" && <CheckCircleIcon className="h-4 w-4 text-green-500" />}</span>
                   Pending
                 </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Filter by Deadline</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className={deadlineFilter === "all" ? "bg-gray-100 dark:bg-gray-700" : ""}
+                  onClick={() => setDeadlineFilter("all")}
+                >
+                  <span className="w-4 h-4 mr-2">{deadlineFilter === "all" && <CheckCircleIcon className="h-4 w-4 text-green-500" />}</span>
+                  All Deadlines
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={deadlineFilter === "active" ? "bg-gray-100 dark:bg-gray-700" : ""}
+                  onClick={() => setDeadlineFilter("active")}
+                >
+                  <span className="w-4 h-4 mr-2">{deadlineFilter === "active" && <CheckCircleIcon className="h-4 w-4 text-green-500" />}</span>
+                  Active
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={deadlineFilter === "expired" ? "bg-gray-100 dark:bg-gray-700" : ""}
+                  onClick={() => setDeadlineFilter("expired")}
+                >
+                  <span className="w-4 h-4 mr-2">{deadlineFilter === "expired" && <CheckCircleIcon className="h-4 w-4 text-green-500" />}</span>
+                  Expired
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -225,6 +294,14 @@ export const ReportList = ({
                     Date Created {getSortIcon("date")}
                   </div>
                 </TableHead>
+                <TableHead
+                  className="font-semibold cursor-pointer"
+                  onClick={() => handleSort("deadline")}
+                >
+                  <div className="flex items-center">
+                    Deadline {getSortIcon("deadline")}
+                  </div>
+                </TableHead>
                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -236,55 +313,91 @@ export const ReportList = ({
                     <TableCell><Skeleton className="h-6 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-12" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                   </TableRow>
                 ))
-              ) : currentReport.length > 0 ? (
-                currentReport.map((report) => (
-                  <TableRow
-                    key={report._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <TableCell className="font-medium">
-                      <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 py-1 px-2 rounded">
-                        #{report._id.substring(0, 6)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="max-w-xs md:max-w-md truncate font-medium">
-                      {report.title}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
-                        {report.fields.length} fields
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-1.5">
-                        <CalendarIcon className="h-3 w-3" />
-                        {new Date(report.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell className="text-center">
-                      <Button
-                        variant={report.hasSubmitted ? "outline" : "default"}
-                        size="sm"
-                        onClick={() => handleViewDetails(report._id)}
-                        className={report.hasSubmitted 
-                          ? "text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20" 
-                          : "bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700"}
-                      >
-                        <EyeIcon className="mr-1 h-3.5 w-3.5" />
-                        {report.hasSubmitted ? "View" : "View Details"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+              ) : filteredReports.length > 0 ? (
+                filteredReports.map((report) => {
+                  const deadlineStatus = getDeadlineStatus(report.deadline);
+                  
+                  return (
+                    <TableRow
+                      key={report._id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <TableCell className="font-medium">
+                        <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 py-1 px-2 rounded">
+                          #{report._id.substring(0, 6)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="max-w-xs md:max-w-md truncate font-medium">
+                        {report.title}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                          {report.fields.length} fields
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-1.5">
+                          <CalendarIcon className="h-3 w-3" />
+                          {new Date(report.createdAt).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {report.deadline ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5">
+                              <ClockIcon className="h-3 w-3" />
+                              {format(new Date(report.deadline), "MMM dd, yyyy")}
+                            </div>
+                            <Badge variant={deadlineStatus.variant} className="text-xs w-fit">
+                              {deadlineStatus.text}
+                            </Badge>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            No deadline
+                          </Badge>
+                        )}
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <Button
+                          variant={report.hasSubmitted ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => handleViewDetails(report._id)}
+                          className={report.hasSubmitted 
+                            ? "text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20" 
+                            : "bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700"}
+                          disabled={deadlineStatus.status === "expired"}
+                        >
+                          {deadlineStatus.status === "expired" ? (
+                            <>
+                              <AlertTriangleIcon className="mr-1 h-3.5 w-3.5" />
+                              Expired
+                            </>
+                          ) : report.hasSubmitted ? (
+                            <>
+                              <EyeIcon className="mr-1 h-3.5 w-3.5" />
+                              View
+                            </>
+                          ) : (
+                            <>
+                              <EyeIcon className="mr-1 h-3.5 w-3.5" />
+                              View Details
+                            </>
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center text-gray-500 dark:text-gray-400">

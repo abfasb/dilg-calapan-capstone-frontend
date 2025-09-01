@@ -47,6 +47,8 @@ interface BarangaySubmission {
   hasSubmission: boolean;
   submissionCount: number;
   latestSubmission: any;
+  formId: string;
+  formTitle: string;
 }
 
 interface SubmissionDetail {
@@ -106,7 +108,7 @@ const DocumentTracker: React.FC = () => {
   const [forms, setForms] = useState<Form[]>([]);
   const [selectedForm, setSelectedForm] = useState<string>('');
   const [selectedFormDeadline, setSelectedFormDeadline] = useState<Date | null>(null);
-  const [barangaySubmissions, setBarangaySubmissions] = useState<BarangaySubmission[]>([]);
+  const [allBarangaySubmissions, setAllBarangaySubmissions] = useState<BarangaySubmission[]>([]);
   const [fullSubmissions, setFullSubmissions] = useState<FullSubmission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionDetail | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -121,7 +123,7 @@ const DocumentTracker: React.FC = () => {
   const [viewMode, setViewMode] = useState<'simple' | 'full'>('simple');
   const [timePeriodFilter, setTimePeriodFilter] = useState<string>('all');
 
-   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
 
   const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -131,7 +133,7 @@ const DocumentTracker: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedForm) {
+    if (viewMode === 'simple' && selectedForm) {
       const form = forms.find(f => f._id === selectedForm);
       if (form) {
         const deadlineDate = new Date(form.deadline);
@@ -143,11 +145,9 @@ const DocumentTracker: React.FC = () => {
         }
       }
       
-      if (viewMode === 'simple') {
-        fetchSubmissionsByBarangay();
-      } else {
-        fetchAllSubmissions();
-      }
+      fetchSubmissionsByBarangay();
+    } else if (viewMode === 'full') {
+      fetchAllFormsSubmissions();
     }
   }, [selectedForm, viewMode, timePeriodFilter]);
 
@@ -175,6 +175,54 @@ const DocumentTracker: React.FC = () => {
     } catch (error) {
       console.error('Error fetching forms:', error);
       toast.error('Error fetching forms: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  const fetchAllFormsSubmissions = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch submissions for all forms
+      const submissionsPromises = forms.map(form => 
+        fetch(`${API_BASE}/api/document-tracker/submissions/${form._id}${timePeriodFilter !== 'all' ? `?period=${timePeriodFilter}` : ''}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }).then(res => res.json())
+      );
+      
+      const allSubmissions = await Promise.all(submissionsPromises);
+      
+      // Merge all submissions with form information
+      const mergedSubmissions = [];
+      for (let i = 0; i < forms.length; i++) {
+        const form = forms[i];
+        const formSubmissions = allSubmissions[i];
+        
+        const mergedData = barangays.map(barangay => {
+          const submission = formSubmissions.find((sub: BarangaySubmission) => sub.barangay === barangay.name);
+          return {
+            ...(submission || {
+              barangay: barangay.name,
+              hasSubmission: false,
+              submissionCount: 0,
+              latestSubmission: null
+            }),
+            formId: form._id,
+            formTitle: form.title
+          };
+        });
+        
+        mergedSubmissions.push(...mergedData);
+      }
+      
+      setAllBarangaySubmissions(mergedSubmissions);
+    } catch (error) {
+      console.error('Error fetching all forms submissions:', error);
+      toast.error("Failed to fetch all forms submissions: " + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -216,7 +264,7 @@ const DocumentTracker: React.FC = () => {
         };
       });
       
-      setBarangaySubmissions(mergedData);
+      setAllBarangaySubmissions(mergedData);
     } catch (error) {
       console.error('Error fetching submissions:', error);
       toast.error("Failed to fetch submissions: " + (error instanceof Error ? error.message : 'Unknown error'));
@@ -291,7 +339,7 @@ const DocumentTracker: React.FC = () => {
     }
   };
 
-   const handleFileUpdate = async (submissionId: string) => {
+  const handleFileUpdate = async (submissionId: string) => {
     if (!newFile || selectedFileIndex === null) return;
 
     const formData = new FormData();
@@ -320,7 +368,7 @@ const DocumentTracker: React.FC = () => {
         if (viewMode === 'simple') {
           fetchSubmissionsByBarangay();
         } else {
-          fetchAllSubmissions();
+          fetchAllFormsSubmissions();
         }
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
@@ -337,14 +385,12 @@ const DocumentTracker: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-
-
   const handleRefresh = () => {
     setIsRefreshing(true);
     if (viewMode === 'simple') {
       fetchSubmissionsByBarangay();
     } else {
-      fetchAllSubmissions();
+      fetchAllFormsSubmissions();
     }
   };
 
@@ -365,11 +411,11 @@ const DocumentTracker: React.FC = () => {
     );
   };
 
-  const getDeadlineStatus = (submissionDate: string | null) => {
-    if (!submissionDate || !selectedFormDeadline) return { status: 'No Submission', color: 'gray' };
+  const getDeadlineStatus = (submissionDate: string | null, formDeadline: string) => {
+    if (!submissionDate || !formDeadline) return { status: 'No Submission', color: 'gray' };
     
     const submittedDate = new Date(submissionDate);
-    const deadlineDate = new Date(selectedFormDeadline);
+    const deadlineDate = new Date(formDeadline);
     
     if (isNaN(submittedDate.getTime()) || isNaN(deadlineDate.getTime())) {
       return { status: 'Invalid Date', color: 'gray' };
@@ -389,22 +435,27 @@ const DocumentTracker: React.FC = () => {
       }
     }
   };
-    const [fileInputKey, setFileInputKey] = useState(0);
 
-    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
-      if (e.target.files && e.target.files[0]) {
-        setNewFile(e.target.files[0]);
-        if (index !== undefined) {
-          setSelectedFileIndex(index);
-        }
-        setFileInputKey(prev => prev + 1);
+  const [fileInputKey, setFileInputKey] = useState(0);
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewFile(e.target.files[0]);
+      if (index !== undefined) {
+        setSelectedFileIndex(index);
       }
-    };
+      setFileInputKey(prev => prev + 1);
+    }
+  };
 
   const filteredAndSortedSubmissions = () => {
-    let filtered = barangaySubmissions;
+    let filtered = allBarangaySubmissions;
     
-    // Apply status filter
+    // In full view, filter by selected form if any
+    if (viewMode === 'simple' && selectedForm) {
+      filtered = filtered.filter(item => item.formId === selectedForm);
+    }
+    
     if (activeStatusFilter !== 'all') {
       filtered = filtered.filter(item => {
         if (activeStatusFilter === 'submitted') return item.hasSubmission;
@@ -413,29 +464,33 @@ const DocumentTracker: React.FC = () => {
     }
     
     // Apply deadline status filter
-    if (deadlineStatusFilter !== 'all' && selectedFormDeadline) {
+    if (deadlineStatusFilter !== 'all') {
       filtered = filtered.filter(item => {
         if (!item.hasSubmission) return deadlineStatusFilter === 'no-submission';
         
-        const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt);
+        const form = forms.find(f => f._id === item.formId);
+        if (!form) return false;
+        
+        const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt, form.deadline);
         return deadlineStatus.status.toLowerCase().replace(' ', '-') === deadlineStatusFilter;
       });
     }
     
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(item => 
-        item.barangay.toLowerCase().includes(searchQuery.toLowerCase())
+        item.barangay.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (viewMode === 'full' && item.formTitle.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
     
-    // Apply sorting
     if (sortConfig) {
       filtered = [...filtered].sort((a, b) => {
-        // Handle deadline status sorting
         if (sortConfig.key === 'deadlineStatus') {
-          const aStatus = getDeadlineStatus(a.latestSubmission?.createdAt).status;
-          const bStatus = getDeadlineStatus(b.latestSubmission?.createdAt).status;
+          const formA = forms.find(f => f._id === a.formId);
+          const formB = forms.find(f => f._id === b.formId);
+          
+          const aStatus = getDeadlineStatus(a.latestSubmission?.createdAt, formA?.deadline || '').status;
+          const bStatus = getDeadlineStatus(b.latestSubmission?.createdAt, formB?.deadline || '').status;
           
           if (aStatus < bStatus) {
             return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -451,6 +506,10 @@ const DocumentTracker: React.FC = () => {
             return sortConfig.direction === 'ascending' 
               ? a.barangay.localeCompare(b.barangay)
               : b.barangay.localeCompare(a.barangay);
+          case 'formTitle':
+            return sortConfig.direction === 'ascending' 
+              ? a.formTitle.localeCompare(b.formTitle)
+              : b.formTitle.localeCompare(a.formTitle);
           case 'submissionCount':
             return sortConfig.direction === 'ascending'
               ? a.submissionCount - b.submissionCount
@@ -549,6 +608,26 @@ const DocumentTracker: React.FC = () => {
     { id: 'yearly', label: 'Yearly', icon: <CalendarRange size={16} /> },
   ];
 
+  // Group submissions by barangay for the grid view
+  const getBarangayGridData = () => {
+    const barangayData: Record<string, Record<string, BarangaySubmission>> = {};
+    
+    // Initialize with all barangays
+    barangays.forEach(barangay => {
+      barangayData[barangay.name] = {};
+    });
+    
+    // Populate with submission data
+    allBarangaySubmissions.forEach(submission => {
+      if (!barangayData[submission.barangay]) {
+        barangayData[submission.barangay] = {};
+      }
+      barangayData[submission.barangay][submission.formId] = submission;
+    });
+    
+    return barangayData;
+  };
+
   const renderSimpleView = () => (
     <div className="rounded-md border">
       <Table>
@@ -612,10 +691,11 @@ const DocumentTracker: React.FC = () => {
         </TableHeader>
         <TableBody>
           {filteredAndSortedSubmissions().map((item) => {
-            const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt);
+            const form = forms.find(f => f._id === item.formId);
+            const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt, form?.deadline || '');
             
             return (
-              <TableRow key={item.barangay}>
+              <TableRow key={`${item.barangay}-${item.formId}`}>
                 <TableCell className="font-medium">
                   <div className="flex items-center">
                     <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -671,26 +751,95 @@ const DocumentTracker: React.FC = () => {
     </div>
   );
 
-  const renderFullGridView = () => (
+  const renderFullGridView = () => {
+    const barangayData = getBarangayGridData();
+    
+    return (
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow>
+              <TableHead 
+                className="w-[200px] cursor-pointer sticky left-0 bg-muted/50 z-10"
+                onClick={() => handleSort('barangay')}
+              >
+                <div className="flex items-center">
+                  Barangay
+                  {sortConfig?.key === 'barangay' && (
+                    sortConfig.direction === 'ascending' ? 
+                      <ChevronUp className="ml-1 h-4 w-4" /> : 
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                  )}
+                </div>
+              </TableHead>
+              {forms.map(form => (
+                <TableHead key={form._id} className="text-center min-w-[150px]">
+                  <div className="flex flex-col items-center">
+                    <span className="font-medium">{form.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(form.deadline).toLocaleDateString()}
+                    </span>
+                  </div>
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Object.entries(barangayData).map(([barangayName, formSubmissions]) => (
+              <TableRow key={barangayName}>
+                <TableCell className="font-medium sticky left-0 bg-background z-10">
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                    {barangayName}
+                  </div>
+                </TableCell>
+                {forms.map(form => {
+                  const submission = formSubmissions[form._id];
+                  const hasSubmission = submission?.hasSubmission || false;
+                  const deadlineStatus = getDeadlineStatus(
+                    submission?.latestSubmission?.createdAt, 
+                    form.deadline
+                  );
+                  
+                  return (
+                    <TableCell key={form._id} className="text-center">
+                      {hasSubmission ? (
+                        <div 
+                          className="inline-flex flex-col items-center gap-1 cursor-pointer p-2 rounded hover:bg-muted/50"
+                          onClick={() => submission.latestSubmission && fetchSubmissionDetails(submission.latestSubmission._id)}
+                        >
+                          <div className={`h-3 w-3 rounded-full bg-green-500`} />
+                          <span className="text-xs font-medium">{deadlineStatus.status}</span>
+                          {submission.submissionCount > 1 && (
+                            <span className="text-xs text-muted-foreground">
+                              {submission.submissionCount} submissions
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="inline-flex flex-col items-center gap-1 p-2">
+                          <div className="h-3 w-3 rounded-full bg-red-500" />
+                          <span className="text-xs font-medium">Not Submitted</span>
+                        </div>
+                      )}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
+  const renderFullListView = () => (
     <div className="rounded-md border">
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
             <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('referenceNumber')}
-            >
-              <div className="flex items-center">
-                Reference #
-                {sortConfig?.key === 'referenceNumber' && (
-                  sortConfig.direction === 'ascending' ? 
-                    <ChevronUp className="ml-1 h-4 w-4" /> : 
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                )}
-              </div>
-            </TableHead>
-            <TableHead 
-              className="cursor-pointer"
+              className="w-[200px] cursor-pointer"
               onClick={() => handleSort('barangay')}
             >
               <div className="flex items-center">
@@ -704,11 +853,38 @@ const DocumentTracker: React.FC = () => {
             </TableHead>
             <TableHead 
               className="cursor-pointer"
-              onClick={() => handleSort('name')}
+              onClick={() => handleSort('formTitle')}
             >
               <div className="flex items-center">
-                Submitted By
-                {sortConfig?.key === 'name' && (
+                Form Title
+                {sortConfig?.key === 'formTitle' && (
+                  sortConfig.direction === 'ascending' ? 
+                    <ChevronUp className="ml-1 h-4 w-4" /> : 
+                    <ChevronDown className="ml-1 h-4 w-4" />
+                )}
+              </div>
+            </TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead 
+              className="cursor-pointer"
+              onClick={() => handleSort('deadlineStatus')}
+            >
+              <div className="flex items-center">
+                Deadline Status
+                {sortConfig?.key === 'deadlineStatus' && (
+                  sortConfig.direction === 'ascending' ? 
+                    <ChevronUp className="ml-1 h-4 w-4" /> : 
+                    <ChevronDown className="ml-1 h-4 w-4" />
+                )}
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer text-right"
+              onClick={() => handleSort('submissionCount')}
+            >
+              <div className="flex items-center justify-end">
+                Submissions
+                {sortConfig?.key === 'submissionCount' && (
                   sortConfig.direction === 'ascending' ? 
                     <ChevronUp className="ml-1 h-4 w-4" /> : 
                     <ChevronDown className="ml-1 h-4 w-4" />
@@ -717,75 +893,41 @@ const DocumentTracker: React.FC = () => {
             </TableHead>
             <TableHead 
               className="cursor-pointer"
-              onClick={() => handleSort('createdAt')}
+              onClick={() => handleSort('latestSubmission.createdAt')}
             >
               <div className="flex items-center">
-                Submission Date
-                {sortConfig?.key === 'createdAt' && (
+                Last Submission
+                {sortConfig?.key === 'latestSubmission.createdAt' && (
                   sortConfig.direction === 'ascending' ? 
                     <ChevronUp className="ml-1 h-4 w-4" /> : 
                     <ChevronDown className="ml-1 h-4 w-4" />
                 )}
               </div>
             </TableHead>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('status')}
-            >
-              <div className="flex items-center">
-                Status
-                {sortConfig?.key === 'status' && (
-                  sortConfig.direction === 'ascending' ? 
-                    <ChevronUp className="ml-1 h-4 w-4" /> : 
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                )}
-              </div>
-            </TableHead>
-            <TableHead>Deadline Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredAndSortedFullSubmissions().map((submission) => {
-            const deadlineStatus = getDeadlineStatus(submission.createdAt);
+          {filteredAndSortedSubmissions().map((item) => {
+            const form = forms.find(f => f._id === item.formId);
+            const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt, form?.deadline || '');
             
             return (
-              <TableRow key={submission._id}>
+              <TableRow key={`${item.barangay}-${item.formId}`}>
                 <TableCell className="font-medium">
-                  {submission.referenceNumber}
-                </TableCell>
-                <TableCell>
                   <div className="flex items-center">
                     <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                    {submission.userId.barangay}
+                    {item.barangay}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center">
-                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                    {submission.userId.firstName} {submission.userId.lastName}
+                    <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                    {item.formTitle}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                    {new Date(submission.createdAt).toLocaleDateString()}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {submission.status === 'approved' ? (
-                    <Badge className="bg-green-100 text-green-800 hover:bg-green-100 flex items-center gap-1">
-                      <CheckCircle size={14} /> Approved
-                    </Badge>
-                  ) : submission.status === 'rejected' ? (
-                    <Badge className="bg-red-100 text-red-800 hover:bg-red-100 flex items-center gap-1">
-                      <XCircle size={14} /> Rejected
-                    </Badge>
-                  ) : (
-                    <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 flex items-center gap-1">
-                      <Clock size={14} /> Pending
-                    </Badge>
-                  )}
+                  {getStatusIndicator(item.hasSubmission)}
                 </TableCell>
                 <TableCell>
                   <Badge 
@@ -801,16 +943,29 @@ const DocumentTracker: React.FC = () => {
                     {deadlineStatus.status}
                   </Badge>
                 </TableCell>
+                <TableCell className="text-right">{item.submissionCount}</TableCell>
+                <TableCell>
+                  {item.latestSubmission ? (
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                      {new Date(item.latestSubmission.createdAt).toLocaleDateString()}
+                    </div>
+                  ) : (
+                    'N/A'
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fetchSubmissionDetails(submission._id)}
-                    className="flex items-center gap-1"
-                  >
-                    <FileText size={14} />
-                    Details
+                  {item.hasSubmission && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchSubmissionDetails(item.latestSubmission._id)}
+                      className="flex items-center gap-1"
+                    >
+                      <FileText size={14} />
+                      Details
                     </Button>
+                  )}
                 </TableCell>
               </TableRow>
             );
@@ -837,7 +992,7 @@ const DocumentTracker: React.FC = () => {
           <p className="text-muted-foreground">Track all submitted reports by barangay</p>
         </div>
         <div className="flex items-center gap-2">
-          {selectedFormDeadline && (
+          {viewMode === 'simple' && selectedFormDeadline && (
             <Badge variant="outline" className="flex items-center gap-1 py-1">
               <CalendarClock size={14} />
               Deadline: {selectedFormDeadline.toLocaleDateString()}
@@ -860,10 +1015,10 @@ const DocumentTracker: React.FC = () => {
               className="rounded-l-none flex items-center gap-1"
             >
               <Grid size={14} />
-              Full Grid
+              Grid View
             </Button>
           </div>
-          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing || !selectedForm}>
+          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing || (viewMode === 'simple' && !selectedForm)}>
             <RefreshCw size={16} className={`mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -874,46 +1029,50 @@ const DocumentTracker: React.FC = () => {
         <CardHeader className="pb-3">
           <CardTitle>Report Overview</CardTitle>
           <CardDescription>
-            Select a report form to view submission status across barangays
+            {viewMode === 'simple' 
+              ? 'Select a report form to view submission status across barangays' 
+              : 'View submission status for all reports across barangays'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <Label htmlFor="form-select" className="text-sm font-medium mb-2 block">Select Report Form</Label>
-              <Select value={selectedForm} onValueChange={setSelectedForm}>
-                <SelectTrigger id="form-select" className="w-full">
-                  <SelectValue placeholder="Select a report form" />
-                </SelectTrigger>
-                <SelectContent>
-                  {forms.map((form) => {
-                    const deadlineDate = new Date(form.deadline);
-                    const isValidDate = !isNaN(deadlineDate.getTime());
-                    
-                    return (
-                      <SelectItem key={form._id} value={form._id}>
-                        <div className="flex flex-col">
-                          <span>{form.title}</span>
-                          <span className="text-xs text-muted-foreground">
-                            Deadline: {isValidDate ? deadlineDate.toLocaleDateString() : 'Invalid Date'}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+            {viewMode === 'simple' && (
+              <div className="flex-1">
+                <Label htmlFor="form-select" className="text-sm font-medium mb-2 block">Select Report Form</Label>
+                <Select value={selectedForm} onValueChange={setSelectedForm}>
+                  <SelectTrigger id="form-select" className="w-full">
+                    <SelectValue placeholder="Select a report form" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {forms.map((form) => {
+                      const deadlineDate = new Date(form.deadline);
+                      const isValidDate = !isNaN(deadlineDate.getTime());
+                      
+                      return (
+                        <SelectItem key={form._id} value={form._id}>
+                          <div className="flex flex-col">
+                            <span>{form.title}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Deadline: {isValidDate ? deadlineDate.toLocaleDateString() : 'Invalid Date'}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             <div className="flex-1">
               <Label htmlFor="search" className="text-sm font-medium mb-2 block">
-                {viewMode === 'simple' ? 'Search Barangay' : 'Search All Fields'}
+                {viewMode === 'simple' ? 'Search Barangay' : 'Search Barangay or Form Title'}
               </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder={viewMode === 'simple' ? 'Search barangay...' : 'Search reference, name, barangay...'}
+                  placeholder={viewMode === 'simple' ? 'Search barangay...' : 'Search barangay or form title...'}
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -941,25 +1100,23 @@ const DocumentTracker: React.FC = () => {
               </div>
             </div>
 
-            {viewMode === 'simple' && (
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Filter by Deadline Status</Label>
-                <div className="flex flex-wrap gap-2">
-                  {deadlineStatusFilters.map((filter) => (
-                    <Button
-                      key={filter.id}
-                      variant={deadlineStatusFilter === filter.id ? "default" : "outline"}
-                      size="sm"
-                      className="flex items-center gap-2"
-                      onClick={() => setDeadlineStatusFilter(filter.id)}
-                    >
-                      {filter.icon}
-                      {filter.label}
-                    </Button>
-                  ))}
-                </div>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Filter by Deadline Status</Label>
+              <div className="flex flex-wrap gap-2">
+                {deadlineStatusFilters.map((filter) => (
+                  <Button
+                    key={filter.id}
+                    variant={deadlineStatusFilter === filter.id ? "default" : "outline"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => setDeadlineStatusFilter(filter.id)}
+                  >
+                    {filter.icon}
+                    {filter.label}
+                  </Button>
+                ))}
               </div>
-            )}
+            </div>
 
             <div>
               <Label className="text-sm font-medium mb-2 block">Filter by Time Period</Label>
@@ -984,13 +1141,13 @@ const DocumentTracker: React.FC = () => {
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
-          ) : !selectedForm ? (
+          ) : viewMode === 'simple' && !selectedForm ? (
             <div className="text-center py-12 border rounded-lg bg-muted/20">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No Form Selected</h3>
               <p className="text-muted-foreground">Select a report form to view submissions</p>
             </div>
-          ) : (viewMode === 'simple' ? filteredAndSortedSubmissions() : filteredAndSortedFullSubmissions()).length === 0 ? (
+          ) : filteredAndSortedSubmissions().length === 0 ? (
             <div className="text-center py-12 border rounded-lg bg-muted/20">
               <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No Submissions Found</h3>
@@ -1099,7 +1256,7 @@ const DocumentTracker: React.FC = () => {
                           <Label className="text-sm font-medium text-muted-foreground">Deadline Status</Label>
                           <div className="p-3">
                             {(() => {
-                              const deadlineStatus = getDeadlineStatus(selectedSubmission.createdAt);
+                              const deadlineStatus = getDeadlineStatus(selectedSubmission.createdAt, selectedSubmission.formId.deadline);
                               return (
                                 <Badge 
                                   variant="outline" 
@@ -1145,7 +1302,7 @@ const DocumentTracker: React.FC = () => {
                   </Card>
                 </TabsContent>
 
-                  <TabsContent value="files">
+                <TabsContent value="files">
                   <Card>
                     <CardHeader>
                       <CardTitle>Submitted Files</CardTitle>
@@ -1259,7 +1416,6 @@ const DocumentTracker: React.FC = () => {
                     </CardContent>
                   </Card>
                 </TabsContent>
-                
 
                 <TabsContent value="history">
                   <Card>

@@ -70,7 +70,6 @@ export default function ReportForm() {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/form/${id}`);
         setReport(response.data);
         
-        // Check if deadline has passed
         if (response.data.deadline) {
           const deadlineDate = new Date(response.data.deadline);
           const now = new Date();

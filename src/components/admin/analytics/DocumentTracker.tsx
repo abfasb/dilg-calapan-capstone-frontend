@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Button } from '../../ui/button';
@@ -31,7 +31,8 @@ import {
   AlertTriangle,
   Grid,
   List,
-  CalendarRange
+  CalendarRange,
+  File
 } from 'lucide-react';
 import barangays from '../../../types/barangays';
 
@@ -120,6 +121,9 @@ const DocumentTracker: React.FC = () => {
   const [viewMode, setViewMode] = useState<'simple' | 'full'>('simple');
   const [timePeriodFilter, setTimePeriodFilter] = useState<string>('all');
 
+   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
+
   const API_BASE = import.meta.env.VITE_API_URL || '';
 
   useEffect(() => {
@@ -179,7 +183,6 @@ const DocumentTracker: React.FC = () => {
     try {
       let url = `${API_BASE}/api/document-tracker/submissions/${selectedForm}`;
       
-      // Add time period filter if selected
       if (timePeriodFilter !== 'all') {
         url += `?period=${timePeriodFilter}`;
       }
@@ -228,7 +231,6 @@ const DocumentTracker: React.FC = () => {
     try {
       let url = `${API_BASE}/api/document-tracker/submissions-all/${selectedForm}`;
       
-      // Add time period filter if selected
       if (timePeriodFilter !== 'all') {
         url += `?period=${timePeriodFilter}`;
       }
@@ -289,18 +291,18 @@ const DocumentTracker: React.FC = () => {
     }
   };
 
-  const handleFileUpdate = async (submissionId: string, index?: number) => {
-    if (!newFile) return;
+   const handleFileUpdate = async (submissionId: string) => {
+    if (!newFile || selectedFileIndex === null) return;
 
     const formData = new FormData();
     formData.append('file', newFile);
     
-    if (index !== undefined) {
-      formData.append('fileIndex', index.toString());
+    if (selectedFileIndex !== -1) {
+      formData.append('fileIndex', selectedFileIndex.toString());
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/document-tracker/submission/${submissionId}/file`, {
+      const response = await fetch(`${API_BASE}/form/submission/${submissionId}/file`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -311,7 +313,7 @@ const DocumentTracker: React.FC = () => {
       if (response.ok) {
         toast.success('File updated successfully');
         setNewFile(null);
-        setFileIndexToUpdate(null);
+        setSelectedFileIndex(null);
         if (selectedSubmission) {
           fetchSubmissionDetails(selectedSubmission._id);
         }
@@ -329,6 +331,13 @@ const DocumentTracker: React.FC = () => {
       toast.error('Error updating file: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
+
+  const triggerFileInput = (index: number) => {
+    setSelectedFileIndex(index);
+    fileInputRef.current?.click();
+  };
+
+
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -380,15 +389,17 @@ const DocumentTracker: React.FC = () => {
       }
     }
   };
+    const [fileInputKey, setFileInputKey] = useState(0);
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
-    if (e.target.files && e.target.files[0]) {
-      setNewFile(e.target.files[0]);
-      if (index !== undefined) {
-        setFileIndexToUpdate(index);
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
+      if (e.target.files && e.target.files[0]) {
+        setNewFile(e.target.files[0]);
+        if (index !== undefined) {
+          setSelectedFileIndex(index);
+        }
+        setFileInputKey(prev => prev + 1);
       }
-    }
-  };
+    };
 
   const filteredAndSortedSubmissions = () => {
     let filtered = barangaySubmissions;
@@ -1006,7 +1017,7 @@ const DocumentTracker: React.FC = () => {
               </DialogHeader>
 
               <Tabs defaultValue="details" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="details" className="flex items-center gap-2">
                     <FileText size={16} />
                     Details
@@ -1014,10 +1025,6 @@ const DocumentTracker: React.FC = () => {
                   <TabsTrigger value="files" className="flex items-center gap-2">
                     <Download size={16} />
                     Files
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="flex items-center gap-2">
-                    <Clock size={16} />
-                    History
                   </TabsTrigger>
                 </TabsList>
 
@@ -1138,12 +1145,24 @@ const DocumentTracker: React.FC = () => {
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="files">
+                  <TabsContent value="files">
                   <Card>
                     <CardHeader>
                       <CardTitle>Submitted Files</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                      {/* Hidden file input for all file replacements */}
+                      <Input
+                        type="file"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setNewFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                      
                       {selectedSubmission.files && selectedSubmission.files.length > 0 && (
                         <div className="space-y-4">
                           <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -1167,30 +1186,25 @@ const DocumentTracker: React.FC = () => {
                                       Download
                                     </a>
                                   </Button>
-                                  <div className="flex flex-col gap-2">
-                                    <Input
-                                      type="file"
-                                      className="hidden"
-                                      id={`file-${index}`}
-                                      onChange={(e) => handleFileInputChange(e, index)}
-                                    />
-                                    <Label htmlFor={`file-${index}`} className="cursor-pointer">
-                                      <Button size="sm" variant="outline" className="flex items-center gap-2 w-full">
-                                        <Upload size={14} />
-                                        Replace
-                                      </Button>
-                                    </Label>
-                                    {newFile && fileIndexToUpdate === index && (
-                                      <Button 
-                                        size="sm" 
-                                        onClick={() => handleFileUpdate(selectedSubmission._id, index)}
-                                        className="flex items-center gap-2"
-                                      >
-                                        <Upload size={14} />
-                                        Upload New File
-                                      </Button>
-                                    )}
-                                  </div>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="flex items-center gap-2"
+                                    onClick={() => triggerFileInput(index)}
+                                  >
+                                    <Upload size={14} />
+                                    Replace
+                                  </Button>
+                                  {newFile && selectedFileIndex === index && (
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => handleFileUpdate(selectedSubmission._id)}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <Upload size={14} />
+                                      Upload New File
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -1215,34 +1229,29 @@ const DocumentTracker: React.FC = () => {
                             <div className="flex flex-col sm:flex-row gap-2">
                               <Button size="sm" asChild className="flex items-center gap-2">
                                 <a href={selectedSubmission.bulkFile.fileUrl} target="_blank" rel="noopener noreferrer">
-                                  <Download size={14} />
-                                  Download
+                                  <File size={14} />
+                                  View
                                 </a>
                               </Button>
-                              <div className="flex flex-col gap-2">
-                                <Input
-                                  type="file"
-                                  className="hidden"
-                                  id="bulk-file"
-                                  onChange={(e) => handleFileInputChange(e)}
-                                />
-                                <Label htmlFor="bulk-file" className="cursor-pointer">
-                                  <Button size="sm" variant="outline" className="flex items-center gap-2 w-full">
-                                    <Upload size={14} />
-                                    Replace
-                                  </Button>
-                                </Label>
-                                {newFile && fileIndexToUpdate === null && (
-                                  <Button 
-                                    size="sm" 
-                                    onClick={() => handleFileUpdate(selectedSubmission._id)}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <Upload size={14} />
-                                    Upload New File
-                                  </Button>
-                                )}
-                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="flex items-center gap-2"
+                                onClick={() => triggerFileInput(-1)}
+                              >
+                                <Upload size={14} />
+                                Replace
+                              </Button>
+                              {newFile && selectedFileIndex === -1 && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleFileUpdate(selectedSubmission._id)}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Upload size={14} />
+                                  Upload New File
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1250,6 +1259,7 @@ const DocumentTracker: React.FC = () => {
                     </CardContent>
                   </Card>
                 </TabsContent>
+                
 
                 <TabsContent value="history">
                   <Card>

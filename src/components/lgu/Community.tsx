@@ -27,27 +27,15 @@ interface Form {
   title: string;
 }
 
-interface SubmissionStatus {
-  [position: string]: boolean;
-}
-
 interface BarangayStatus {
   barangayId: string;
   barangayName: string;
-  positions: SubmissionStatus;
-  overallStatus: 'low' | 'medium' | 'high';
-  submittedCount: number;
+  submitted: boolean;
+  submissionDate: string | null;
+  overallStatus: 'completed' | 'pending';
 }
 
-const positions = [
-  "Captain",
-  "Secretary",
-  "Treasurer",
-  "SK Chairman",
-  "Councilor"
-];
-
-const COLORS = ['#FF8042', '#FFBB28', '#00C49F'];
+const COLORS = ['#FF8042', '#00C49F'];
 
 const Community = () => {
   const [forms, setForms] = useState<Form[]>([]);
@@ -92,14 +80,7 @@ const Community = () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/monitoring/get-monitoring?formId=${selectedForm}`);
         const data: BarangayStatus[] = await response.json();
-        
-        const dataWithTotal = data.map(barangay => ({
-          ...barangay,
-          completedPositions: Object.values(barangay.positions).filter(val => val).length,
-          totalPositions: Object.keys(barangay.positions).length
-        }));
-        
-        setBarangayStatuses(dataWithTotal as any);
+        setBarangayStatuses(data);
         setCurrentPage(1); 
       } catch (error) {
         console.error('Error fetching submission status:', error);
@@ -113,49 +94,27 @@ const Community = () => {
 
   const analyticsData = useMemo(() => {
     const statusCounts = {
-      high: 0,
-      medium: 0,
-      low: 0
-    };
-
-    const positionCompletion = {
-      Captain: 0,
-      Secretary: 0,
-      Treasurer: 0,
-      'SK Chairman': 0,
-      Councilor: 0
+      completed: 0,
+      pending: 0
     };
 
     barangayStatuses.forEach(barangay => {
       statusCounts[barangay.overallStatus]++;
-
-      positions.forEach(position => {
-        if (barangay.positions[position]) {
-          (positionCompletion as any)[position]++;
-
-        }
-      });
     });
 
     const totalBarangays = barangayStatuses.length;
-    const completedBarangays = statusCounts.high;
+    const completedBarangays = statusCounts.completed;
     const completionRate = totalBarangays > 0 
       ? (completedBarangays / totalBarangays) * 100 
       : 0;
 
-    const topBarangays = [...barangayStatuses]
-      .sort((a, b) => (b as any).completedPositions - (a as any).completedPositions)
-      .slice(0, 5);
-
-    const bottomBarangays = [...barangayStatuses]
-      .sort((a, b) => (a as any).completedPositions - (b as any).completedPositions)
-      .slice(0, 5);
+    const completedBarangaysList = barangayStatuses.filter(b => b.submitted);
+    const pendingBarangaysList = barangayStatuses.filter(b => !b.submitted);
 
     return {
       statusCounts,
-      positionCompletion,
-      topBarangays,
-      bottomBarangays,
+      completedBarangaysList,
+      pendingBarangaysList,
       totalBarangays,
       completedBarangays,
       completionRate
@@ -186,38 +145,26 @@ const Community = () => {
     }
   };
 
-  const getStatusColor = (status: 'low' | 'medium' | 'high') => {
+  const getStatusColor = (status: 'completed' | 'pending') => {
     switch (status) {
-      case 'low': return 'bg-red-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'high': return 'bg-green-500';
+      case 'completed': return 'bg-green-500';
+      case 'pending': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
   };
 
-  const getStatusText = (status: 'low' | 'medium' | 'high') => {
+  const getStatusText = (status: 'completed' | 'pending') => {
     switch (status) {
-      case 'low': return 'Low';
-      case 'medium': return 'Medium';
-      case 'high': return 'High';
+      case 'completed': return 'Completed';
+      case 'pending': return 'Pending';
       default: return 'Unknown';
     }
   };
 
-  // Prepare data for charts
   const statusChartData = [
-    { name: 'High', value: analyticsData.statusCounts.high, color: '#00C49F' },
-    { name: 'Medium', value: analyticsData.statusCounts.medium, color: '#FFBB28' },
-    { name: 'Low', value: analyticsData.statusCounts.low, color: '#FF8042' },
+    { name: 'Completed', value: analyticsData.statusCounts.completed, color: '#00C49F' },
+    { name: 'Pending', value: analyticsData.statusCounts.pending, color: '#FF8042' },
   ];
-
-  const positionChartData = Object.entries(analyticsData.positionCompletion).map(([position, count]) => ({
-    name: position,
-    count,
-    percentage: analyticsData.totalBarangays > 0
-      ? Math.round((count / analyticsData.totalBarangays) * 100)
-      : 0
-  }));
 
   // Pagination handlers
   const handlePageChange = (page: number) => {
@@ -231,7 +178,6 @@ const Community = () => {
     setCurrentPage(1);
   };
 
-  // Generate page numbers for pagination
   const renderPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
@@ -267,13 +213,13 @@ const Community = () => {
   return (
     <div className="space-y-8">
       <Toaster
-              position="top-right"
-              gutter={32}
-              containerClassName="!top-4 !right-6"
-              toastOptions={{
-                className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
-              }}
-            />
+        position="top-right"
+        gutter={32}
+        containerClassName="!top-4 !right-6"
+        toastOptions={{
+          className: '!bg-[#1a1d24] !text-white !rounded-xl !border !border-[#2a2f38]',
+        }}
+      />
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-cyan-400">Monitoring and Submissions</h1>
         <div className="flex space-x-2">
@@ -295,7 +241,7 @@ const Community = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-r from-cyan-600 to-blue-500 border-0 text-white">
           <CardHeader>
             <CardTitle className="text-sm font-medium">Total Barangays</CardTitle>
@@ -317,26 +263,14 @@ const Community = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white">
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{analyticsData.statusCounts.medium}</div>
-            <div className="text-sm mt-1">
-              Medium progress
-            </div>
-          </CardContent>
-        </Card>
-
         <Card className="bg-gradient-to-r from-rose-500 to-red-500 border-0 text-white">
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Needs Attention</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Submissions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{analyticsData.statusCounts.low}</div>
+            <div className="text-3xl font-bold">{analyticsData.statusCounts.pending}</div>
             <div className="text-sm mt-1">
-              Low progress barangays
+              Barangays need to submit
             </div>
           </CardContent>
         </Card>
@@ -376,8 +310,8 @@ const Community = () => {
                   variant="outline"
                   className="bg-cyan-600 hover:bg-cyan-700 text-white whitespace-nowrap"
                   onClick={() => {
-                    const incompleteBarangays = barangayStatuses.filter(b => b.overallStatus !== 'high');
-                    if (incompleteBarangays.length === 0) {
+                    const pendingBarangays = barangayStatuses.filter(b => b.overallStatus === 'pending');
+                    if (pendingBarangays.length === 0) {
                       alert('All barangays have completed submissions!');
                       return;
                     }
@@ -385,12 +319,12 @@ const Community = () => {
                       alert('Please enter a notification message');
                       return;
                     }
-                    if (confirm(`Send notification to ${incompleteBarangays.length} barangays?`)) {
-                      incompleteBarangays.forEach(b => handleNotifyBarangay(b.barangayId));
+                    if (confirm(`Send notification to ${pendingBarangays.length} barangays?`)) {
+                      pendingBarangays.forEach(b => handleNotifyBarangay(b.barangayId));
                     }
                   }}
                 >
-                  Notify All Incomplete
+                  Notify All Pending
                 </Button>
               </div>
               
@@ -425,66 +359,39 @@ const Community = () => {
                   <TableHeader>
                     <TableRow className="hover:bg-gray-800">
                       <TableHead className="text-white">Barangay</TableHead>
-                      <TableHead className="text-white">Overall Status</TableHead>
-                      <TableHead className="text-white">Progress</TableHead>
-                      {positions.map(position => (
-                        <TableHead key={position} className="text-white">{position}</TableHead>
-                      ))}
+                      <TableHead className="text-white">Status</TableHead>
+                      <TableHead className="text-white">Submission Date</TableHead>
                       <TableHead className="text-white">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentBarangays.map((barangay: any) => {
-                      // FIX: Calculate progress using completedPositions
-                      const totalPositions = barangay.totalPositions;
-                      const completedPositions = barangay.completedPositions;
-                      const progress = totalPositions > 0 
-                        ? Math.round((completedPositions / totalPositions) * 100)
-                        : 0;
-                      
-                      return (
-                        <TableRow key={barangay.barangayId} className="hover:bg-gray-800">
-                          <TableCell className="font-medium text-white">
-                            {barangay.barangayName}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={`${getStatusColor(barangay.overallStatus)} text-white`}>
-                              {getStatusText(barangay.overallStatus)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <div className="w-32 bg-gray-700 rounded-full h-2.5 mr-2">
-                                <div 
-                                  className={`h-2.5 rounded-full ${getStatusColor(barangay.overallStatus)}`}
-                                  style={{ width: `${progress}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm text-white font-bold">{progress}%</span>
-                            </div>
-                          </TableCell>
-                          {positions.map(position => (
-                            <TableCell key={position}>
-                              {barangay.positions[position] ? (
-                                <span className="text-green-500">●</span>
-                              ) : (
-                                <span className="text-red-500">●</span>
-                              )}
-                            </TableCell>
-                          ))}
-                          <TableCell>
-                            <Button 
-                              variant="outline"
-                              className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                              onClick={() => handleNotifyBarangay(barangay.barangayId)}
-                              disabled={!notificationMessage.trim()}
-                            >
-                              Notify
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
+                    {currentBarangays.map((barangay) => (
+                      <TableRow key={barangay.barangayId} className="hover:bg-gray-800">
+                        <TableCell className="font-medium text-white">
+                          {barangay.barangayName}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(barangay.overallStatus)} text-white`}>
+                            {getStatusText(barangay.overallStatus)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-white">
+                          {barangay.submissionDate 
+                            ? new Date(barangay.submissionDate).toLocaleDateString() 
+                            : 'Not submitted'}
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline"
+                            className="bg-cyan-600 hover:bg-cyan-700 text-white hover:text-white"
+                            onClick={() => handleNotifyBarangay(barangay.barangayId)}
+                            disabled={!notificationMessage.trim() || barangay.submitted}
+                          >
+                            {barangay.submitted ? 'Submitted' : 'Notify'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
                 
@@ -569,108 +476,87 @@ const Community = () => {
             </CardContent>
           </Card>
 
-          {/* Position Completion */}
+          {/* Completion Progress */}
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
               <CardTitle className="text-xl font-semibold text-white">
-                Position Completion Rate
+                Completion Progress
               </CardTitle>
             </CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={positionChartData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                >
-                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`${value} barangays`, 'Count']} />
-                  <Bar dataKey="count" name="Completed" fill="#00C49F" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Top Performing Barangays */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-white">
-                Top Performing Barangays
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analyticsData.topBarangays.map((barangay: any, index) => {
-                  const totalPositions = barangay.totalPositions;
-                  const completedPositions = barangay.completedPositions;
-                  const progress = totalPositions > 0 
-                    ? (completedPositions / totalPositions) * 100
-                    : 0;
-                  
-                  return (
-                    <div key={barangay.barangayId} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-cyan-600 text-white mr-3">
-                          {index + 1}
-                        </div>
-                        <span className="font-medium text-white">{barangay.barangayName}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-32 bg-gray-600 rounded-full h-2.5 mr-3">
-                          <div 
-                            className="h-2.5 rounded-full bg-green-500"
-                            style={{ width: `${progress}%` }}
-                          ></div>
-                        </div>
-                        <Badge className="bg-green-500 text-white">
-                          {completedPositions}/{totalPositions}
-                        </Badge>
-                      </div>
-                    </div>
-                  )
-                })}
+            <CardContent className="h-80 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-5xl font-bold text-cyan-400 mb-2">
+                  {Math.round(analyticsData.completionRate)}%
+                </div>
+                <div className="text-gray-300">Overall Completion Rate</div>
+                <div className="w-64 h-4 bg-gray-700 rounded-full mt-6 mx-auto">
+                  <div 
+                    className="h-4 rounded-full bg-green-500 transition-all duration-500"
+                    style={{ width: `${analyticsData.completionRate}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-sm text-gray-400 mt-2">
+                  <span>0%</span>
+                  <span>100%</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Needs Attention */}
+          {/* Completed Barangays */}
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
               <CardTitle className="text-xl font-semibold text-white">
-                Needs Attention
+                Completed Barangays
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {analyticsData.bottomBarangays.map((barangay: any, index) => {
-                  const totalPositions = barangay.totalPositions;
-                  const completedPositions = barangay.completedPositions;
-                  const progress = totalPositions > 0 
-                    ? (completedPositions / totalPositions) * 100
-                    : 0;
-                  
-                  return (
-                    <div key={barangay.barangayId} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500 text-white mr-3">
-                          {index + 1}
-                        </div>
-                        <span className="font-medium text-white">{barangay.barangayName}</span>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {analyticsData.completedBarangaysList.map((barangay, index) => (
+                  <div key={barangay.barangayId} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-500 text-white mr-3">
+                        {index + 1}
                       </div>
-                      <div className="flex items-center">
-                        <div className="w-32 bg-gray-600 rounded-full h-2.5 mr-3">
-                          <div 
-                            className="h-2.5 rounded-full bg-red-500"
-                            style={{ width: `${progress}%` }}
-                          ></div>
-                        </div>
-                        <Badge className="bg-red-500 text-white">
-                          {completedPositions}/{totalPositions}
-                        </Badge>
-                      </div>
+                      <span className="font-medium text-white">{barangay.barangayName}</span>
                     </div>
-                  )
-                })}
+                    <div className="text-sm text-gray-300">
+                      {barangay.submissionDate ? new Date(barangay.submissionDate).toLocaleDateString() : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pending Barangays */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-white">
+                Pending Barangays
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {analyticsData.pendingBarangaysList.map((barangay, index) => (
+                  <div key={barangay.barangayId} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500 text-white mr-3">
+                        {index + 1}
+                      </div>
+                      <span className="font-medium text-white">{barangay.barangayName}</span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                      onClick={() => handleNotifyBarangay(barangay.barangayId)}
+                      disabled={!notificationMessage.trim()}
+                    >
+                      Notify
+                    </Button>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

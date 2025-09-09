@@ -76,7 +76,7 @@ const CustomReports: React.FC = () => {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const response = await fetch('http://localhost:5000/form/get-report');
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/form/get-report`);
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
         setForms(data);
@@ -168,7 +168,7 @@ const CustomReports: React.FC = () => {
         formData.append('template', newTemplateFile);
       }
 
-      const response = await fetch(`http://localhost:5000/form/update-report/${formId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}form/update-report/${formId}`, {
         method: 'PUT',
         body: formData,
       });

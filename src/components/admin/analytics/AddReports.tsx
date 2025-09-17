@@ -161,7 +161,6 @@ const AddReports: React.FC = () => {
     setFields(prev => [...prev, newField]);
     setActiveFieldId(newField.id);
     
-    // Close sidebar on mobile after adding
     setMobileSidebarOpen(false);
   }, []);
 
@@ -235,17 +234,16 @@ const AddReports: React.FC = () => {
       formData.append('fields', JSON.stringify(fields));
       
       if (deadline) {
-      console.log('Adding deadline:', deadline.toISOString()); // Debug log
+      console.log('Adding deadline:', deadline.toISOString());
       formData.append('deadline', deadline.toISOString());
     } else {
-      console.log('No deadline set'); // Debug log
+      console.log('No deadline set');
     }
       
       if (templateFile) {
         formData.append('template', templateFile);
       }
 
-       // Debug: Log all form data entries
     for (let [key, value] of formData.entries()) {
       console.log(key, value);
     }
@@ -277,7 +275,6 @@ const AddReports: React.FC = () => {
     }
   };
 
-  // Mobile sidebar content
   const mobileSidebarContent = (
     <Card className="h-full overflow-hidden">
       <CardHeader className="pb-4 flex flex-row items-center justify-between">
@@ -309,7 +306,6 @@ const AddReports: React.FC = () => {
     </Card>
   );
 
-  // Mobile settings content
   const mobileSettingsContent = (
     <Card className="h-full overflow-hidden">
       <CardHeader className="pb-4 flex flex-row items-center justify-between">

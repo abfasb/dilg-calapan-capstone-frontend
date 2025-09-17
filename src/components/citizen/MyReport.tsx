@@ -380,22 +380,6 @@ export default function MyReport() {
                     </DropdownMenuItem>
                     )}
                       <DropdownMenuItem asChild>
-                        <a
-                          href={report.files[0]?.url}
-                          download
-                          className="flex items-center"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Download PDF
-                        </a>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to={`/report/${report._id}`} className="flex items-center">
-                          <FileText className="w-4 h-4 mr-2" />
-                          View Details
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
                         <Link
                           to={`/account/citizen/submission/${report.referenceNumber}`} // Fixed to use referenceNumber
                           state={{ 

@@ -105,6 +105,7 @@ export default function Reports() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   const [pendingStatus, setPendingStatus] = useState<FormResponse["status"] | null>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 400, height: 200 });
 
   const [loading, setLoading] = useState({
     forms: true,
@@ -117,12 +118,38 @@ export default function Reports() {
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      // Adjust canvas size for mobile
+      if (mobile) {
+        setCanvasSize({ width: 300, height: 150 });
+      } else {
+        setCanvasSize({ width: 400, height: 200 });
+      }
     };
+
+    // Initialize canvas size
+    handleResize();
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Initialize canvas when signature modal opens
+  useEffect(() => {
+    if (showSignatureModal && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000';
+      }
+    }
+  }, [showSignatureModal]);
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -337,48 +364,50 @@ export default function Reports() {
     return acc;
   }, {} as Record<string, number>);
 
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+  // Get coordinates from event (mouse or touch)
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return { x: 0, y: 0 };
 
-    let clientX, clientY;
+    const rect = canvas.getBoundingClientRect();
     
     if ('touches' in e) {
       // Touch event
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
     } else {
       // Mouse event
-      clientX = e.clientX;
-      clientY = e.clientY;
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
     }
+  };
 
-    const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent default for touch events to avoid scrolling while drawing
+    if ('touches' in e) {
+      e.preventDefault();
+    }
+    
+    const { x, y } = getCoordinates(e);
     setIsDrawing(true);
     setLastPoint({ x, y });
   };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing || !canvasRef.current) return;
-
-    let clientX, clientY;
     
+    // Prevent default for touch events to avoid scrolling while drawing
     if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
+      e.preventDefault();
     }
-
+    
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const { x, y } = getCoordinates(e);
 
     if (ctx && lastPoint) {
       ctx.beginPath();
@@ -479,15 +508,20 @@ export default function Reports() {
           <div className="relative">
             <canvas
               ref={canvasRef}
-              width={isMobile ? 300 : 400}
-              height={isMobile ? 150 : 200}
+              width={canvasSize.width}
+              height={canvasSize.height}
               className="bg-white rounded-md border border-gray-600 touch-none"
               onMouseDown={startDrawing}
               onMouseUp={endDrawing}
               onMouseMove={draw}
+              onMouseLeave={endDrawing}
               onTouchStart={startDrawing}
               onTouchEnd={endDrawing}
               onTouchMove={draw}
+              onTouchCancel={endDrawing}
+              style={{
+                touchAction: 'none' // Prevent browser touch actions like scrolling
+              }}
             />
             <button
               onClick={clearCanvas}
@@ -499,7 +533,10 @@ export default function Reports() {
 
           <DialogFooter className="flex flex-col gap-2 sm:flex-row">
             <Button 
-              onClick={() => setShowSignatureModal(false)}
+              onClick={() => {
+                setShowSignatureModal(false);
+                clearCanvas();
+              }}
               className="bg-gray-700 hover:bg-gray-600 w-full sm:w-auto"
             >
               Cancel
@@ -953,7 +990,7 @@ export default function Reports() {
                           <h3 className="text-lg font-semibold mb-2">Uploaded Document</h3>
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-900/50 p-3 rounded-md gap-3">
                             <div className="flex items-center gap-3">
-                              <FileText className="w-6 h-6 text-cyan-400" />
+                              <FileText className="w-6 w-6 text-cyan-400" />
                               <div>
                                 <p className="font-medium truncate max-w-[200px] sm:max-w-none">{selectedResponse.bulkFile.fileName}</p>
                                 <p className="text-sm text-gray-400">

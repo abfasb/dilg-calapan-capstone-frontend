@@ -227,52 +227,58 @@ const DocumentTracker: React.FC = () => {
   };
 
   const fetchSubmissionsByBarangay = async () => {
-    setIsLoading(true);
-    try {
-      let url = `${API_BASE}/api/document-tracker/submissions/${selectedForm}`;
-      
-      if (timePeriodFilter !== 'all') {
-        url += `?period=${timePeriodFilter}`;
+  setIsLoading(true);
+  try {
+    let url = `${API_BASE}/api/document-tracker/submissions/${selectedForm}`;
+    
+    if (timePeriodFilter !== 'all') {
+      url += `?period=${timePeriodFilter}`;
+    }
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
       }
+    });
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      throw new Error(`Expected JSON but received: ${contentType}. Response: ${text.substring(0, 100)}`);
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    const mergedData = barangays.map(barangay => {
+      const submission = data.find((sub: any) => sub.barangay === barangay.name);
       
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(`Expected JSON but received: ${contentType}. Response: ${text.substring(0, 100)}`);
-      }
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      const mergedData = barangays.map(barangay => {
-        const submission = data.find((sub: BarangaySubmission) => sub.barangay === barangay.name);
-        return submission || {
+      if (submission) {
+        return submission;
+      } else {
+        return {
           barangay: barangay.name,
           hasSubmission: false,
           submissionCount: 0,
-          latestSubmission: null
+          latestSubmission: null,
+          formId: selectedForm
         };
-      });
-      
-      setAllBarangaySubmissions(mergedData);
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
-      toast.error("Failed to fetch submissions: " + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+      }
+    });
+    
+    setAllBarangaySubmissions(mergedData);
+  } catch (error) {
+    console.error('Error fetching submissions:', error);
+    toast.error("Failed to fetch submissions: " + (error instanceof Error ? error.message : 'Unknown error'));
+  } finally {
+    setIsLoading(false);
+    setIsRefreshing(false);
+  }
+};
 
   const fetchAllSubmissions = async () => {
     setIsLoading(true);
@@ -449,85 +455,90 @@ const DocumentTracker: React.FC = () => {
   };
 
   const filteredAndSortedSubmissions = () => {
-    let filtered = allBarangaySubmissions;
-    
-    // In full view, filter by selected form if any
-    if (viewMode === 'simple' && selectedForm) {
-      filtered = filtered.filter(item => item.formId === selectedForm);
-    }
-    
-    if (activeStatusFilter !== 'all') {
-      filtered = filtered.filter(item => {
-        if (activeStatusFilter === 'submitted') return item.hasSubmission;
-        return !item.hasSubmission;
-      });
-    }
-    
-    // Apply deadline status filter
-    if (deadlineStatusFilter !== 'all') {
-      filtered = filtered.filter(item => {
-        if (!item.hasSubmission) return deadlineStatusFilter === 'no-submission';
+  let filtered = allBarangaySubmissions;
+  
+  // Always filter by selected form in simple view
+  if (viewMode === 'simple' && selectedForm) {
+    filtered = filtered.filter(item => item.formId === selectedForm);
+  }
+  
+  // Apply status filter
+  if (activeStatusFilter !== 'all') {
+    filtered = filtered.filter(item => {
+      if (activeStatusFilter === 'submitted') return item.hasSubmission;
+      if (activeStatusFilter === 'not-submitted') return !item.hasSubmission;
+      return true;
+    });
+  }
+  
+  // Apply deadline status filter
+  if (deadlineStatusFilter !== 'all') {
+    filtered = filtered.filter(item => {
+      if (!item.hasSubmission) return deadlineStatusFilter === 'no-submission';
+      
+      const form = forms.find(f => f._id === item.formId);
+      if (!form) return false;
+      
+      const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt, form.deadline);
+      const statusKey = deadlineStatus.status.toLowerCase().replace(' ', '-');
+      return statusKey === deadlineStatusFilter;
+    });
+  }
+  
+  // Apply search filter
+  if (searchQuery) {
+    filtered = filtered.filter(item => 
+      item.barangay.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (viewMode === 'full' && item.formTitle && item.formTitle.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }
+  
+  // Apply sorting
+  if (sortConfig) {
+    filtered = [...filtered].sort((a, b) => {
+      if (sortConfig.key === 'deadlineStatus') {
+        const formA = forms.find(f => f._id === a.formId);
+        const formB = forms.find(f => f._id === b.formId);
         
-        const form = forms.find(f => f._id === item.formId);
-        if (!form) return false;
+        const aStatus = getDeadlineStatus(a.latestSubmission?.createdAt, formA?.deadline || '').status;
+        const bStatus = getDeadlineStatus(b.latestSubmission?.createdAt, formB?.deadline || '').status;
         
-        const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt, form.deadline);
-        return deadlineStatus.status.toLowerCase().replace(' ', '-') === deadlineStatusFilter;
-      });
-    }
-    
-    if (searchQuery) {
-      filtered = filtered.filter(item => 
-        item.barangay.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (viewMode === 'full' && item.formTitle.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
-    
-    if (sortConfig) {
-      filtered = [...filtered].sort((a, b) => {
-        if (sortConfig.key === 'deadlineStatus') {
-          const formA = forms.find(f => f._id === a.formId);
-          const formB = forms.find(f => f._id === b.formId);
-          
-          const aStatus = getDeadlineStatus(a.latestSubmission?.createdAt, formA?.deadline || '').status;
-          const bStatus = getDeadlineStatus(b.latestSubmission?.createdAt, formB?.deadline || '').status;
-          
-          if (aStatus < bStatus) {
-            return sortConfig.direction === 'ascending' ? -1 : 1;
-          }
-          if (aStatus > bStatus) {
-            return sortConfig.direction === 'ascending' ? 1 : -1;
-          }
-          return 0;
+        if (aStatus < bStatus) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
         }
+        if (aStatus > bStatus) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      }
 
-        switch (sortConfig.key) {
-          case 'barangay':
-            return sortConfig.direction === 'ascending' 
-              ? a.barangay.localeCompare(b.barangay)
-              : b.barangay.localeCompare(a.barangay);
-          case 'formTitle':
-            return sortConfig.direction === 'ascending' 
-              ? a.formTitle.localeCompare(b.formTitle)
-              : b.formTitle.localeCompare(a.formTitle);
-          case 'submissionCount':
-            return sortConfig.direction === 'ascending'
-              ? a.submissionCount - b.submissionCount
-              : b.submissionCount - a.submissionCount;
-          case 'latestSubmission.createdAt':
-            const aDate = a.latestSubmission?.createdAt || '';
-            const bDate = b.latestSubmission?.createdAt || '';
-            return sortConfig.direction === 'ascending'
-              ? aDate.localeCompare(bDate)
-              : bDate.localeCompare(aDate);
-          default:
-            return 0;
-        }
-      });
-    }
-    
-    return filtered;
-  };
+      switch (sortConfig.key) {
+        case 'barangay':
+          return sortConfig.direction === 'ascending' 
+            ? a.barangay.localeCompare(b.barangay)
+            : b.barangay.localeCompare(a.barangay);
+        case 'formTitle':
+          return sortConfig.direction === 'ascending' 
+            ? (a.formTitle || '').localeCompare(b.formTitle || '')
+            : (b.formTitle || '').localeCompare(a.formTitle || '');
+        case 'submissionCount':
+          return sortConfig.direction === 'ascending'
+            ? a.submissionCount - b.submissionCount
+            : b.submissionCount - a.submissionCount;
+        case 'latestSubmission.createdAt':
+          const aDate = a.latestSubmission?.createdAt || '';
+          const bDate = b.latestSubmission?.createdAt || '';
+          return sortConfig.direction === 'ascending'
+            ? aDate.localeCompare(bDate)
+            : bDate.localeCompare(aDate);
+        default:
+          return 0;
+      }
+    });
+  }
+  
+  return filtered;
+};
 
   const filteredAndSortedFullSubmissions = () => {
     let filtered = fullSubmissions;
@@ -628,128 +639,131 @@ const DocumentTracker: React.FC = () => {
     return barangayData;
   };
 
+  
   const renderSimpleView = () => (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader className="bg-muted/50">
-          <TableRow>
-            <TableHead 
-              className="w-[200px] cursor-pointer"
-              onClick={() => handleSort('barangay')}
-            >
-              <div className="flex items-center">
-                Barangay
-                {sortConfig?.key === 'barangay' && (
-                  sortConfig.direction === 'ascending' ? 
-                    <ChevronUp className="ml-1 h-4 w-4" /> : 
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                )}
-              </div>
-            </TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('deadlineStatus')}
-            >
-              <div className="flex items-center">
-                Deadline Status
-                {sortConfig?.key === 'deadlineStatus' && (
-                  sortConfig.direction === 'ascending' ? 
-                    <ChevronUp className="ml-1 h-4 w-4" /> : 
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                )}
-              </div>
-            </TableHead>
-            <TableHead 
-              className="cursor-pointer text-right"
-              onClick={() => handleSort('submissionCount')}
-            >
-              <div className="flex items-center justify-end">
-                Submissions
-                {sortConfig?.key === 'submissionCount' && (
-                  sortConfig.direction === 'ascending' ? 
-                    <ChevronUp className="ml-1 h-4 w-4" /> : 
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                )}
-              </div>
-            </TableHead>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('latestSubmission.createdAt')}
-            >
-              <div className="flex items-center">
-                Last Submission
-                {sortConfig?.key === 'latestSubmission.createdAt' && (
-                  sortConfig.direction === 'ascending' ? 
-                    <ChevronUp className="ml-1 h-4 w-4" /> : 
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                )}
-              </div>
-            </TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredAndSortedSubmissions().map((item) => {
-            const form = forms.find(f => f._id === item.formId);
-            const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt, form?.deadline || '');
-            
-            return (
-              <TableRow key={`${item.barangay}-${item.formId}`}>
-                <TableCell className="font-medium">
+  <div className="rounded-md border">
+    <Table>
+      <TableHeader className="bg-muted/50">
+        <TableRow>
+          <TableHead 
+            className="w-[200px] cursor-pointer"
+            onClick={() => handleSort('barangay')}
+          >
+            <div className="flex items-center">
+              Barangay
+              {sortConfig?.key === 'barangay' && (
+                sortConfig.direction === 'ascending' ? 
+                  <ChevronUp className="ml-1 h-4 w-4" /> : 
+                  <ChevronDown className="ml-1 h-4 w-4" />
+              )}
+            </div>
+          </TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead 
+            className="cursor-pointer"
+            onClick={() => handleSort('deadlineStatus')}
+          >
+            <div className="flex items-center">
+              Deadline Status
+              {sortConfig?.key === 'deadlineStatus' && (
+                sortConfig.direction === 'ascending' ? 
+                  <ChevronUp className="ml-1 h-4 w-4" /> : 
+                  <ChevronDown className="ml-1 h-4 w-4" />
+              )}
+            </div>
+          </TableHead>
+          <TableHead 
+            className="cursor-pointer text-right"
+            onClick={() => handleSort('submissionCount')}
+          >
+            <div className="flex items-center justify-end">
+              Submissions
+              {sortConfig?.key === 'submissionCount' && (
+                sortConfig.direction === 'ascending' ? 
+                  <ChevronUp className="ml-1 h-4 w-4" /> : 
+                  <ChevronDown className="ml-1 h-4 w-4" />
+              )}
+            </div>
+          </TableHead>
+          <TableHead 
+            className="cursor-pointer"
+            onClick={() => handleSort('latestSubmission.createdAt')}
+          >
+            <div className="flex items-center">
+              Last Submission
+              {sortConfig?.key === 'latestSubmission.createdAt' && (
+                sortConfig.direction === 'ascending' ? 
+                  <ChevronUp className="ml-1 h-4 w-4" /> : 
+                  <ChevronDown className="ml-1 h-4 w-4" />
+              )}
+            </div>
+          </TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filteredAndSortedSubmissions().map((item) => {
+          const form = forms.find(f => f._id === item.formId);
+          const deadlineStatus = getDeadlineStatus(item.latestSubmission?.createdAt, form?.deadline || '');
+          
+          return (
+            <TableRow key={`${item.barangay}-${item.formId}`}>
+              <TableCell className="font-medium">
+                <div className="flex items-center">
+                  <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                  {item.barangay}
+                </div>
+              </TableCell>
+              <TableCell>
+                {getStatusIndicator(item.hasSubmission)}
+              </TableCell>
+              <TableCell>
+                <Badge 
+                  variant="outline" 
+                  className={
+                    deadlineStatus.color === 'green' ? 'bg-green-100 text-green-800 hover:bg-green-100' :
+                    deadlineStatus.color === 'yellow' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' :
+                    deadlineStatus.color === 'orange' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100' :
+                    deadlineStatus.color === 'red' ? 'bg-red-100 text-red-800 hover:bg-red-100' :
+                    'bg-gray-100 text-gray-800 hover:bg-gray-100'
+                  }
+                >
+                  {deadlineStatus.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right">{item.submissionCount}</TableCell>
+              <TableCell>
+                {item.latestSubmission ? (
                   <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                    {item.barangay}
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                    {new Date(item.latestSubmission.createdAt).toLocaleDateString()}
                   </div>
-                </TableCell>
-                <TableCell>
-                  {getStatusIndicator(item.hasSubmission)}
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant="outline" 
-                    className={
-                      deadlineStatus.color === 'green' ? 'bg-green-100 text-green-800 hover:bg-green-100' :
-                      deadlineStatus.color === 'yellow' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' :
-                      deadlineStatus.color === 'orange' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100' :
-                      deadlineStatus.color === 'red' ? 'bg-red-100 text-red-800 hover:bg-red-100' :
-                      'bg-gray-100 text-gray-800 hover:bg-gray-100'
-                    }
+                ) : (
+                  'N/A'
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                {item.hasSubmission && item.latestSubmission ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchSubmissionDetails(item.latestSubmission._id)}
+                    className="flex items-center gap-1"
                   >
-                    {deadlineStatus.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">{item.submissionCount}</TableCell>
-                <TableCell>
-                  {item.latestSubmission ? (
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                      {new Date(item.latestSubmission.createdAt).toLocaleDateString()}
-                    </div>
-                  ) : (
-                    'N/A'
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  {item.hasSubmission && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fetchSubmissionDetails(item.latestSubmission._id)}
-                      className="flex items-center gap-1"
-                    >
-                      <FileText size={14} />
-                      Details
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  );
+                    <FileText size={14} />
+                    Details
+                  </Button>
+                ) : (
+                  <span className="text-muted-foreground text-sm">No submission</span>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  </div>
+);
 
   const renderFullGridView = () => {
     const barangayData = getBarangayGridData();

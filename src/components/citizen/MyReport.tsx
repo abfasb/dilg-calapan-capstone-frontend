@@ -381,7 +381,7 @@ export default function MyReport() {
                     )}
                       <DropdownMenuItem asChild>
                         <Link
-                          to={`/account/citizen/submission/${report.referenceNumber}`} // Fixed to use referenceNumber
+                          to={`/account/citizen/submission/${report.referenceNumber}`} 
                           state={{ 
                             reportData: report.data,
                             formFields: report.formId?.fields || [],
@@ -392,8 +392,8 @@ export default function MyReport() {
                               barangay: barangay || "",
                               phoneNumber: phoneNumber || ""
                             },
-                            referenceNumber: report.referenceNumber, // Added referenceNumber
-                            createdAt: report.createdAt // Added createdAt
+                            referenceNumber: report.referenceNumber, 
+                            createdAt: report.createdAt
                           }}
                           className="flex items-center"
                         >
@@ -483,11 +483,6 @@ export default function MyReport() {
               </CardContent>
 
               <CardFooter className="flex items-center justify-between pt-4 border-t">
-                <Button variant="outline" size="sm" asChild>
-                  <Link to={`/report/${report._id}`} className="gap-2">
-                    View Full Details
-                  </Link>
-                </Button>
                 <div className="text-xs text-muted-foreground">
                 Updated {formatDistanceToNow(new Date(report.updatedAt || report.createdAt), { addSuffix: true })}
                 </div>

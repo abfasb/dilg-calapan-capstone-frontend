@@ -19,7 +19,7 @@ messaging.onBackgroundMessage((payload) => {
     body: payload.notification.body,
     icon: '/logo.png',
     data: {
-      click_action: payload?.data?.click_action || 'http://localhost:5173/' 
+      click_action: payload?.data?.click_action || 'https://dilg-calapan.vercel.app/' 
     }
   };
 

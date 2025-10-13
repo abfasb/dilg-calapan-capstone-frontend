@@ -42,7 +42,7 @@ export default function ResetPassword() {
       if (!token) return;
     
       try {
-        const response = await axios.get(`http://localhost:5000/account/reset-password/${token}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/account/reset-password/${token}`);
         console.log(response.data.email);
         console.log('hello world');
         if (response.data.email) {

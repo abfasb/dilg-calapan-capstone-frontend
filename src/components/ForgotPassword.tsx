@@ -63,7 +63,7 @@ export default function ResetPassword() {
   const onSubmit = async (data: ResetPasswordForm) => {
     try {
       const response = await axios.post(
-        `http://localhost:5000/account/reset-password/${token}`,
+        `${import.meta.env.VITE_API_URL}/account/reset-password/${token}`,
         { password: data.newPassword }
       );
       setMessage(response.data.message);

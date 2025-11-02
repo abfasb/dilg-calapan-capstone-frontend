@@ -19,9 +19,9 @@ const teamMembers: TeamMember[] = [
     image: 'https://i.ibb.co/dw7N7KB0/474862650-1850779965731720-7251136394819950153-n.jpg',
     description: 'Specializes in AI-driven analytics and automation for the project.',
     socials: {
-      github: 'https://github.com/emman',
-      linkedin: 'https://linkedin.com/in/emman',
-      email: 'emman@example.com',
+      github: 'https://github.com/johndoe',
+      linkedin: 'https://linkedin.com/in/johndoe',
+      email: 'johndoe@example.com',
     },
   },
   {
@@ -31,8 +31,8 @@ const teamMembers: TeamMember[] = [
     description: 'Responsible for building an intuitive UI using React and Tailwind.',
     socials: {
       github: 'https://github.com/abfasb',
-      linkedin: 'https://linkedin.com/in/',
-      email: 'matbalinton@gmail.com',
+      linkedin: 'https://linkedin.com/in/janesmith',
+      email: 'janesmith@example.com',
     },
   },
   {
@@ -41,9 +41,9 @@ const teamMembers: TeamMember[] = [
     image: 'https://i.ibb.co/XTYsNW0/462579078-928813822492507-2147962897797461503-n.jpg',
     description: 'Manages the server, database, and API development for our system.',
     socials: {
-      github: 'https://github.com/jamaica',
-      linkedin: 'https://linkedin.com/jamaica/',
-      email: 'jamaica@gmail.com',
+      github: 'https://github.com/alexjohnson',
+      linkedin: 'https://linkedin.com/in/alexjohnson',
+      email: 'alexjohnson@example.com',
     },
   },
 ];

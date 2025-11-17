@@ -183,8 +183,6 @@ export const DashboardHome = () => {
   const getSystemHealth = () => {
     if (!stats) return null;
     
-    // Fix: Calculate response rate correctly based on total submissions divided by total forms
-    // This is the percentage of forms that have received submissions
     const formsResponseRate = ((stats?.overview?.totalSubmissions ?? 0) / (stats?.overview?.totalForms ?? 1) * 100).toFixed(1);
     
     return [
@@ -404,7 +402,6 @@ export const DashboardHome = () => {
         </div>
       </div>
 
-      {/* System Health Section */}
       <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-2xl transform transition-all hover:shadow-cyan-900/5">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-cyan-900/40 rounded-xl">
@@ -437,7 +434,6 @@ export const DashboardHome = () => {
         </div>
       </div>
 
-      {/* Additional Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-2xl col-span-1">
           <div className="flex items-center gap-3 mb-6">
@@ -473,7 +469,6 @@ export const DashboardHome = () => {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
-              {/* Use actual department performance data from API */}
               {getDepartmentPerformanceData().map((dept : any, index : any) => (
                 <div key={index} className="p-3 rounded-lg bg-gray-700/40 backdrop-blur-sm hover:bg-gray-700/60 transition-all">
                   <div className="flex items-center justify-between mb-2">

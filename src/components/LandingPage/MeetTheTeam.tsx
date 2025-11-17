@@ -12,6 +12,7 @@ interface TeamMember {
   };
 }
 
+
 const teamMembers: TeamMember[] = [
   {
     name: 'Emmanuel Calica',

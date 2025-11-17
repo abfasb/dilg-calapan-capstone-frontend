@@ -261,7 +261,6 @@ const Dashboard = () => {
     );
   }
   
-  // Default data structure to prevent runtime errors
   const defaultDashboardData: DashboardData = {
     overview: {
       totalUsers: 0,
@@ -400,7 +399,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Analytics Dashboard</h1>
@@ -432,7 +430,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Tabs for different views */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-white border border-gray-200 p-1 rounded-lg">
             <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700">Overview</TabsTrigger>
@@ -441,7 +438,6 @@ const Dashboard = () => {
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6 mt-6">
-            {/* Overview Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               <StatCard
                 title="Total Users"
@@ -477,7 +473,6 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* System Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
                 title="Resolution Rate"
@@ -509,9 +504,7 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* User Registration Trend */}
               <Card className="col-span-1 lg:col-span-2 border-0 rounded-xl shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -597,7 +590,6 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Users by Role */}
               <Card className="border-0 rounded-xl shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -647,7 +639,6 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Complaints by Status */}
               <Card className="border-0 rounded-xl shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -791,7 +782,6 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Recent Complaints */}
               <Card className="border-0 rounded-xl shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -852,7 +842,6 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Recent Submissions */}
               <Card className="border-0 rounded-xl shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -910,9 +899,7 @@ const Dashboard = () => {
               </Card>
             </div>
 
-            {/* Additional Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Submission Status Breakdown */}
               <Card className="border-0 rounded-xl shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -1012,7 +999,6 @@ const Dashboard = () => {
               </Card>
             </div>
 
-            {/* Performance Summary */}
             <Card className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-xl shadow-lg overflow-hidden">
               <CardHeader>
                 <div className="flex items-center gap-2">

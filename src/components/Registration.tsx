@@ -150,13 +150,13 @@ function Registration() {
         toast.error('Please fix form errors');
         return;
       }
+      await registerUser(formData);
       
-      setIsSendingOtp(true);
-      await sendOTP(formData.email);
-      setMaskedEmail(maskEmail(formData.email));
-      toast.success('Verification code sent to your email!');
-      setOtpResendTime(60);
-      setStep('verification');
+      
+      toast.success('Registration Successful!');
+       setTimeout(() => {
+      router("/account/login");
+    }, 3000);
       
     } catch (error: any) {
       if (error.response) {

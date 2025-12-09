@@ -161,6 +161,7 @@ const HeroSection = () => {
 
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-b-2xl overflow-hidden relative">
                 <div className="h-80 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center relative">
+                  {/* Loading placeholder effect */}
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 dark:via-gray-700/40 to-transparent"
                     animate={{ x: [-500, 500] }}

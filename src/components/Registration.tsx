@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { z } from 'zod'
 import { toast, Toaster } from 'react-hot-toast'
 import barangays from '../types/barangays'
-import { registerUser, sendOTP, verifyOTP } from "../api/registrationApi"
+import { registerUser } from "../api/registrationApi"
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid'
 import { useNavigate } from "react-router-dom"
 import { useDebouncedCallback } from 'use-debounce';
@@ -64,19 +64,12 @@ const initialFormState = {
 
 function Registration() {
   const router = useNavigate();
-  const [step, setStep] = useState<'form' | 'verification'>('form');
   const [formData, setFormData] = useState(initialFormState);
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [open, setOpen] = useState(false)
-  const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
-  const [otpError, setOtpError] = useState('')
-  const [otpResendTime, setOtpResendTime] = useState(0)
-  const [maskedEmail, setMaskedEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSendingOtp, setIsSendingOtp] = useState(false)
-  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const logos = [
     "https://i.ibb.co/sJcshyZp/images-6.jpg",
@@ -127,14 +120,6 @@ function Registration() {
     debouncedValidate(field, value)
   }
 
-  const maskEmail = (email: string) => {
-    const [name, domain] = email.split('@');
-    if (name.length > 2) {
-      return `${name.substring(0, 2)}${'*'.repeat(name.length - 2)}@${domain}`;
-    }
-    return `${name}@${domain}`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -148,228 +133,30 @@ function Registration() {
         });
         setErrors(errorMap);
         toast.error('Please fix form errors');
+        setIsSubmitting(false);
         return;
       }
       
-      setIsSendingOtp(true);
-      await sendOTP(formData.email);
-      setMaskedEmail(maskEmail(formData.email));
-      toast.success('Verification code sent to your email!');
-      setOtpResendTime(60);
-      setStep('verification');
-      
-    } catch (error: any) {
-      if (error.response) {
-        toast.error(error.response.data.message || 'Failed to send verification code');
-      } else {
-        toast.error('Network error. Please check your connection.');
-      }
-    } finally {
-      setIsSubmitting(false);
-      setIsSendingOtp(false);
-    }
-  };
-
-  const handleVerifyOTP = async (otpValue?: string) => {
-    const otpString = otpValue || otp.join('');
-    
-    if (otpString.length !== 6) {
-      setOtpError('Please enter the 6-digit code');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    try {
-      await verifyOTP(formData.email, otpString);
-      
       await registerUser(formData);
-      toast.success('Registration Successful!');
+      toast.success('Registration Successful! You can now login.');
       
-      // Delay redirect by 3 seconds
+      // Reset form
+      setFormData(initialFormState);
+      
+      // Delay redirect by 2 seconds
       setTimeout(() => {
         router('/account/login');
-      }, 3000);
+      }, 2000);
       
     } catch (error: any) {
       if (error.response) {
-        if (error.response.status === 400) {
-          setOtpError(error.response.data.message);
-        } else {
-          toast.error(error.response.data.message || 'Verification failed');
-        }
+        toast.error(error.response.data.message || 'Registration failed');
       } else {
-        toast.error('Network error. Please check your connection.');
+       toast.error('An account for that barangay already exists.');
       }
-    } finally {
       setIsSubmitting(false);
     }
   };
-
-  const handleResendOTP = async () => {
-    if (otpResendTime > 0) return;
-    
-    setIsSendingOtp(true);
-    try {
-      await sendOTP(formData.email);
-      toast.success('New verification code sent!');
-      setOtpResendTime(60);
-    } catch (error) {
-      toast.error('Failed to resend code');
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    if (/^\d*$/.test(value) && value.length <= 1) {
-      const newOtp = [...otp];
-      newOtp[index] = value;
-      setOtp(newOtp);
-      setOtpError('');
-      
-      if (value && index < 5 && otpInputRefs.current[index + 1]) {
-        otpInputRefs.current[index + 1]?.focus();
-      }
-      
-      if (index === 5 && value) {
-        const fullOtp = newOtp.join('');
-        if (fullOtp.length === 6) {
-          handleVerifyOTP(fullOtp);
-        }
-      }
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpInputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (otpResendTime > 0) {
-      timer = setTimeout(() => setOtpResendTime(otpResendTime - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [otpResendTime]);
-
-  useEffect(() => {
-    if (step === 'verification') {
-      setTimeout(() => {
-        otpInputRefs.current[0]?.focus();
-      }, 100);
-    }
-  }, [step]);
-
-  if (step === 'verification') {
-    return (
-      <div className="min-h-screen bg-[#1a1d24] text-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="toast-wrapper">
-            <Toaster
-              position="top-right"
-              gutter={32}
-              containerClassName="!top-10 !right-6"
-              toastOptions={{
-                className: '!bg-white !text-black !rounded-xl !border !border-[#2a2f38]',
-              }}
-            />
-          </div>
-
-          <div className="bg-[#2a2f38] rounded-xl p-8 shadow-lg">
-            <div className="text-center mb-8">
-              <div className="mx-auto bg-blue-500/20 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </div>
-              
-              <h1 className="text-2xl font-bold mb-2">Verify Your Email</h1>
-              <p className="text-gray-400">
-                We've sent a 6-digit code to <span className="font-medium text-blue-300">{maskedEmail}</span>
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm text-gray-400 mb-3">Enter verification code</label>
-                <div className="flex justify-center space-x-3">
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => (otpInputRefs.current[index] = el)}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      className={`w-12 h-12 text-center text-xl rounded-lg bg-[#1a1d24] focus:outline-none focus:ring-2 ${
-                        otpError ? 'border border-red-500 focus:ring-red-500' : 'border-blue-500/50 focus:ring-blue-500'
-                      }`}
-                      value={otp[index]}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      disabled={isSubmitting}
-                    />
-                  ))}
-                </div>
-                
-                {otpError && (
-                  <p className="text-red-400 text-sm mt-2 text-center">{otpError}</p>
-                )}
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <button
-                  onClick={handleResendOTP}
-                  disabled={otpResendTime > 0 || isSendingOtp}
-                  className={`text-sm font-medium ${
-                    otpResendTime > 0 
-                      ? 'text-gray-500' 
-                      : 'text-blue-400 hover:text-blue-300'
-                  }`}
-                >
-                  {isSendingOtp ? (
-                    <span>Sending new code...</span>
-                  ) : otpResendTime > 0 ? (
-                    `Resend in ${otpResendTime}s`
-                  ) : (
-                    'Resend verification code'
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => handleVerifyOTP()}
-                  disabled={isSubmitting || otp.join('').length !== 6}
-                  className={`px-6 py-3 text-base font-medium text-white rounded-lg transition-colors ${
-                    isSubmitting || otp.join('').length !== 6
-                      ? 'bg-gray-600 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
-                      Verifying...
-                    </div>
-                  ) : (
-                    'Verify Account'
-                  )}
-                </button>
-              </div>
-
-              <button
-                onClick={() => setStep('form')}
-                className="text-blue-400 hover:text-blue-300 text-sm font-medium mt-4 w-full text-center"
-              >
-                ← Back to registration
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="grid min-h-screen md:grid-cols-2">
@@ -534,7 +321,7 @@ function Registration() {
                 />
                 <label htmlFor="terms" className="text-sm text-gray-400">
                   I certify that I am an authorized barangay official and agree to the{" "}
-                  <button type= "button" onClick={() => setOpen(true)} className="text-[#3b82f6] hover:underline">
+                  <button type="button" onClick={() => setOpen(true)} className="text-[#3b82f6] hover:underline">
                     Terms of Service
                   </button>
                 </label>
@@ -611,15 +398,15 @@ function Registration() {
             
             <button
               type="submit"
-              disabled={isSubmitting || isSendingOtp}
+              disabled={isSubmitting}
               className={`w-full px-4 py-2.5 text-sm font-medium text-white bg-[#3b82f6] rounded-lg transition-all ${
-                isSubmitting || isSendingOtp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
               }`}
             >
-              {isSubmitting || isSendingOtp ? (
+              {isSubmitting ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
-                  {isSendingOtp ? 'Sending code...' : 'Registering...'}
+                  Registering...
                 </div>
               ) : (
                 'Register Official Account'

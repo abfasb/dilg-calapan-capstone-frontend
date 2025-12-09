@@ -151,19 +151,18 @@ function Registration() {
         return;
       }
       
-      await registerUser(formData);
-      toast.success('Registration Successful!');
-
-       setTimeout(() => {
-        router("/account/login");
-      }, 3000);
-
+      setIsSendingOtp(true);
+      await sendOTP(formData.email);
+      setMaskedEmail(maskEmail(formData.email));
+      toast.success('Verification code sent to your email!');
+      setOtpResendTime(60);
+      setStep('verification');
       
     } catch (error: any) {
       if (error.response) {
         toast.error(error.response.data.message || 'Failed to send verification code');
       } else {
-        toast.error('Account already existed for that barangay.');
+        toast.error('Network error. Please check your connection.');
       }
     } finally {
       setIsSubmitting(false);

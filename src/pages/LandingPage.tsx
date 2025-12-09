@@ -41,7 +41,6 @@ const LandingPage: React.FC = () => {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="w-full mx-auto"
       >
-        {/* Main content sections - removed alternating backgrounds */}
         <section id="hero" className="min-h-screen w-full">
           <HeroSection />
         </section>

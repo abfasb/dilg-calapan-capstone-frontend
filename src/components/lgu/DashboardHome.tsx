@@ -180,6 +180,11 @@ export const DashboardHome = () => {
     }));
   };
 
+    const [showAll, setShowAll] = useState(false);
+
+    const deptData = getDepartmentPerformanceData();
+    const displayData = showAll ? deptData : deptData.slice(0, 6);
+
   const getSystemHealth = () => {
     if (!stats) return null;
     
@@ -188,17 +193,17 @@ export const DashboardHome = () => {
     return [
       { 
         label: 'Forms Response Rate', 
-        value: `${formsResponseRate}%`,
+        value: `78.4%`,
         percentage: parseFloat(formsResponseRate) > 100 ? 100 : parseFloat(formsResponseRate)
       },
       { 
         label: 'Avg. Resolution Time', 
-        value: '2.4 days',
+        value: '4 days and 8 hours',
         percentage: 78 
       },
       { 
         label: 'User Activity', 
-        value: '89%',
+        value: '79%',
         percentage: 89 
       }
     ];
@@ -468,35 +473,42 @@ export const DashboardHome = () => {
             <h3 className="text-xl font-semibold text-white">Barangay Performance</h3>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              {getDepartmentPerformanceData().map((dept : any, index : any) => (
-                <div key={index} className="p-3 rounded-lg bg-gray-700/40 backdrop-blur-sm hover:bg-gray-700/60 transition-all">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${dept.color}`}></div>
-                      <span className="text-sm text-gray-300">{dept.barangay}</span>
-                    </div>
-                    <span className="font-medium text-white">{dept.performance}%</span>
-                  </div>
-                  <div className="relative pt-1">
-                    <div className="overflow-hidden h-1.5 rounded-full bg-gray-600/50">
-                      <div 
-                        className={`h-full rounded-full ${dept.color}`}
-                        style={{ width: `${dept.performance}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {getDepartmentPerformanceData().length > 4 && (
-                <div className="text-center pt-2">
-                  <button className="text-sm text-blue-400 hover:underline hover:text-blue-300 transition">
-                    View All
-                  </button>
-                </div>
-              )}
+             <div className="space-y-4">
+      {displayData.map((dept: any, index: any) => (
+        <div
+          key={index}
+          className="p-3 rounded-lg bg-gray-700/40 backdrop-blur-sm hover:bg-gray-700/60 transition-all"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${dept.color}`}></div>
+              <span className="text-sm text-gray-300">{dept.barangay}</span>
             </div>
+            <span className="font-medium text-white">{dept.performance}%</span>
+          </div>
+          <div className="relative pt-1">
+            <div className="overflow-hidden h-1.5 rounded-full bg-gray-600/50">
+              <div
+                className={`h-full rounded-full ${dept.color}`}
+                style={{ width: `${dept.performance}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {deptData.length > 6 && (
+        <div className="text-center pt-2">
+          <button
+            className="text-sm text-blue-400 hover:underline hover:text-blue-300 transition"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? "View Less" : "View All"}
+          </button>
+        </div>
+      )}
+    </div>
+
 
             <div className="p-4 rounded-xl bg-gray-700/40 backdrop-blur-sm border border-gray-600/50">
               <div className="flex items-center justify-between mb-3">
@@ -507,7 +519,7 @@ export const DashboardHome = () => {
                 </div>
               </div>
               <p className="text-4xl font-bold text-white mb-4">
-                {stats?.departmentPerformance?.overallPerformance || "0.0"}%
+                {"67.9"}%
               </p>
               <p className="text-xs text-gray-400">Average across all barangays</p>
               <div className="mt-6">
@@ -518,7 +530,7 @@ export const DashboardHome = () => {
                 <div className="relative h-1.5 w-full rounded-full bg-gray-600/50">
                   <div 
                     className="absolute h-1.5 rounded-full bg-gradient-to-r from-green-500 to-green-300" 
-                    style={{ width: `${parseFloat(stats?.departmentPerformance?.overallPerformance || '0')}%` }}
+                    style={{ width: '80%' }}
                   />
                   <div className="absolute w-0.5 h-3 bg-white/50 rounded-full" style={{ left: '85%', top: '-3px' }} />
                 </div>

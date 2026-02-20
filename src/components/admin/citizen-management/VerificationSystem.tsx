@@ -25,7 +25,7 @@ const ChatSupport = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5000', {
+    const newSocket = io('https://dilg-calapan-capstone-backend.onrender.com', {
       transports: ['websocket']
     });
     
